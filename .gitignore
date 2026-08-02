@@ -1,5 +1,5 @@
 node_modules/
 dist/
+apps/web/public/yalisp/seed.wasm
 .DS_Store
 *.log
-

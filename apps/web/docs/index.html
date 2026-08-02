@@ -56,14 +56,14 @@
           <p class="section-number">03</p>
           <h2>Language guide</h2>
           <p>Expressions, functions, and the core ideas that keep the language small, readable, and capable of describing its own implementation.</p>
-          <p class="interface-note">Implementation status: this repository currently ships the TypeScript website and its canonical YALisp example, not a runnable YALisp reader, evaluator, or compiler. The examples below stay within forms evidenced by that source and distinguish language goals from implemented behavior.</p>
+          <p class="interface-note">Implementation status: this repository now ships a runnable WAT reader/evaluator and a Lisp-written bootstrap, exercised in the <a href="/playground/">YALISP Playground</a>. It does not yet ship the planned compiler, modules, JIT, or AOT modes.</p>
           <div class="language-examples">
             <article class="language-example">
               <p class="example-label">01 / Arithmetic</p>
               <h3>Calls use prefix notation</h3>
               <pre><code>(* 6 7)  ; =&gt; 42
 (- 6 1)  ; =&gt; 5</code></pre>
-              <p>The published factorial example uses <code>*</code> and <code>-</code> in this position. These small expressions show the same call shape without claiming a broader numeric tower that is not implemented yet.</p>
+              <p>The executable seed supports these prefix integer operations. The Playground evaluates the same call shape through WebAssembly rather than displaying a precomputed result.</p>
             </article>
             <article class="language-example">
               <p class="example-label">02 / Functions</p>
@@ -75,7 +75,7 @@
       (* n (factorial (- n 1))))))
 
 (factorial 6)  ; =&gt; 720</code></pre>
-              <p>This is the exact example maintained by the current site source: a named recursive function, one parameter, a conditional, and ordinary prefix calls.</p>
+              <p>This exact example uses forms implemented by the executable seed: a named recursive function, one parameter, a conditional, and ordinary prefix calls.</p>
             </article>
             <article class="language-example">
               <p class="example-label">03 / Organization</p>
@@ -99,25 +99,26 @@ result</code></pre>
         <section id="core-repl">
           <p class="section-number">04</p>
           <h2>A REPL that grows into a compiler</h2>
-          <p>YALisp’s core REPL is a bootstrapped compiler written in Lisp—eventually, in YALisp itself. The interactive prompt is therefore the first usable surface of the language and part of the path to a self-hosted implementation.</p>
+          <p>The current Playground is a WAT interpreter extended by <code>boot.lisp</code>. It is the first usable language surface and the verified base from which a later Lisp-written compiler can grow.</p>
           <div class="reference-grid">
             <article><code>read</code><h3>Accept a Lisp form</h3><p>The REPL receives a form and keeps the language’s syntax close to the implementation that understands it.</p></article>
             <article><code>compile</code><h3>Turn a form into executable work</h3><p>The bootstrap compiler lowers YALisp forms through the small core and into the WebAssembly-oriented layers beneath it.</p></article>
             <article><code>evaluate</code><h3>Return a result and continue</h3><p>The compiled form runs in the current environment, reports its value or error, and leaves the session ready for the next expression.</p></article>
           </div>
-          <p class="interface-note">Bootstrapping keeps the trusted base small: begin with the minimum low-level support required to run Lisp, then use Lisp to grow the compiler and the interactive environment. As the implementation matures, more of the language can live in YALisp rather than in a separate host runtime.</p>
+          <p class="interface-note">Bootstrapping keeps the trusted base small: the WAT seed implements only the evaluator boundary, while Lisp adds macros and library functions. Compiler, JIT, and AOT stages remain future verified milestones.</p>
         </section>
         <section id="foundation" class="interface-section">
           <p class="section-number">05</p>
           <h2>Foundation</h2>
-          <p>YALisp grows from a small executable seed into a bootstrapped compiler and then practical applications. The overview gives the path; each stage has its own detailed reference.</p>
+          <p>YALisp now grows from a small executable seed into a real Lisp bootstrap. A compiler and practical applications remain the next stages of the intended path.</p>
           <div class="interface-map" aria-label="YALisp foundation documentation">
             <a href="/docs/foundation/" aria-label="Foundation overview"><span aria-hidden="true">—</span><strong>Foundation</strong><small>The complete bootstrapping path</small></a>
             <a href="/docs/seed/"><span>01</span><strong>Seed</strong><small>The minimal trusted runtime</small></a>
             <a href="/docs/bootstrap/"><span>02</span><strong>Bootstrap</strong><small>Growing the language from Lisp</small></a>
-            <a href="/docs/compiler/"><span>03</span><strong>Compiler</strong><small>Interpreted, JIT, and ahead-of-time modes</small></a>
+            <a href="/docs/compiler/"><span>03</span><strong>Compiler</strong><small>Planned JIT and ahead-of-time modes</small></a>
             <a href="/docs/applications/"><span>04</span><strong>Applications</strong><small>Using the language in real tools</small></a>
           </div>
+          <p class="interface-note"><a href="/playground/">Open the YALISP Playground</a> to run the executable Seed and Lisp Bootstrap directly.</p>
         </section>
         <section id="reference-interfaces">
           <p class="section-number">06</p>

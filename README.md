@@ -1,12 +1,17 @@
 # YALisp
 
-A framework-free TypeScript monorepo for the YALisp landing page at
+A small WAT/Lisp bootstrap runtime and framework-free TypeScript site for YALisp at
 [yalisp.etdofresh.com](https://yalisp.etdofresh.com).
 
 ## Workspace layout
 
-- `apps/web` — responsive landing page built with Vite and vanilla TypeScript
+- `apps/web` — responsive landing page, documentation, and executable
+  `/playground/` built with Vite and vanilla TypeScript
 - `packages/site-content` — typed, reusable site copy and code examples
+
+The Playground assembles `apps/web/src/seed/bootstrap.wat` into WebAssembly and
+loads the checked-in `apps/web/public/yalisp/boot.lisp` bootstrap. It currently
+exposes the interpreter only; JIT and AOT remain explicitly unavailable.
 
 ## Local development
 

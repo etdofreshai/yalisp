@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101310" />
+    <meta name="description" content="Run the real YALISP WebAssembly seed and Lisp bootstrap" />
+    <title>Playground · YALISP</title>
+    <style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style><script src="/theme-init.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to playground</a>
+    <header class="docs-header playground-header">
+      <a class="brand" href="/" aria-label="YALISP home">Y<span>A</span>LISP</a>
+      <div class="header-actions">
+        <a class="playground-docs-link" href="/docs/">Documentation</a>
+        <button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle><span aria-hidden="true">☀</span><span>Light</span></button>
+      </div>
+    </header>
+    <main id="content" class="playground-main">
+      <p class="eyebrow">YALISP Playground</p>
+      <section>
+        <p class="section-number">Executable Seed + Bootstrap</p>
+        <h1>Tap a form.<br /><em>Run real Lisp.</em></h1>
+        <p class="lede">This Playground assembles no pretend output. Each example runs in the checked-in WebAssembly seed, optionally after that seed evaluates the checked-in Lisp bootstrap.</p>
+        <p class="interface-note">The implementation is derived from the verified M9 seed in <a href="https://github.com/ETdoFreshAI/lispish/tree/c78a2be/boot">Lispish commit c78a2be</a>. Read the <a href="/docs/seed/">Seed</a> and <a href="/docs/bootstrap/">Bootstrap</a> explanations for the exact boundary.</p>
+        <div data-bootstrap-demo data-initial-stage="seed"></div>
+      </section>
+      <section class="interface-section">
+        <p class="section-number">Current boundary</p>
+        <h2>Measured honestly.<br /><em>Limited explicitly.</em></h2>
+        <p>The current YALISP runtime is the WAT interpreter plus <code>boot.lisp</code>. JIT and AOT are shown as unavailable because their Lispish implementations have not been ported and verified here. The benchmark reports only real interpreter work performed after you tap Run.</p>
+      </section>
+    </main>
+    <script type="module" src="/src/playground.ts"></script>
+  </body>
+</html>

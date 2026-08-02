@@ -98,10 +98,11 @@ test("assembly documentation uses the bundled inventory", async () => {
   assert.ok(!page.includes("raw.githubusercontent.com"));
 });
 
-test("documentation explains the bootstrapped core REPL", async () => {
+test("documentation explains the executable interpreter and Lisp bootstrap", async () => {
   const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
   assert.ok(docs.includes('id="core-repl"'));
-  assert.match(docs, /bootstrapped compiler/i);
+  assert.match(docs, /WAT interpreter extended by <code>boot\.lisp<\/code>/i);
+  assert.match(docs, /Compiler, JIT, and AOT stages remain future verified milestones/i);
 });
 
 test("language guide distinguishes evidenced syntax from planned features", async () => {
@@ -159,6 +160,25 @@ test("foundation documentation explains the bootstrapping path", async () => {
   ]) {
     assert.ok(overview.includes(marker), `missing ${marker}`);
   }
+});
+
+test("seed and bootstrap docs link to the first-class executable Playground", async () => {
+  const seed = await readFile(new URL("../docs/seed/index.html", import.meta.url), "utf8");
+  const bootstrap = await readFile(new URL("../docs/bootstrap/index.html", import.meta.url), "utf8");
+  const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
+  const overview = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  for (const marker of ['href="/playground/"', "real WebAssembly interpreter", "no simulated results"]) {
+    assert.ok(seed.includes(marker), `seed page is missing ${marker}`);
+  }
+  for (const marker of ['href="/playground/"', "boot.lisp", "Fibonacci", "JIT and AOT unavailable"]) {
+    assert.ok(bootstrap.includes(marker), `bootstrap page is missing ${marker}`);
+  }
+  assert.ok(!seed.includes("data-bootstrap-demo"));
+  assert.ok(!bootstrap.includes("data-bootstrap-demo"));
+  for (const marker of ["data-theme-bootstrap", 'src="/theme-init.js"', "data-bootstrap-demo", "YALISP Playground"]) {
+    assert.ok(playground.includes(marker), `playground is missing ${marker}`);
+  }
+  assert.ok(overview.includes('<a href="/playground/">Open the YALISP Playground</a>'));
 });
 
 test("applications documentation uses the shared documentation shell", async () => {

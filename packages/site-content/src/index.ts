@@ -27,9 +27,9 @@ export const features: readonly Feature[] = [
   },
   {
     index: "03",
-    title: "TypeScript all the way",
+    title: "WebAssembly at the seed",
     description:
-      "A modern, portable foundation with excellent tooling and no framework in the way.",
+      "A checked-in WAT interpreter that runs the first Lisp-written bootstrap in browsers.",
     token: "(ship)"
   }
 ] as const;
@@ -46,4 +46,3 @@ export const codeLines: readonly CodeLine[] = [
 ] as const;
 
 export const principles = ["Readable", "Hackable", "Portable"] as const;
-

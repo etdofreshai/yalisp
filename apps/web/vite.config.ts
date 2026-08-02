@@ -12,6 +12,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: "index.html",
+        playground: "playground/index.html",
         docs: "docs/index.html",
         foundation: "docs/foundation/index.html",
         compiler: "docs/compiler/index.html",
