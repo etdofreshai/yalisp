@@ -105,3 +105,21 @@ test("applications documentation uses the shared documentation shell", async () 
     assert.ok(applications.includes(marker), `missing ${marker}`);
   }
 });
+
+test("SDL documentation separates 2D rendering from the 3D GPU profile", async () => {
+  const sdl = await readFile(new URL("../docs/sdl/index.html", import.meta.url), "utf8");
+  for (const marker of [
+    'id="video-render"',
+    "02 / 2D graphics",
+    'id="gpu-3d"',
+    "05 / 3D and GPU",
+    "sdl.gpu.render",
+    "graphics-pipeline.create",
+    "render-pass.begin",
+    "draw-indexed",
+    "sdl.gpu.compute",
+    "compute-pass.begin"
+  ]) {
+    assert.ok(sdl.includes(marker), `missing ${marker}`);
+  }
+});
