@@ -1,18 +1,18 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap");
 
 :root {
-  color: #20211e;
-  background: #f0eeea;
+  color: #f2f0e8;
+  background: #101310;
   font-family: "Manrope", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --paper: #f0eeea;
-  --ink: #20211e;
-  --muted: #74766f;
-  --line: rgba(32, 33, 30, 0.18);
+  --paper: #101310;
+  --ink: #f2f0e8;
+  --muted: #aaa9a1;
+  --line: rgba(242, 240, 232, 0.17);
   --acid: #c9f85a;
   --orange: #fa5b35;
-  --night: #181a17;
+  --night: #090b09;
 }
 
 * {
@@ -28,8 +28,8 @@ body {
   min-width: 320px;
   overflow-x: hidden;
   background:
-    linear-gradient(rgba(32, 33, 30, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(32, 33, 30, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(242, 240, 232, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(242, 240, 232, 0.035) 1px, transparent 1px),
     var(--paper);
   background-size: 48px 48px;
 }
@@ -197,7 +197,7 @@ h2 em {
   width: 100%;
   max-width: 450px;
   margin: 0;
-  color: #4d4e49;
+  color: var(--muted);
   font-size: clamp(1rem, 1.5vw, 1.25rem);
   line-height: 1.6;
 }
@@ -368,7 +368,7 @@ h2 em {
 .language {
   display: grid;
   padding: clamp(6rem, 10vw, 10rem) 4vw;
-  color: #f0eeea;
+  color: var(--ink);
   background: var(--night);
   gap: 8vw;
   grid-template-columns: 0.8fr 1.2fr;
@@ -519,14 +519,14 @@ h2 em {
   place-items: center;
   padding: 8rem 4vw;
   overflow: hidden;
-  color: var(--paper);
-  background: var(--orange);
+  color: var(--ink);
+  background: #1b2516;
   text-align: center;
 }
 
 .closing .section-kicker {
   justify-content: center;
-  color: rgba(240, 238, 234, 0.72);
+  color: rgba(242, 240, 232, 0.72);
 }
 
 .closing h2 {
@@ -538,7 +538,7 @@ h2 em {
   align-items: center;
   gap: 2.5rem;
   padding: 1rem 1.25rem;
-  border: 1px solid var(--paper);
+  border: 1px solid var(--ink);
   font-family: "DM Mono", monospace;
   font-size: 0.72rem;
   text-transform: uppercase;
@@ -547,15 +547,15 @@ h2 em {
 }
 
 .button:hover {
-  color: var(--orange);
-  background: var(--paper);
+  color: #1b2516;
+  background: var(--ink);
 }
 
 .closing-mark {
   position: absolute;
   left: 1vw;
   margin: 0;
-  color: rgba(240, 238, 234, 0.15);
+  color: rgba(242, 240, 232, 0.12);
   font-family: "DM Mono", monospace;
   font-size: clamp(16rem, 42vw, 42rem);
   font-weight: 300;
@@ -583,7 +583,7 @@ footer p:last-child {
 }
 
 .brand-footer {
-  color: var(--paper);
+  color: var(--ink);
 }
 
 .reveal {
