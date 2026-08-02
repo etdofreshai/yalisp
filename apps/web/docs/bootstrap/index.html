@@ -6,7 +6,7 @@
     <header class="docs-header"><a class="brand" href="/">Y<span>A</span>LISP</a><div class="header-actions"><button class="theme-toggle" type="button" data-theme-toggle><span>☀</span><span>Light</span></button><button class="docs-menu" type="button" data-docs-menu><span></span><span></span></button></div></header>
     <div class="docs-shell" data-docs-shell><aside class="docs-nav"></aside><main id="content">
       <p class="eyebrow">Foundation / Bootstrap</p>
-      <section>
+      <section id="source">
         <p class="section-number">Bootstrap</p><h1>Let Lisp<br /><em>grow the seed.</em></h1>
         <p class="lede">The checked-in <code>boot.lisp</code> program is evaluated by the WAT seed at startup. It adds macros and reusable functions in YALISP itself, making the difference between Seed and Bootstrap directly executable.</p>
         <p class="interface-note">The real bootstrap adds <code>cond</code>, <code>defn</code>, <code>let</code>, boolean macros, structural equality, and list functions such as <code>map</code>, <code>filter</code>, and <code>reduce</code>. The separate <code>compiler.lisp</code> milestone loads after this bootstrap.</p>

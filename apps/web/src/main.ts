@@ -1,5 +1,7 @@
 import { codeLines, features, principles } from "@yalisp/site-content";
 import "./styles.css";
+import "./project-navigation.css";
+import { mountProjectNavigation } from "./project-navigation";
 
 const featureList = document.querySelector<HTMLElement>("[data-features]");
 const code = document.querySelector<HTMLElement>("[data-code]");
@@ -9,10 +11,17 @@ const header = document.querySelector<HTMLElement>("[data-header]");
 const copyButton = document.querySelector<HTMLButtonElement>("[data-copy]");
 const year = document.querySelector<HTMLElement>("[data-year]");
 const themeToggle = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+const navigationHost = document.querySelector<HTMLElement>("[data-project-navigation]");
 
-if (!featureList || !code || !principleRow || !menuButton || !header || !copyButton || !year || !themeToggle) {
+if (!featureList || !code || !principleRow || !menuButton || !header || !copyButton || !year || !themeToggle || !navigationHost) {
   throw new Error("The YALisp landing page is missing a required UI element.");
 }
+
+mountProjectNavigation(navigationHost, {
+  currentPath: "/",
+  initialState: "collapsed",
+  navigationId: "landing-project-navigation"
+});
 
 featureList.innerHTML = features
   .map(
@@ -71,11 +80,18 @@ menuButton.addEventListener("click", () => {
   menuButton.setAttribute("aria-expanded", String(isOpen));
 });
 
-document.querySelectorAll<HTMLAnchorElement>(".nav a").forEach((link) => {
+document.querySelectorAll<HTMLAnchorElement>(".project-navigation a").forEach((link) => {
   link.addEventListener("click", () => {
     header.classList.remove("menu-open");
     menuButton.setAttribute("aria-expanded", "false");
   });
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || !header.classList.contains("menu-open")) return;
+  header.classList.remove("menu-open");
+  menuButton.setAttribute("aria-expanded", "false");
+  menuButton.focus();
 });
 
 const plainCode = `;; a tiny taste of YALisp

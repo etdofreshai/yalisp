@@ -4,16 +4,16 @@ import test from "node:test";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const source = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+const navigation = await readFile(new URL("../src/project-navigation.ts", import.meta.url), "utf8");
 
 test("landing page exposes its essential semantic and social contracts", () => {
   for (const marker of [
     'id="main"',
     'id="why"',
     'id="language"',
-    'href="/playground/"',
-    'href="/docs/"',
-    'class="nav-playground"',
     'class="rail-status"',
+    'data-project-navigation',
+    'data-navigation-default="collapsed"',
     'data-theme-bootstrap',
     'src="/theme-init.js"',
     "https://github.com/etdofreshai/yalisp",
@@ -23,7 +23,10 @@ test("landing page exposes its essential semantic and social contracts", () => {
   ]) {
     assert.ok(html.includes(marker), `missing ${marker}`);
   }
-  assert.ok(!html.includes('href="/code/"'), "launch navigation still advertises the retired Code destination");
+  for (const marker of ['pageLink("/playground/"', 'pageLink("/docs/"', "project-nav-playground", "https://github.com/etdofreshai/yalisp"]) {
+    assert.ok(navigation.includes(marker), `shared navigation is missing ${marker}`);
+  }
+  assert.ok(!navigation.includes('href="/code/"'), "shared navigation still advertises the retired Code destination");
 });
 
 test("production container builds once and serves with Vite on its declared and checked port", async () => {
@@ -45,27 +48,61 @@ test("interactive controls have TypeScript behavior", () => {
   assert.ok(source.includes('document.documentElement.dataset.theme'));
 });
 
-test("landing shell provides a persistent desktop rail and responsive mobile navigation", async () => {
+test("landing shell starts with a compact rail and exposes its shared tree through the menu", async () => {
   const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
   assert.match(styles, /--rail-width:/);
-  assert.match(styles, /\.site-header\s*\{[\s\S]*position: fixed/);
-  assert.match(styles, /main,\s*\nfooter\s*\{\s*margin-left: var\(--rail-width\)/);
+  assert.match(styles, /\.site-header\s*\{[\s\S]*width: 76px/);
+  assert.match(styles, /\.site-header\.menu-open\s*\{[\s\S]*width: var\(--rail-width\)/);
+  assert.match(styles, /\.site-header:not\(\.menu-open\) \.landing-project-navigation/);
+  assert.match(styles, /main,\s*\nfooter\s*\{\s*margin-left: 76px/);
   assert.match(styles, /@media \(max-width: 900px\)[\s\S]*main,\s*\n\s*footer \{ margin-left: 0; \}/);
 });
 
-test("documentation navigation is shared and remembers its collapsed state", async () => {
+test("landing and inner pages mount the same semantic navigation with different defaults", async () => {
   const docsBehavior = await readFile(new URL("../src/docs.ts", import.meta.url), "utf8");
-  const overview = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const playgroundBehavior = await readFile(new URL("../src/playground.ts", import.meta.url), "utf8");
+  const navStyles = await readFile(new URL("../src/project-navigation.css", import.meta.url), "utf8");
   for (const marker of [
-    "yalisp-sidebar-collapsed",
-    "sidebar-collapsed",
-    'href="/docs/foundation/"',
-    'href="/playground/"',
-    'href="/docs/sdl/"'
+    '<ul class="project-nav-tree">',
+    "project-nav-children",
+    "project-nav-page-child",
+    "project-nav-anchor",
+    'pageLink("/", "Project overview")',
+    'anchorLink("/", "why", "Why YALisp")',
+    'anchorLink("/", "language", "The language")',
+    'pageLink("/docs/foundation/"',
+    'pageLink("/playground/"',
+    'pageLink("/docs/sdl/"',
+    '<span class="project-nav-index">01</span><span>Seed</span>',
+    '<span class="project-nav-index">02</span><span>Bootstrap</span>',
+    '<span class="project-nav-index">03</span><span>Compiler</span>',
+    '<span class="project-nav-index">04</span><span>Applications</span>',
+    '<span class="project-nav-index">05</span><span>Interfaces</span>',
+    '<span class="project-nav-index">06</span><span>Game Runtime</span>'
   ]) {
-    assert.ok(docsBehavior.includes(marker) || overview.includes(marker), `missing ${marker}`);
+    assert.ok(navigation.includes(marker), `missing ${marker}`);
   }
-  assert.ok(!docsBehavior.includes('href="/code/"'), "documentation navigation still advertises the retired Code destination");
+  assert.match(navStyles, /\.project-nav ul[^}]*list-style: none/);
+  assert.match(navStyles, /\.project-nav-anchor[^}]*color: var\(--muted\)/);
+  assert.match(navStyles, /\.project-nav-section-link[^}]*color: var\(--muted\)/);
+  assert.match(navStyles, /\.project-nav-page-child[^}]*font: 500/);
+  assert.ok(source.includes('initialState: "collapsed"'));
+  assert.ok(docsBehavior.includes('initialState: "expanded"'));
+  assert.ok(docsBehavior.includes("setSidebarCollapsed(false)"));
+  assert.ok(playgroundBehavior.includes('import "./docs"'));
+  assert.ok(!navigation.includes('href="/code/"'), "shared navigation still advertises the retired Code destination");
+});
+
+test("documentation and Playground shells provide hosts for the common project tree", async () => {
+  const pages = ["", "applications/", "assembly/", "bootstrap/", "compiler/", "dom/", "foundation/", "sdl/", "seed/", "system-interface/"];
+  for (const page of pages) {
+    const document = await readFile(new URL(`../docs/${page}index.html`, import.meta.url), "utf8");
+    assert.ok(document.includes('class="docs-nav"'), `${page || "docs/"} is missing the shared navigation host`);
+  }
+  const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
+  assert.ok(playground.includes("data-docs-shell"));
+  assert.ok(playground.includes('class="docs-nav"'));
+  assert.ok(playground.includes("data-docs-menu"));
 });
 
 test("Foundation docs own their actual checked-in sources and retire the standalone Code destination", async () => {

@@ -22,19 +22,10 @@ button { color: inherit; font: inherit; }
 .docs-nav { position: sticky; top: 76px; display: flex; height: calc(100vh - 76px); flex-direction: column; padding: 3.5rem 4vw; border-right: 1px solid var(--line); }
 .sidebar-toggle { position: absolute; top: 1.25rem; right: 1rem; display: inline-flex; align-items: center; gap: .45rem; padding: .5rem .65rem; border: 1px solid var(--line); background: var(--paper); color: var(--muted); cursor: pointer; font-family: "DM Mono", monospace; font-size: .62rem; letter-spacing: .04em; }
 .sidebar-toggle:hover { color: var(--ink); border-color: var(--ink); }
-.sidebar-content { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .sidebar-collapsed .docs-nav { padding: 3.5rem .7rem; align-items: center; }
 .sidebar-collapsed .sidebar-toggle { right: .55rem; }
-.sidebar-collapsed .sidebar-toggle span + span, .sidebar-collapsed .sidebar-content { display: none; }
+.sidebar-collapsed .sidebar-toggle span + span, .sidebar-collapsed .project-navigation { display: none; }
 .nav-label, .eyebrow, .section-number { margin: 0; color: var(--muted); font-family: "DM Mono", monospace; font-size: .68rem; text-transform: uppercase; letter-spacing: .09em; }
-.back-link { display: inline-flex; width: fit-content; margin: 0 0 2.5rem; color: var(--muted); font-family: "DM Mono", monospace; font-size: .68rem; letter-spacing: .04em; transition: color 160ms ease; }
-.back-link:hover { color: var(--ink); }
-.docs-nav nav { display: grid; gap: .4rem; margin-top: 1.8rem; }
-.docs-nav .nav-section-label { padding: 1.1rem 0 .35rem; }
-.docs-nav nav a { padding: .6rem .7rem; margin-left: -.7rem; font-size: .9rem; transition: background 160ms ease; }
-.docs-nav nav a:hover, .docs-nav nav a.active { background: color-mix(in srgb, var(--ink) 10%, transparent); }
-.docs-nav nav a.nav-child { padding-top: .35rem; padding-bottom: .35rem; padding-left: 1.35rem; color: var(--muted); font-family: "DM Mono", monospace; font-size: .67rem; }
-.source-link { margin-top: auto; color: var(--muted); font-family: "DM Mono", monospace; font-size: .68rem; }
 main { width: min(100%, 760px); padding: clamp(4rem, 10vw, 8rem) clamp(2rem, 7vw, 7rem); }
 section { padding: 0 0 6rem; margin-top: 6rem; border-bottom: 1px solid var(--line); scroll-margin-top: 110px; }
 section:first-of-type { margin-top: 3rem; }
@@ -85,10 +76,10 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 .function-reference li { padding: 1rem 1.1rem 1.05rem; border: 1px solid var(--line); background: color-mix(in srgb, var(--paper) 94%, var(--ink)); }
 .function-reference code { display: inline-block; padding: .28rem .42rem; border: 1px solid color-mix(in srgb, #fa5b35 46%, transparent); color: #fa5b35; font-family: "DM Mono", monospace; font-size: .7rem; line-height: 1.2; }
 .function-reference span { display: block; max-width: 62ch; margin-top: .72rem; color: var(--muted); font-family: "Manrope", sans-serif; font-size: .86rem; line-height: 1.65; }
-.playground-main { width: min(100%, 900px); margin: 0 auto; }
+.playground-shell { grid-template-columns: minmax(220px, 25vw) minmax(0, 900px); }
+.playground-shell.sidebar-collapsed { grid-template-columns: 62px minmax(0, 900px); }
+.playground-main { width: min(100%, 900px); }
 .playground-header { position: sticky; }
-.playground-docs-link { padding: .65rem .8rem; color: var(--muted); font-family: "DM Mono", monospace; font-size: .65rem; letter-spacing: .05em; }
-.playground-docs-link:hover { color: var(--ink); }
 .source-view { min-width: 0; margin-top: 1.5rem; border: 1px solid var(--line); background: color-mix(in srgb, var(--paper) 94%, var(--ink)); }
 .source-view-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 1rem; border-bottom: 1px solid var(--line); color: var(--muted); font: .66rem/1.5 "DM Mono", monospace; }
 .source-view-header span { min-width: 0; overflow-wrap: anywhere; }
@@ -150,7 +141,7 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
   .docs-shell.sidebar-collapsed { display: block; }
   .sidebar-toggle { display: none; }
   .sidebar-collapsed .docs-nav { align-items: stretch; padding: 2.5rem 5vw; }
-  .sidebar-collapsed .sidebar-content { display: flex; }
+  .sidebar-collapsed .project-navigation { display: flex; }
   .nav-open .docs-nav { display: flex; }
   main { padding: 4rem 5vw; }
   section { padding-bottom: 4rem; margin-top: 4rem; }

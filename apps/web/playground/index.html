@@ -13,11 +13,13 @@
     <header class="docs-header playground-header">
       <a class="brand" href="/" aria-label="YALISP home">Y<span>A</span>LISP</a>
       <div class="header-actions">
-        <a class="playground-docs-link" href="/docs/">Documentation</a>
         <button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle><span aria-hidden="true">☀</span><span>Light</span></button>
+        <button class="docs-menu" type="button" aria-label="Toggle project navigation" aria-expanded="false" data-docs-menu><span></span><span></span></button>
       </div>
     </header>
-    <main id="content" class="playground-main">
+    <div class="docs-shell playground-shell" data-docs-shell>
+      <aside class="docs-nav" aria-label="Project navigation"></aside>
+      <main id="content" class="playground-main">
       <p class="eyebrow">YALISP Playground</p>
       <section>
         <p class="section-number">Executable Seed + Bootstrap</p>
@@ -31,7 +33,8 @@
         <h2>Measured honestly.<br /><em>Limited explicitly.</em></h2>
         <p>The full gallery remains interpreted by the seed generated from <code>bootstrap.wat</code> plus <code>boot.lisp</code>. The compiler milestone is narrower: <code>compiler.lisp</code> lowers one-parameter integer expressions built from binary <code>+</code>, <code>-</code>, and <code>*</code>. The benchmark compares that exact supported workload through the interpreter, a fresh browser JIT module, and the compiler-produced AOT artifact. It does not imply that arbitrary gallery programs compile.</p>
       </section>
-    </main>
+      </main>
+    </div>
     <script type="module" src="/src/playground.ts"></script>
   </body>
 </html>
