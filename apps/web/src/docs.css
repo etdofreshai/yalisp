@@ -55,6 +55,12 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 .interface-catalog code { color: #fa5b35; }
 .interface-catalog small { display: block; margin-top: .7rem; color: var(--muted); font-size: .82rem; line-height: 1.5; }
 .interface-note { padding: 1.2rem 1.3rem; margin-top: 1.5rem; border-left: 2px solid #fa5b35; background: color-mix(in srgb, #fa5b35 7%, transparent); font-size: .92rem !important; }
+.interface-note a { color: var(--ink); text-decoration: underline; text-decoration-color: #fa5b35; text-underline-offset: .18em; }
+.bootstrap-flow { display: grid; gap: 1px; margin-top: 2.5rem; border: 1px solid var(--line); background: var(--line); }
+.bootstrap-flow article { position: relative; padding: 1.45rem 1.5rem 1.45rem 4.8rem; background: var(--paper); }
+.bootstrap-flow span { position: absolute; top: 1.55rem; left: 1.5rem; color: #fa5b35; font-family: "DM Mono", monospace; font-size: .68rem; }
+.bootstrap-flow h2 { margin: 0 0 .5rem; font-size: 1.2rem; letter-spacing: -.04em; line-height: 1; }
+.bootstrap-flow p { margin: 0; font-size: .9rem !important; line-height: 1.65 !important; }
 @media (max-width: 760px) {
   .docs-header { padding: 0 5vw; }
   .docs-menu { display: inline-flex; }

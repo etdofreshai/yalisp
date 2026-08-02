@@ -13,6 +13,7 @@ export default defineConfig({
       input: {
         main: "index.html",
         docs: "docs/index.html",
+        foundation: "docs/foundation/index.html",
         assembly: "docs/assembly/index.html",
         systemInterface: "docs/system-interface/index.html",
         host: "docs/host/index.html"

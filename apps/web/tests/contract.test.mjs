@@ -61,3 +61,10 @@ test("each reference interface has a dedicated page", async () => {
     assert.match(document, /normative YALisp/i);
   }
 });
+
+test("foundation documentation explains the bootstrapping path", async () => {
+  const foundation = await readFile(new URL("../docs/foundation/index.html", import.meta.url), "utf8");
+  for (const marker of ["Seed", "Bootstrap", "Compiler", "Applications"]) {
+    assert.ok(foundation.includes(marker), `missing ${marker}`);
+  }
+});
