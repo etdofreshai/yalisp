@@ -38,10 +38,14 @@
           <p class="section-number">02 / Source</p>
           <h2>Inspect the<br /><em>actual compiler.</em></h2>
           <p>The compiler is adapted from Lispish's integer lowering design at commit <code>b7214f1</code>, while retaining YALISP's smaller current runtime boundary.</p>
-          <p class="interface-note"><a href="/code/#compiler-source">Read the complete checked-in <code>compiler.lisp</code> source</a>, alongside the seed and bootstrap it runs on.</p>
+          <div class="source-view">
+            <div class="source-view-header"><span>apps/web/public/yalisp/compiler.lisp</span><a href="https://github.com/etdofreshai/yalisp/blob/main/apps/web/public/yalisp/compiler.lisp">GitHub ↗</a></div>
+            <pre tabindex="0"><code data-compiler-source>Loading checked-in compiler source…</code></pre>
+          </div>
+          <p class="interface-note">AOT provenance: <code>scripts/build-aot.mjs</code> boots the checked-in seed, evaluates <code>boot.lisp</code> and this <code>compiler.lisp</code>, compiles the exact benchmark form, and writes the checked-in <a href="https://github.com/etdofreshai/yalisp/blob/main/apps/web/public/yalisp/aot-benchmark.wasm"><code>aot-benchmark.wasm</code> artifact</a>. The browser still measures fetch, WebAssembly compilation, and instantiation; this is not a general compiler or proof that unsupported forms compile.</p>
         </section>
       </main>
     </div>
-    <script type="module" src="/src/docs.ts"></script>
+    <script type="module" src="/src/source-docs.ts"></script>
   </body>
 </html>

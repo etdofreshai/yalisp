@@ -4,63 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101310" />
-    <meta name="description" content="Read the actual checked-in YALISP seed and bootstrap source" />
-    <title>Code · YALISP</title>
-    <style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style><script src="/theme-init.js"></script>
+    <meta http-equiv="refresh" content="0; url=/docs/foundation/" />
+    <link rel="canonical" href="https://yalisp.etdofresh.com/docs/foundation/" />
+    <title>Foundation · YALISP Docs</title>
+    <style data-theme-bootstrap>html{background:#101310;color:#f2f0e8;color-scheme:dark;font-family:system-ui,sans-serif}html[data-theme="light"]{background:#f0eeea;color:#20211e;color-scheme:light}body{margin:0;padding:2rem}a{color:inherit}</style><script src="/theme-init.js"></script>
+    <script>location.replace("/docs/foundation/")</script>
   </head>
-  <body>
-    <a class="skip-link" href="#content">Skip to source</a>
-    <header class="docs-header">
-      <a class="brand" href="/" aria-label="YALISP home">Y<span>A</span>LISP</a>
-      <div class="header-actions">
-        <button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle><span aria-hidden="true">☀</span><span>Light</span></button>
-        <button class="docs-menu" type="button" aria-label="Toggle project navigation" aria-expanded="false" data-docs-menu><span></span><span></span></button>
-      </div>
-    </header>
-    <div class="docs-shell code-shell" data-docs-shell>
-      <aside class="docs-nav" aria-label="Project navigation"></aside>
-      <main id="content" class="code-main">
-        <p class="eyebrow">Project / Code</p>
-        <section>
-          <p class="section-number">Checked-in source</p>
-          <h1>Read what<br /><em>actually runs.</em></h1>
-          <p class="lede">This page renders YALISP source directly from the same checked-in files used to build and boot the Playground. It does not substitute illustrative snippets for implementation.</p>
-          <div class="code-index" aria-label="Source index">
-            <a href="#seed-source"><span>01</span><strong>WebAssembly seed · bootstrap.wat</strong></a>
-            <a href="#bootstrap-source"><span>02</span><strong>Lisp bootstrap · boot.lisp</strong></a>
-            <a href="#compiler-source"><span>03</span><strong>Lisp compiler · compiler.lisp</strong></a>
-          </div>
-        </section>
-        <section id="seed-source" class="interface-section">
-          <p class="section-number">01 / WebAssembly seed</p>
-          <h2>The executable<br /><em>interpreter kernel.</em></h2>
-          <p>The build assembles this checked-in WAT file into the generated <code>seed.wasm</code> artifact used by the browser.</p>
-          <div class="code-source">
-            <div class="code-source-header"><span>apps/web/src/seed/bootstrap.wat</span><a href="https://github.com/etdofreshai/yalisp/blob/main/apps/web/src/seed/bootstrap.wat">GitHub ↗</a></div>
-            <pre tabindex="0"><code data-seed-source>Loading checked-in WAT source…</code></pre>
-          </div>
-        </section>
-        <section id="bootstrap-source" class="interface-section">
-          <p class="section-number">02 / Lisp bootstrap</p>
-          <h2>Lisp grows<br /><em>the seed.</em></h2>
-          <p>The Playground loads this checked-in Lisp program into the WAT interpreter to add derived helpers and macros.</p>
-          <div class="code-source">
-            <div class="code-source-header"><span>apps/web/public/yalisp/boot.lisp</span><a href="https://github.com/etdofreshai/yalisp/blob/main/apps/web/public/yalisp/boot.lisp">GitHub ↗</a></div>
-            <pre tabindex="0"><code data-bootstrap-source>Loading checked-in Lisp source…</code></pre>
-          </div>
-        </section>
-        <section id="compiler-source" class="interface-section">
-          <p class="section-number">03 / Compiler</p>
-          <h2>Lisp lowers<br /><em>a proven subset.</em></h2>
-          <p>This compiler is evaluated by the YALISP seed after <code>boot.lisp</code>. It lowers one-parameter integer functions made from binary <code>+</code>, <code>-</code>, and <code>*</code> expressions to a WebAssembly function payload. Unsupported forms return <code>nil</code> and remain interpreted.</p>
-          <p class="interface-note">The supported subset is intentionally small. Equivalence is verified only while values stay within the seed's signed 30-bit fixnum range. This is not yet a general compiler or self-hosting system.</p>
-          <div class="code-source">
-            <div class="code-source-header"><span>apps/web/public/yalisp/compiler.lisp</span><a href="https://github.com/etdofreshai/yalisp/blob/main/apps/web/public/yalisp/compiler.lisp">GitHub ↗</a></div>
-            <pre tabindex="0"><code data-compiler-source>Loading checked-in compiler source…</code></pre>
-          </div>
-        </section>
-      </main>
-    </div>
-    <script type="module" src="/src/code.ts"></script>
-  </body>
+  <body><p>Source now lives with each Foundation stage. <a href="/docs/foundation/">Continue to Foundation documentation</a>.</p></body>
 </html>

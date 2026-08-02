@@ -11,7 +11,7 @@ test("landing page exposes its essential semantic and social contracts", () => {
     'id="why"',
     'id="language"',
     'href="/playground/"',
-    'href="/code/"',
+    'href="/docs/"',
     'class="nav-playground"',
     'class="rail-status"',
     'data-theme-bootstrap',
@@ -23,6 +23,7 @@ test("landing page exposes its essential semantic and social contracts", () => {
   ]) {
     assert.ok(html.includes(marker), `missing ${marker}`);
   }
+  assert.ok(!html.includes('href="/code/"'), "launch navigation still advertises the retired Code destination");
 });
 
 test("production container builds once and serves with Vite on its declared and checked port", async () => {
@@ -59,30 +60,46 @@ test("documentation navigation is shared and remembers its collapsed state", asy
     "yalisp-sidebar-collapsed",
     "sidebar-collapsed",
     'href="/docs/foundation/"',
-    'href="/code/"',
     'href="/playground/"',
     'href="/docs/sdl/"'
   ]) {
     assert.ok(docsBehavior.includes(marker) || overview.includes(marker), `missing ${marker}`);
   }
+  assert.ok(!docsBehavior.includes('href="/code/"'), "documentation navigation still advertises the retired Code destination");
 });
 
-test("Code page renders only actual checked-in seed, bootstrap, and compiler sources", async () => {
-  const page = await readFile(new URL("../code/index.html", import.meta.url), "utf8");
-  const behavior = await readFile(new URL("../src/code.ts", import.meta.url), "utf8");
+test("Foundation docs own their actual checked-in sources and retire the standalone Code destination", async () => {
+  const seedPage = await readFile(new URL("../docs/seed/index.html", import.meta.url), "utf8");
+  const bootstrapPage = await readFile(new URL("../docs/bootstrap/index.html", import.meta.url), "utf8");
+  const compilerPage = await readFile(new URL("../docs/compiler/index.html", import.meta.url), "utf8");
+  const legacyCode = await readFile(new URL("../code/index.html", import.meta.url), "utf8");
+  const behavior = await readFile(new URL("../src/source-docs.ts", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../src/docs.css", import.meta.url), "utf8");
   const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url), "utf8");
   const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
   const compiler = await readFile(new URL("../public/yalisp/compiler.lisp", import.meta.url), "utf8");
 
-  for (const marker of ["data-seed-source", "data-bootstrap-source", "data-compiler-source", "signed 30-bit fixnum range", 'src="/src/code.ts"']) {
-    assert.ok(page.includes(marker), `Code page is missing ${marker}`);
-  }
+  assert.ok(seedPage.includes("data-seed-source"));
+  assert.ok(seedPage.includes("apps/web/src/seed/bootstrap.wat"));
+  assert.ok(bootstrapPage.includes("data-bootstrap-source"));
+  assert.ok(bootstrapPage.includes("apps/web/public/yalisp/boot.lisp"));
+  assert.ok(compilerPage.includes("data-compiler-source"));
+  assert.ok(compilerPage.includes("apps/web/public/yalisp/compiler.lisp"));
+  assert.ok(compilerPage.includes("scripts/build-aot.mjs"));
+  assert.ok(compilerPage.includes("aot-benchmark.wasm"));
+  for (const page of [seedPage, bootstrapPage, compilerPage]) assert.ok(page.includes('src="/src/source-docs.ts"'));
   assert.match(behavior, /bootstrap\.wat\?raw/);
   assert.match(behavior, /"\/yalisp\/boot\.lisp"/);
   assert.match(behavior, /"\/yalisp\/compiler\.lisp"/);
+  assert.match(styles, /\.source-view pre[^}]*overflow: auto/);
+  assert.match(styles, /\.source-view code[^}]*white-space: pre/);
   assert.ok(wat.includes("(module"));
   assert.ok(bootstrap.includes("(define"));
   assert.ok(compiler.includes("(defn cc.compile"));
+  assert.ok(legacyCode.includes('location.replace("/docs/foundation/")'));
+  assert.ok(legacyCode.includes('rel="canonical" href="https://yalisp.etdofresh.com/docs/foundation/"'));
+  assert.ok(!legacyCode.includes("data-seed-source"));
+  assert.ok(!compilerPage.includes('href="/code/'));
 });
 
 test("documentation resolves its theme before first paint", async () => {

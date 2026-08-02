@@ -21,7 +21,6 @@ docsNav.innerHTML = `
     <p class="nav-label">Project</p>
     <nav>
       <a class="${isCurrent("/playground/")}" href="/playground/">Playground</a>
-      <a class="${isCurrent("/code/")}" href="/code/">Code</a>
       <p class="nav-label nav-section-label">Documentation</p>
       <a class="${currentPath === "/docs/" ? "active" : ""}" href="/docs/#introduction">Introduction</a>
       <a href="/docs/#getting-started">Getting started</a>
