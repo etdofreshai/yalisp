@@ -10,11 +10,11 @@ RUN npm ci
 COPY apps ./apps
 COPY packages ./packages
 
+RUN npm run build
+
 EXPOSE 5173
 
-CMD ["sh", "-c", "npm run build --workspace @yalisp/site-content && npm run dev --workspace @yalisp/web -- --port 5173 --strictPort"]
-
-EXPOSE 80
+CMD ["npm", "run", "preview", "--workspace", "@yalisp/web", "--", "--port", "5173", "--strictPort"]
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -q --spider http://127.0.0.1/ || exit 1
+  CMD wget -q --spider http://127.0.0.1:5173/ || exit 1

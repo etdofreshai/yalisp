@@ -22,14 +22,14 @@
       <section>
         <p class="section-number">Executable Seed + Bootstrap</p>
         <h1>Tap a form.<br /><em>Run real Lisp.</em></h1>
-        <p class="lede">This Playground assembles no pretend output. Each example runs in the checked-in WebAssembly seed, optionally after that seed evaluates the checked-in Lisp bootstrap.</p>
+        <p class="lede">This Playground assembles no pretend output. Each example runs in WebAssembly generated from the checked-in WAT seed, optionally after that seed evaluates the checked-in Lisp bootstrap.</p>
         <p class="interface-note">The implementation is derived from the verified M9 seed in <a href="https://github.com/ETdoFreshAI/lispish/tree/c78a2be/boot">Lispish commit c78a2be</a>. Read the <a href="/docs/seed/">Seed</a> and <a href="/docs/bootstrap/">Bootstrap</a> explanations for the exact boundary.</p>
         <div data-bootstrap-demo data-initial-stage="seed"></div>
       </section>
       <section class="interface-section">
         <p class="section-number">Current boundary</p>
         <h2>Measured honestly.<br /><em>Limited explicitly.</em></h2>
-        <p>The current YALISP runtime is the WAT interpreter plus <code>boot.lisp</code>. JIT and AOT are shown as unavailable because their Lispish implementations have not been ported and verified here. The benchmark reports only real interpreter work performed after you tap Run.</p>
+        <p>The current YALISP runtime is the interpreter generated from <code>bootstrap.wat</code> plus <code>boot.lisp</code>. Guarded reader, type, and heap failures report their kernel diagnostic and discard that run. JIT and AOT are shown as unavailable because their Lispish implementations have not been ported and verified here. The benchmark reports only real interpreter work performed after you tap Run.</p>
       </section>
     </main>
     <script type="module" src="/src/playground.ts"></script>

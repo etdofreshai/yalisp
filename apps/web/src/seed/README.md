@@ -8,9 +8,11 @@ small, real interpreter rather than a simulated example.
 
 ## Boundary
 
-`bootstrap.wat` imports only `host.write(ptr, len)`. It exports a four-page
-WebAssembly memory plus `init`, `eval_all`, and `eval_print`. Source is copied
-into the fixed input range `[1024, 8192)` before evaluation.
+The checked-in `bootstrap.wat` imports only `host.write(ptr, len)`. The build
+assembles it into the generated, ignored `public/yalisp/seed.wasm`, which
+exports a four-page WebAssembly memory plus `init`, `eval_all`, and
+`eval_print`. Source is copied into the fixed input range `[1024, 8192)` before
+evaluation.
 
 The seed implements:
 
@@ -28,11 +30,14 @@ Bootstrap stage. It adds real Lisp-written macros and functions including
 `cond`, `defn`, `let`, `when`, `unless`, `and`, `or`, `map`, `filter`,
 `reduce`, `append`, and structural equality.
 
-This intentionally does not claim garbage collection, recoverable errors,
-modules, filesystem or DOM access, a compiler, JIT execution, or AOT execution.
+This intentionally does not claim garbage collection, language-level
+recoverable errors, modules, filesystem or DOM access, a compiler, JIT
+execution, or AOT execution.
 Curated web examples use a fresh instance so the seed's fixed bump-allocated
 heap remains bounded. The interpreter benchmark is also bounded and reports
-only measured interpreter execution.
+only measured interpreter execution. Heap, reader, and primitive type guards
+write a truthful diagnostic before trapping; the Playground preserves that
+diagnostic and discards the failed instance.
 
 Run `npm run build-seed --workspace @yalisp/web` to assemble the WAT into the
 ignored generated file `public/yalisp/seed.wasm`.

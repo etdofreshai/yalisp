@@ -115,6 +115,7 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 .seed-manual textarea { width: 100%; resize: vertical; padding: .9rem; border: 1px solid var(--line); border-radius: 0; outline: none; background: color-mix(in srgb, var(--paper) 94%, var(--ink)); color: var(--ink); font: .76rem/1.6 "DM Mono", monospace; }
 .seed-manual textarea:focus { border-color: #fa5b35; }
 .seed-manual button { width: 100%; margin-top: .65rem; }
+.seed-manual > small { display: block; margin-top: .65rem; color: var(--muted); font: .65rem/1.55 "DM Mono", monospace; }
 .seed-benchmark { padding: 1.25rem; margin-top: 1rem; border: 1px solid var(--line); }
 .seed-benchmark h3 { margin: .75rem 0; font-size: 1.25rem; font-weight: 500; letter-spacing: -.035em; }
 .seed-benchmark > p:not(.section-number) { margin: 0 0 1rem; font-size: .86rem !important; line-height: 1.6 !important; }

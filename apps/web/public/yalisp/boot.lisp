@@ -1,13 +1,15 @@
 ;;; Derived from ETdoFreshAI/lispish commit c78a2be (M9 bootstrap).
 ;;; boot.lisp - the standard-tier of YALISP, written in YALISP.
 ;;;
-;;; Loaded onto the bootstrap kernel (bootstrap.wat) at startup. This is the
-;;; "majority of base YALISP written in YALISP" the project is after: the
-;;; kernel provides only the 7 special forms (quote if lambda macro define set!
-;;; begin) plus a handful of primitives; everything below is defined here.
+;;; Loaded onto the WebAssembly seed generated from src/seed/bootstrap.wat.
+;;; The WAT and this file are checked-in sources; public/yalisp/seed.wasm is a
+;;; build artifact. Together they demonstrate the intended bootstrapping
+;;; direction: the seed provides 7 special forms (quote if lambda macro define
+;;; set! begin) plus a small primitive set; everything below is evaluated from
+;;; this YALISP source.
 ;;;
-;;; Source of truth: docs/core.lisp (its [defined] section). Adapted to the
-;;; current kernel, with these gaps tracked as future milestones:
+;;; Reference provenance: the boot/core.lisp [defined] section at Lispish
+;;; commit c78a2be. Adapted to this checked-in YALISP seed, with these gaps:
 ;;;   - names are unqualified (no core.* prefix yet; needs namespaces/`using`)
 ;;;   - nil stands in for the boolean `false` (kernel has no distinct false yet)
 ;;;   - cond/let/and/or are macros here (core.lisp lists them as special forms,
@@ -57,7 +59,13 @@
   (macro args
     (cond ((nil? args) false)
           ((nil? (cdr args)) (car args))
-          (true `(if ,(car args) ,(car args) (or ,@(cdr args)))))))
+          ;; Evaluate the first operand once. The remaining operands live in a
+          ;; zero-argument thunk created in the caller's environment, so the
+          ;; macro's internal bindings cannot capture identifiers in user code.
+          (true `((lambda (or--once-value or--rest-thunk)
+                    (if or--once-value or--once-value (or--rest-thunk)))
+                  ,(car args)
+                  (lambda () (or ,@(cdr args))))))))
 
 ;; (defn name param-spec body...) -> (define name (lambda param-spec body...))
 (define defn

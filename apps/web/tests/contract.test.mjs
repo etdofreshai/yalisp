@@ -10,6 +10,7 @@ test("landing page exposes its essential semantic and social contracts", () => {
     'id="main"',
     'id="why"',
     'id="language"',
+    'href="/playground/"',
     "https://github.com/etdofreshai/yalisp",
     'data-features',
     'data-code',
@@ -17,6 +18,18 @@ test("landing page exposes its essential semantic and social contracts", () => {
   ]) {
     assert.ok(html.includes(marker), `missing ${marker}`);
   }
+});
+
+test("production container builds once and serves with Vite on its declared and checked port", async () => {
+  const dockerfile = await readFile(new URL("../../../Dockerfile", import.meta.url), "utf8");
+  assert.match(dockerfile, /FROM node:24-alpine/);
+  assert.match(dockerfile, /RUN npm run build/);
+  assert.match(dockerfile, /EXPOSE 5173/);
+  assert.match(dockerfile, /127\.0\.0\.1:5173/);
+  assert.match(dockerfile, /"preview"/);
+  assert.doesNotMatch(dockerfile, /"dev"/);
+  assert.doesNotMatch(dockerfile, /nginx/i);
+  assert.doesNotMatch(dockerfile, /EXPOSE 80/);
 });
 
 test("interactive controls have TypeScript behavior", () => {

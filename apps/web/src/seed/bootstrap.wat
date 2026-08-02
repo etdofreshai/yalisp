@@ -1,5 +1,7 @@
-;; YALISP bootstrap kernel
-;; Derived from ETdoFreshAI/lispish commit c78a2be (M9 seed), preserving its executable semantics.
+;; YALISP WebAssembly seed kernel
+;; Derived from ETdoFreshAI/lispish commit c78a2be (M9 seed), then narrowly
+;; hardened for bounded browser execution. This checked-in WAT is the source;
+;; public/yalisp/seed.wasm is generated from it during the web build.
 ;; M1: tagged value model, bump allocator, symbol interning, printer.
 ;; M2: S-expression reader (text -> values).
 ;; M3: eval/apply, first-class environments, special forms, closures, primitives.
@@ -118,13 +120,32 @@
   (data (i32.const 415) "string.contains?")  ;; 415 len 16
   (data (i32.const 431) "string=?")          ;; 431 len 8
   (data (i32.const 439) "to-string")         ;; 439 len 9
+  (data (i32.const 448) "heap exhausted")    ;; 448 len 14
+  (data (i32.const 462) "string expected")   ;; 462 len 15
+  (data (i32.const 477) "unterminated string") ;; 477 len 19
+  (data (i32.const 496) "unterminated list") ;; 496 len 17
+  (data (i32.const 513) "number expected")   ;; 513 len 15
+
+  ;; Fail before a write crosses the fixed four-page memory boundary. Use the
+  ;; host import directly because $write may itself be buffering into the full
+  ;; heap for to-string.
+  (func $ensure_space (param $end i32)
+    (if (i32.gt_u (local.get $end) (i32.shl (memory.size) (i32.const 16)))
+      (then
+        (call $host_write (i32.const 448) (i32.const 14))
+        (call $host_write (i32.const 104) (i32.const 1))
+        (unreachable))))
 
   ;; --- allocator: returns a 4-byte-aligned pointer ---
   (func $alloc (param $size i32) (result i32)
-    (local $p i32)
+    (local $p i32) (local $end i32)
     (local.set $size (i32.and (i32.add (local.get $size) (i32.const 3)) (i32.const -4)))
     (local.set $p (global.get $heap))
-    (global.set $heap (i32.add (global.get $heap) (local.get $size)))
+    (local.set $end (i32.add (local.get $p) (local.get $size)))
+    (if (i32.lt_u (local.get $end) (local.get $p))
+      (then (call $ensure_space (i32.const -1))))
+    (call $ensure_space (local.get $end))
+    (global.set $heap (local.get $end))
     (local.get $p))
 
   (func $copy (param $dst i32) (param $src i32) (param $len i32)
@@ -142,6 +163,7 @@
   (func $write (param $ptr i32) (param $len i32)
     (if (global.get $out_buf)
       (then
+        (call $ensure_space (i32.add (i32.add (global.get $out_buf) (global.get $out_len)) (local.get $len)))
         (call $copy (i32.add (global.get $out_buf) (global.get $out_len)) (local.get $ptr) (local.get $len))
         (global.set $out_len (i32.add (global.get $out_len) (local.get $len))))
       (else (call $host_write (local.get $ptr) (local.get $len)))))
@@ -274,6 +296,18 @@
     (call $write (i32.const 193) (i32.const 12))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
+  (func $err_static (param $ptr i32) (param $len i32)
+    (call $write (local.get $ptr) (local.get $len))
+    (call $write (i32.const 104) (i32.const 1))
+    (unreachable))
+  (func $require_string (param $v i32) (result i32)
+    (if (i32.eqz (call $has_tag (local.get $v) (i32.const 4)))
+      (then (call $err_static (i32.const 462) (i32.const 15)) (unreachable)))
+    (local.get $v))
+  (func $require_number (param $v i32) (result i32)
+    (if (i32.eqz (i32.and (local.get $v) (i32.const 1)))
+      (then (call $err_static (i32.const 513) (i32.const 15)) (unreachable)))
+    (local.get $v))
 
   ;; --- printer ---
   (func $print_int (param $n i32)
@@ -442,13 +476,14 @@
           (local.set $c (i32.load8_u (global.get $rp)))
           (if (i32.eq (local.get $c) (i32.const 110)) (then (local.set $c (i32.const 10)))      ;; \n
             (else (if (i32.eq (local.get $c) (i32.const 116)) (then (local.set $c (i32.const 9)))))))) ;; \t
+      (call $ensure_space (i32.add (i32.add (local.get $start) (local.get $n)) (i32.const 1)))
       (i32.store8 (i32.add (local.get $start) (local.get $n)) (local.get $c))
       (local.set $n (i32.add (local.get $n) (i32.const 1)))
       (global.set $rp (i32.add (global.get $rp) (i32.const 1)))
       (br $l)))
-    (if (i32.lt_u (global.get $rp) (global.get $rend))
-      (then (if (i32.eq (i32.load8_u (global.get $rp)) (i32.const 34))
-              (then (global.set $rp (i32.add (global.get $rp) (i32.const 1)))))))
+    (if (i32.ge_u (global.get $rp) (global.get $rend))
+      (then (call $err_static (i32.const 477) (i32.const 19)) (unreachable)))
+    (global.set $rp (i32.add (global.get $rp) (i32.const 1)))
     (global.set $heap (i32.and (i32.add (i32.add (local.get $start) (local.get $n)) (i32.const 3)) (i32.const -4)))
     (local.set $s (call $alloc (i32.const 12)))
     (i32.store          (local.get $s) (i32.const 4))
@@ -460,7 +495,7 @@
     (local $car i32) (local $cdr i32)
     (call $skip_ws)
     (if (i32.ge_u (global.get $rp) (global.get $rend))
-      (then (return (global.get $nil))))                        ;; unterminated
+      (then (call $err_static (i32.const 496) (i32.const 17)) (unreachable)))
     (if (i32.eq (i32.load8_u (global.get $rp)) (i32.const 41))  ;; ')'
       (then (global.set $rp (i32.add (global.get $rp) (i32.const 1)))
             (return (global.get $nil))))
@@ -827,7 +862,7 @@
                                           (call $fixval (call $car (call $cdr (local.get $args)))))))))
     ;; --- strings (M9) ---
     (if (i32.eq (local.get $id) (i32.const 30))   ;; string.length
-      (then (return (call $mkfix (i32.load offset=8 (call $car (local.get $args)))))))
+      (then (return (call $mkfix (i32.load offset=8 (call $require_string (call $car (local.get $args))))))))
     (if (i32.eq (local.get $id) (i32.const 31))   ;; string.append / string.concat
       (then
         (local.set $acc (global.get $heap))       ;; buffer start
@@ -835,34 +870,40 @@
         (local.set $cur (local.get $args))
         (block $d (loop $l
           (br_if $d (i32.eq (local.get $cur) (global.get $nil)))
-          (if (call $has_tag (call $car (local.get $cur)) (i32.const 4))
-            (then
-              (call $copy (i32.add (local.get $acc) (local.get $a))
-                          (i32.load offset=4 (call $car (local.get $cur)))
-                          (i32.load offset=8 (call $car (local.get $cur))))
-              (local.set $a (i32.add (local.get $a) (i32.load offset=8 (call $car (local.get $cur)))))))
+          (drop (call $require_string (call $car (local.get $cur))))
+          (call $ensure_space (i32.add (i32.add (local.get $acc) (local.get $a))
+                                      (i32.load offset=8 (call $car (local.get $cur)))))
+          (call $copy (i32.add (local.get $acc) (local.get $a))
+                      (i32.load offset=4 (call $car (local.get $cur)))
+                      (i32.load offset=8 (call $car (local.get $cur))))
+          (local.set $a (i32.add (local.get $a) (i32.load offset=8 (call $car (local.get $cur)))))
           (local.set $cur (i32.load offset=8 (local.get $cur)))
           (br $l)))
         (global.set $heap (i32.and (i32.add (i32.add (local.get $acc) (local.get $a)) (i32.const 3)) (i32.const -4)))
         (return (call $mkstr_hdr (local.get $acc) (local.get $a)))))
     (if (i32.eq (local.get $id) (i32.const 32))   ;; string.slice / string.substring
       (then
-        (local.set $acc (i32.load offset=4 (call $car (local.get $args))))   ;; bytes ptr
-        (local.set $b (i32.load offset=8 (call $car (local.get $args))))     ;; length
-        (local.set $cur (call $fixval (call $car (call $cdr (local.get $args)))))  ;; start
+        (local.set $acc (call $require_string (call $car (local.get $args))))
+        (local.set $b (i32.load offset=8 (local.get $acc)))                  ;; length
+        (local.set $acc (i32.load offset=4 (local.get $acc)))                ;; bytes ptr
+        (local.set $cur (call $fixval (call $require_number (call $car (call $cdr (local.get $args))))))  ;; start
         (local.set $a (if (result i32) (i32.eq (call $cdr (call $cdr (local.get $args))) (global.get $nil))
                           (then (local.get $b))
-                          (else (call $fixval (call $car (call $cdr (call $cdr (local.get $args))))))))  ;; end
+                          (else (call $fixval (call $require_number (call $car (call $cdr (call $cdr (local.get $args)))))))))  ;; end
+        (if (i32.gt_s (local.get $a) (local.get $b)) (then (local.set $a (local.get $b))))
+        (if (i32.lt_s (local.get $a) (i32.const 0)) (then (local.set $a (i32.const 0))))
+        (if (i32.gt_s (local.get $cur) (local.get $a)) (then (local.set $cur (local.get $a))))
+        (if (i32.lt_s (local.get $cur) (i32.const 0)) (then (local.set $cur (i32.const 0))))
         (return (call $mkstr_copy (i32.add (local.get $acc) (local.get $cur))
                                   (i32.sub (local.get $a) (local.get $cur))))))
     (if (i32.eq (local.get $id) (i32.const 33))   ;; string.contains?
       (then (return (call $bool (call $str_contains
-              (i32.load offset=4 (call $car (local.get $args))) (i32.load offset=8 (call $car (local.get $args)))
-              (i32.load offset=4 (call $car (call $cdr (local.get $args)))) (i32.load offset=8 (call $car (call $cdr (local.get $args)))))))))
+              (i32.load offset=4 (call $require_string (call $car (local.get $args)))) (i32.load offset=8 (call $require_string (call $car (local.get $args))))
+              (i32.load offset=4 (call $require_string (call $car (call $cdr (local.get $args))))) (i32.load offset=8 (call $require_string (call $car (call $cdr (local.get $args))))))))))
     (if (i32.eq (local.get $id) (i32.const 34))   ;; string=?
       (then (return (call $bool (call $bytes_eq
-              (i32.load offset=4 (call $car (local.get $args))) (i32.load offset=8 (call $car (local.get $args)))
-              (i32.load offset=4 (call $car (call $cdr (local.get $args)))) (i32.load offset=8 (call $car (call $cdr (local.get $args)))))))))
+              (i32.load offset=4 (call $require_string (call $car (local.get $args)))) (i32.load offset=8 (call $require_string (call $car (local.get $args))))
+              (i32.load offset=4 (call $require_string (call $car (call $cdr (local.get $args))))) (i32.load offset=8 (call $require_string (call $car (call $cdr (local.get $args))))))))))
     (if (i32.eq (local.get $id) (i32.const 35))   ;; to-string
       (then
         (local.set $acc (global.get $heap))

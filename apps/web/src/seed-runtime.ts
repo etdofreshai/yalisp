@@ -71,6 +71,8 @@ const examples: Record<SeedStage, readonly SeedExample[]> = {
 
 const inputPointer = 1024;
 const inputLimit = 8192 - inputPointer;
+const benchmarkIterations = 1000;
+const benchmarkChunkSize = 50;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -118,21 +120,32 @@ async function createSession(stage: SeedStage) {
     return bytes.length;
   };
 
-  exports.init();
+  const run = (operation: () => void) => {
+    output = "";
+    try {
+      operation();
+    } catch (error) {
+      const diagnostic = output.replace(/\r\n/g, "\n").trimEnd();
+      const trap = error instanceof Error ? error.message : String(error);
+      throw new Error(diagnostic
+        ? `${diagnostic} · WebAssembly trap; this fresh session was discarded.`
+        : `WebAssembly trap: ${trap}`);
+    }
+    return output.replace(/\r\n/g, "\n").trimEnd();
+  };
+
+  run(() => exports.init());
   if (stage === "bootstrap") {
     const bootstrap = await loadBootstrap();
-    exports.eval_all(inputPointer, load(bootstrap));
+    run(() => exports.eval_all(inputPointer, load(bootstrap)));
   }
 
   return {
     evaluate(source: string) {
-      output = "";
-      exports.eval_print(inputPointer, load(source));
-      return output.replace(/\r\n/g, "\n").trimEnd();
+      return run(() => exports.eval_print(inputPointer, load(source)));
     },
     evaluateQuietly(source: string) {
-      output = "";
-      exports.eval_all(inputPointer, load(source));
+      run(() => exports.eval_all(inputPointer, load(source)));
     }
   };
 }
@@ -168,6 +181,7 @@ function mountDemo(root: HTMLElement) {
       <label for="seed-manual-${root.dataset.initialStage || "seed"}">Form or small script</label>
       <textarea id="seed-manual-${root.dataset.initialStage || "seed"}" rows="6" spellcheck="false" data-seed-manual></textarea>
       <button type="button" data-seed-manual-run>Run typed form</button>
+      <small>Input is limited to ${inputLimit.toLocaleString()} UTF-8 bytes. A guarded kernel error ends only that run; the next run starts a fresh instance.</small>
     </details>
     <div class="seed-benchmark">
       <p class="section-number">Measured interpreter benchmark</p>
@@ -256,7 +270,7 @@ function mountDemo(root: HTMLElement) {
   benchmark.addEventListener("click", async () => {
     benchmark.disabled = true;
     benchmarkResult.textContent = "Preparing a fresh seed session…";
-    const iterations = 1000;
+    const iterations = benchmarkIterations;
     let completed = 0;
     let elapsed = 0;
     let lastResult = "";
@@ -264,7 +278,7 @@ function mountDemo(root: HTMLElement) {
       const session = await createSession("seed");
       session.evaluateQuietly("(define benchmark-step (lambda (x) (+ (* x x) 1)))");
       while (completed < iterations) {
-        const chunk = Math.min(50, iterations - completed);
+        const chunk = Math.min(benchmarkChunkSize, iterations - completed);
         const started = performance.now();
         for (let index = 0; index < chunk; index += 1) {
           lastResult = session.evaluate("(benchmark-step 21)");
