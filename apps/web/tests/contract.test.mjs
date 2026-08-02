@@ -36,3 +36,9 @@ test("documentation presents the three reference interfaces", async () => {
     assert.ok(docs.includes(marker), `missing ${marker}`);
   }
 });
+
+test("documentation explains the bootstrapped core REPL", async () => {
+  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  assert.ok(docs.includes('id="core-repl"'));
+  assert.match(docs, /bootstrapped compiler/i);
+});
