@@ -43,7 +43,7 @@ test("assembly documentation exposes its primary instruction groups", async () =
     "assembly.i32.add",
     "assembly.memory.grow",
     "assembly.v128.load",
-    "assembly.type"
+    "assembly.func"
   ]) {
     assert.ok(docs.includes(marker), `missing ${marker}`);
   }
