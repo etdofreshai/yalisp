@@ -28,7 +28,10 @@
           <a class="active" href="#introduction">Introduction</a>
           <a href="#getting-started">Getting started</a>
           <a href="#language">Language guide</a>
-          <a href="#reference">Reference</a>
+          <a href="#reference-interfaces">Reference interfaces</a>
+          <a class="nav-child" href="#assembly">Assembly</a>
+          <a class="nav-child" href="#system-interface">System interface</a>
+          <a class="nav-child" href="#host">Host</a>
           <a href="#examples">Examples</a>
         </nav>
         <a class="source-link" href="https://github.com/etdofreshai/yalisp">View source <span aria-hidden="true">↗</span></a>
@@ -38,7 +41,7 @@
         <section id="introduction">
           <p class="section-number">01</p>
           <h1>Start small.<br /><em>Understand everything.</em></h1>
-          <p class="lede">A home for the ideas, syntax, and small experiments that make YALisp tick.</p>
+          <p class="lede">A small Lisp with portable interfaces for computation, systems work, and interactive hosts.</p>
         </section>
         <section id="getting-started">
           <p class="section-number">02</p>
@@ -50,10 +53,48 @@
           <h2>Language guide</h2>
           <p>Expressions, functions, and the core ideas that keep the language small and readable.</p>
         </section>
-        <section id="reference">
+        <section id="reference-interfaces">
           <p class="section-number">04</p>
-          <h2>Reference</h2>
-          <p>A growing map of built-ins, forms, and the parts you will reach for most often.</p>
+          <h2>Reference interfaces</h2>
+          <p>The standard interface is organized as three layers. Each layer has a narrow job, so a program can be direct when it needs to be and portable when it can be.</p>
+          <div class="interface-map" aria-label="The three YALisp reference interfaces">
+            <a href="#assembly"><span>01</span><strong>Assembly</strong><small>WebAssembly primitives</small></a>
+            <a href="#system-interface"><span>02</span><strong>System interface</strong><small>Portable system services</small></a>
+            <a href="#host"><span>03</span><strong>Host</strong><small>Rendering and interaction</small></a>
+          </div>
+        </section>
+        <section id="assembly" class="interface-section">
+          <p class="section-number">04.1</p>
+          <h2>Assembly</h2>
+          <p>The assembly module is the direct translation layer. It exposes WebAssembly instructions to Lisp with as little policy or wrapping as possible. Use it when you need predictable low-level behavior.</p>
+          <div class="reference-grid">
+            <article><code>numeric</code><h3>Integer and floating-point operations</h3><p>Arithmetic, comparisons, conversions, and bit-level operations map directly to WebAssembly numeric instructions.</p></article>
+            <article><code>memory</code><h3>Linear memory</h3><p>Load, store, size, and growth operations make WebAssembly memory explicit and available to Lisp code.</p></article>
+            <article><code>control</code><h3>Control flow</h3><p>Blocks, branches, calls, and return values provide the small set of primitives required to construct compiled control flow.</p></article>
+          </div>
+          <p class="interface-note">Naming follows the underlying WebAssembly operation where practical—for example, an integer addition is exposed through the assembly interface rather than hidden behind a separate runtime.</p>
+        </section>
+        <section id="system-interface" class="interface-section">
+          <p class="section-number">04.2</p>
+          <h2>System interface</h2>
+          <p>The system interface is built on the WebAssembly System Interface. It gives programs a portable way to work with the outside world without binding the language to one operating system.</p>
+          <div class="reference-grid">
+            <article><code>io</code><h3>Streams and files</h3><p>Read and write byte streams, work with files and directories, and report errors through a consistent capability-based interface.</p></article>
+            <article><code>time</code><h3>Clocks and scheduling</h3><p>Access monotonic and wall clocks, timers, and the timing facilities supplied by the WebAssembly host.</p></article>
+            <article><code>process</code><h3>Arguments and environment</h3><p>Receive command-line arguments, environment values, random bytes, and other process-scoped services where the host permits them.</p></article>
+          </div>
+          <p class="interface-note">This layer aims to track the WebAssembly system interface closely, so the same YALisp program can move between compatible runtimes with minimal adaptation.</p>
+        </section>
+        <section id="host" class="interface-section">
+          <p class="section-number">04.3</p>
+          <h2>Host</h2>
+          <p>The host module covers the interactive capabilities that are intentionally outside the system interface: windows, rendering surfaces, input devices, audio, and browser-style document APIs.</p>
+          <div class="reference-grid">
+            <article><code>display</code><h3>Windows and rendering</h3><p>Create surfaces, draw frames, manage graphics resources, and present output through an SDL-like or browser-backed host.</p></article>
+            <article><code>input</code><h3>Events and devices</h3><p>Receive keyboard, pointer, touch, gamepad, window, and lifecycle events through one event-oriented interface.</p></article>
+            <article><code>document</code><h3>DOM-style interaction</h3><p>Create and update visual elements, respond to user actions, and render application interfaces when the host provides a document model.</p></article>
+          </div>
+          <p class="interface-note">Hosts may expose different backends, but their public YALisp surface should describe the same capabilities. Platform-specific extensions belong here, clearly marked as extensions.</p>
         </section>
         <section id="examples">
           <p class="section-number">05</p>

@@ -25,6 +25,7 @@ button { color: inherit; font: inherit; }
 .docs-nav nav { display: grid; gap: .4rem; margin-top: 1.8rem; }
 .docs-nav nav a { padding: .6rem .7rem; margin-left: -.7rem; font-size: .9rem; transition: background 160ms ease; }
 .docs-nav nav a:hover, .docs-nav nav a.active { background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.docs-nav nav a.nav-child { padding-top: .35rem; padding-bottom: .35rem; padding-left: 1.35rem; color: var(--muted); font-family: "DM Mono", monospace; font-size: .67rem; }
 .source-link { margin-top: auto; color: var(--muted); font-family: "DM Mono", monospace; font-size: .68rem; }
 main { width: min(100%, 760px); padding: clamp(4rem, 10vw, 8rem) clamp(2rem, 7vw, 7rem); }
 section { padding: 0 0 6rem; margin-top: 6rem; border-bottom: 1px solid var(--line); scroll-margin-top: 110px; }
@@ -35,6 +36,19 @@ h2 { font-size: clamp(2.6rem, 5vw, 4rem); }
 h1 em { color: #fa5b35; font-family: "Newsreader", serif; font-weight: 400; }
 section p:not(.section-number) { max-width: 550px; color: var(--muted); font-size: 1.05rem; line-height: 1.75; }
 .lede { font-size: 1.2rem !important; }
+.interface-map { display: grid; gap: 1px; margin-top: 2.5rem; border: 1px solid var(--line); background: var(--line); }
+.interface-map a { display: grid; grid-template-columns: 2.5rem 1fr; gap: .25rem 1rem; padding: 1.2rem 1.35rem; background: var(--paper); transition: background 160ms ease, color 160ms ease; }
+.interface-map a:hover { background: var(--ink); color: var(--paper); }
+.interface-map span, .reference-grid code { color: #fa5b35; font-family: "DM Mono", monospace; font-size: .68rem; letter-spacing: .05em; }
+.interface-map strong { font-size: 1rem; font-weight: 500; }
+.interface-map small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.interface-map a:hover small { color: color-mix(in srgb, var(--paper) 68%, transparent); }
+.interface-section h2 { margin-bottom: 1.4rem; }
+.reference-grid { display: grid; gap: 1px; margin-top: 2.5rem; border: 1px solid var(--line); background: var(--line); }
+.reference-grid article { padding: 1.5rem; background: var(--paper); }
+.reference-grid h3 { margin: .8rem 0 .55rem; font-size: 1rem; font-weight: 500; letter-spacing: -.025em; }
+.reference-grid p { margin: 0; font-size: .9rem !important; line-height: 1.65 !important; }
+.interface-note { padding: 1.2rem 1.3rem; margin-top: 1.5rem; border-left: 2px solid #fa5b35; background: color-mix(in srgb, #fa5b35 7%, transparent); font-size: .92rem !important; }
 @media (max-width: 760px) {
   .docs-header { padding: 0 5vw; }
   .docs-menu { display: inline-flex; }

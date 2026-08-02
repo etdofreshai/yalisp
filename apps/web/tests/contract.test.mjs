@@ -25,3 +25,14 @@ test("interactive controls have TypeScript behavior", () => {
   assert.ok(source.includes('aria-expanded'));
 });
 
+test("documentation presents the three reference interfaces", async () => {
+  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  for (const marker of [
+    'id="reference-interfaces"',
+    'id="assembly"',
+    'id="system-interface"',
+    'id="host"'
+  ]) {
+    assert.ok(docs.includes(marker), `missing ${marker}`);
+  }
+});
