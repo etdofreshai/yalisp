@@ -1,0 +1,20 @@
+{
+  "name": "yalisp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The YALisp monorepo and landing page.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @yalisp/site-content && npm run build --workspace @yalisp/web",
+    "dev": "npm run build --workspace @yalisp/site-content && npm run dev --workspace @yalisp/web",
+    "test": "npm run build --workspace @yalisp/site-content && npm test --workspaces --if-present",
+    "typecheck": "npm run build --workspace @yalisp/site-content && npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@11.9.0"
+}
