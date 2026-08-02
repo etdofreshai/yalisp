@@ -60,10 +60,36 @@ const pageAnchors: Record<string, Array<[string, string, string?]>> = {
   ]
 };
 
+const foundationPages = new Set([
+  "/docs/foundation/",
+  "/docs/seed/",
+  "/docs/bootstrap/",
+  "/docs/compiler/",
+  "/docs/applications/"
+]);
+
+const interfacePages = new Set([
+  "/docs/assembly/",
+  "/docs/system-interface/",
+  "/docs/dom/",
+  "/docs/sdl/"
+]);
+
 export const normalizePath = (path: string) => {
-  const cleanPath = path.replace(/index\.html$/, "").replace(/\/+$/, "");
+  const pathOnly = path.split(/[?#]/, 1)[0] ?? "/";
+  const cleanPath = pathOnly.replace(/\/{2,}/g, "/").replace(/index\.html$/, "").replace(/\/+$/, "");
   return cleanPath ? `${cleanPath}/` : "/";
 };
+
+export function getNavigationOwnerState(path: string) {
+  const currentPath = normalizePath(path);
+  return {
+    currentPath,
+    anchorOwner: Object.hasOwn(pageAnchors, currentPath) ? currentPath : null,
+    foundationExpanded: foundationPages.has(currentPath),
+    interfacesExpanded: interfacePages.has(currentPath)
+  };
+}
 
 function setActiveAnchor(navigation: HTMLElement, path: string, hash: string) {
   navigation.querySelectorAll<HTMLAnchorElement>(".project-nav-anchor").forEach((link) => {
@@ -119,11 +145,12 @@ function trackActiveSection(navigation: HTMLElement, path: string) {
 }
 
 export function mountProjectNavigation(host: HTMLElement, options: NavigationOptions) {
-  const currentPath = normalizePath(options.currentPath ?? window.location.pathname);
+  const ownerState = getNavigationOwnerState(options.currentPath ?? window.location.pathname);
+  const { currentPath, foundationExpanded, interfacesExpanded } = ownerState;
   const currentHash = window.location.hash;
-  const pageLink = (path: string, label: string, extraClass = "") => {
+  const pageLink = (path: string, label: string, extraClass = "", extraAttributes = "") => {
     const active = currentPath === path;
-    return `<a class="project-nav-link project-nav-page${extraClass}${active ? " active" : ""}" href="${path}"${active ? ' aria-current="page"' : ""}>${label}</a>`;
+    return `<a class="project-nav-link project-nav-page${extraClass}${active ? " active" : ""}" href="${path}"${active ? ' aria-current="page"' : ""}${extraAttributes}>${label}</a>`;
   };
   const anchorLink = (path: string, hash: string, label: string, number?: string) => {
     const active = currentPath === path && currentHash === `#${hash}`;
@@ -136,6 +163,10 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
     return `<ul class="project-nav-children project-nav-anchor-list" data-anchor-group data-owner-path="${path}"${expanded ? "" : " hidden"}>${anchors
       .map(([hash, label, number]) => `<li>${anchorLink(path, hash, label, number)}</li>`)
       .join("")}</ul>`;
+  };
+  const pageGroup = (name: string, ownerPaths: Set<string>, children: string) => {
+    const expanded = ownerPaths.has(currentPath);
+    return `<ul id="project-nav-${name}-pages" class="project-nav-children project-nav-page-list" data-page-group="${name}" data-owner-paths="${[...ownerPaths].join(" ")}"${expanded ? "" : " hidden"}>${children}</ul>`;
   };
 
   host.dataset.navigationDefault = options.initialState;
@@ -152,30 +183,33 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
             ${pageLink("/docs/", "Documentation overview")}
             ${anchorGroup("/docs/")}
           </li>
-          <li class="project-nav-context">${pageLink("/docs/foundation/", "Foundation overview")}</li>
-          <li class="project-nav-stage">
-            ${pageLink("/docs/seed/", '<span class="project-nav-index">01</span><span>Seed</span>')}
-            ${anchorGroup("/docs/seed/")}
-          </li>
-          <li class="project-nav-stage">
-            ${pageLink("/docs/bootstrap/", '<span class="project-nav-index">02</span><span>Bootstrap</span>')}
-            ${anchorGroup("/docs/bootstrap/")}
-          </li>
-          <li class="project-nav-stage">
-            ${pageLink("/docs/compiler/", '<span class="project-nav-index">03</span><span>Compiler</span>')}
-            ${anchorGroup("/docs/compiler/")}
-          </li>
-          <li class="project-nav-stage">
-            ${pageLink("/docs/applications/", '<span class="project-nav-index">04</span><span>Applications</span>')}
+          <li class="project-nav-context project-nav-foundation-group">
+            ${pageLink("/docs/foundation/", "Foundation overview", "", ` aria-expanded="${foundationExpanded}" aria-controls="project-nav-foundation-pages"`)}
+            ${pageGroup("foundation", foundationPages, `
+              <li class="project-nav-stage">
+                ${pageLink("/docs/seed/", '<span class="project-nav-index">01</span><span>Seed</span>')}
+                ${anchorGroup("/docs/seed/")}
+              </li>
+              <li class="project-nav-stage">
+                ${pageLink("/docs/bootstrap/", '<span class="project-nav-index">02</span><span>Bootstrap</span>')}
+                ${anchorGroup("/docs/bootstrap/")}
+              </li>
+              <li class="project-nav-stage">
+                ${pageLink("/docs/compiler/", '<span class="project-nav-index">03</span><span>Compiler</span>')}
+                ${anchorGroup("/docs/compiler/")}
+              </li>
+              <li class="project-nav-stage">
+                ${pageLink("/docs/applications/", '<span class="project-nav-index">04</span><span>Applications</span>')}
+              </li>`)}
           </li>
           <li class="project-nav-stage project-nav-interface-group">
-            <a class="project-nav-link project-nav-section-link" href="/docs/#reference-interfaces"><span class="project-nav-index">05</span><span>Interfaces</span></a>
-            <ul class="project-nav-children project-nav-page-list">
+            <a class="project-nav-link project-nav-section-link" href="/docs/#reference-interfaces" aria-expanded="${interfacesExpanded}" aria-controls="project-nav-interfaces-pages"><span class="project-nav-index">05</span><span>Interfaces</span></a>
+            ${pageGroup("interfaces", interfacePages, `
               <li>${pageLink("/docs/assembly/", '<span class="project-nav-subindex">05.01</span><span>Assembly</span>', " project-nav-page-child")}${anchorGroup("/docs/assembly/")}</li>
               <li>${pageLink("/docs/system-interface/", '<span class="project-nav-subindex">05.02</span><span>System interface</span>', " project-nav-page-child")}${anchorGroup("/docs/system-interface/")}</li>
               <li>${pageLink("/docs/dom/", '<span class="project-nav-subindex">05.03</span><span>DOM</span>', " project-nav-page-child")}${anchorGroup("/docs/dom/")}</li>
               <li>${pageLink("/docs/sdl/", '<span class="project-nav-subindex">05.04</span><span>SDL</span>', " project-nav-page-child")}${anchorGroup("/docs/sdl/")}</li>
-            </ul>
+            `)}
           </li>
           <li class="project-nav-stage">
             <a class="project-nav-link project-nav-section-link" href="/docs/#game-runtime"><span class="project-nav-index">06</span><span>Game Runtime</span></a>

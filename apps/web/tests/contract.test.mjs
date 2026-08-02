@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { getNavigationOwnerState, normalizePath } from "../src/project-navigation.ts";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const source = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
@@ -165,12 +166,91 @@ test("anchor groups disclose only for their owning route and track the active se
     'new IntersectionObserver(queueScrollUpdate',
     'rootMargin: "-20% 0px -70% 0px"',
     "getBoundingClientRect().top",
-    'normalizePath(options.currentPath ?? window.location.pathname)'
+    'getNavigationOwnerState(options.currentPath ?? window.location.pathname)'
   ]) assert.ok(navigation.includes(marker), `missing active-anchor behavior: ${marker}`);
 
   assert.match(navigation, /replace\(\/\\\/\+\$\/, ""\)/);
-  assert.match(navStyles, /\.project-nav-anchor-list\[hidden\]\s*\{\s*display: none/);
+  assert.match(navStyles, /\.project-nav-anchor-list\[hidden\], \.project-nav-page-list\[hidden\]\s*\{\s*display: none/);
   assert.match(navStyles, /\.project-nav-anchor\.active[^}]*box-shadow: inset 2px 0 var\(--accent\)/);
+});
+
+test("Docs, Foundation, and Interfaces disclosures use exact normalized route ownership", () => {
+  for (const route of ["/docs", "/docs/", "/docs//", "/docs/index.html", "/docs/#reference-interfaces", "/docs/?from=nav#foundation"]) {
+    assert.deepEqual(getNavigationOwnerState(route), {
+      currentPath: "/docs/",
+      anchorOwner: "/docs/",
+      foundationExpanded: false,
+      interfacesExpanded: false
+    });
+  }
+
+  for (const route of ["/docs/foundation", "/docs/foundation/", "/docs/foundation/index.html", "/docs/foundation/#path"]) {
+    assert.deepEqual(getNavigationOwnerState(route), {
+      currentPath: "/docs/foundation/",
+      anchorOwner: null,
+      foundationExpanded: true,
+      interfacesExpanded: false
+    });
+  }
+
+  for (const [route, owner] of [
+    ["/docs/seed/#source", "/docs/seed/"],
+    ["/docs/bootstrap/index.html#live-bootstrap", "/docs/bootstrap/"],
+    ["/docs/compiler?view=source#source", "/docs/compiler/"]
+  ]) {
+    assert.deepEqual(getNavigationOwnerState(route), {
+      currentPath: owner,
+      anchorOwner: owner,
+      foundationExpanded: true,
+      interfacesExpanded: false
+    });
+  }
+
+  for (const route of ["/docs/assembly/", "/docs/system-interface#profiles", "/docs/dom/index.html#rendering", "/docs/sdl//?profile=gpu#gpu-3d"]) {
+    const currentPath = normalizePath(route);
+    assert.deepEqual(getNavigationOwnerState(route), {
+      currentPath,
+      anchorOwner: currentPath,
+      foundationExpanded: false,
+      interfacesExpanded: true
+    });
+  }
+
+  for (const route of ["/docs/foundation-extra/", "/docs/domains/", "/docs/system-interface-v2/", "/playground/"]) {
+    assert.deepEqual(getNavigationOwnerState(route), {
+      currentPath: normalizePath(route),
+      anchorOwner: null,
+      foundationExpanded: false,
+      interfacesExpanded: false
+    });
+  }
+
+  for (const marker of [
+    'data-page-group="${name}"',
+    'pageGroup("foundation", foundationPages',
+    'pageGroup("interfaces", interfacePages',
+    'foundationPages.has(currentPath)',
+    'interfacePages.has(currentPath)',
+    'aria-controls="project-nav-foundation-pages"',
+    'aria-controls="project-nav-interfaces-pages"'
+  ]) assert.ok(navigation.includes(marker), `missing exact disclosure contract: ${marker}`);
+  assert.ok(!navigation.includes("startsWith("), "route-prefix matching could leak a neighboring group");
+});
+
+test("Vite redirects canonical page routes to their trailing-slash form", async () => {
+  const viteConfig = await readFile(new URL("../vite.config.ts", import.meta.url), "utf8");
+  for (const route of [
+    "/docs",
+    "/docs/foundation",
+    "/docs/seed",
+    "/docs/system-interface",
+    "/docs/dom",
+    "/playground"
+  ]) assert.ok(viteConfig.includes(`"${route}"`), `missing canonical redirect route ${route}`);
+  assert.ok(viteConfig.includes("configureServer(server)"));
+  assert.ok(viteConfig.includes("configurePreviewServer(server)"));
+  assert.ok(viteConfig.includes("response.statusCode = 308"));
+  assert.ok(viteConfig.includes('response.setHeader("Location", `${url.pathname}/${url.search}`)'));
 });
 
 test("expanded rails use their width while keeping navigation aligned left", async () => {
