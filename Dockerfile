@@ -12,8 +12,6 @@ COPY packages ./packages
 
 EXPOSE 5173
 
-HEALTHCHECK NONE
-
 CMD ["npm", "run", "dev", "--workspace", "@yalisp/web", "--", "--port", "5173", "--strictPort"]
 
 EXPOSE 80
