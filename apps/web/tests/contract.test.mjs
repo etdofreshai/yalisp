@@ -63,6 +63,17 @@ test("assembly documentation exposes its primary instruction groups", async () =
   }
 });
 
+test("assembly documentation uses the bundled inventory", async () => {
+  const page = await readFile(new URL("../docs/assembly/index.html", import.meta.url), "utf8");
+  const behavior = await readFile(new URL("../src/docs.ts", import.meta.url), "utf8");
+  const inventory = await readFile(new URL("../src/assembly-inventory.ts", import.meta.url), "utf8");
+
+  assert.ok(page.includes("data-assembly-inventory"));
+  assert.ok(behavior.includes('from "./assembly-inventory"'));
+  assert.ok(inventory.includes("assembly.i32.add"));
+  assert.ok(!page.includes("raw.githubusercontent.com"));
+});
+
 test("documentation explains the bootstrapped core REPL", async () => {
   const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
   assert.ok(docs.includes('id="core-repl"'));

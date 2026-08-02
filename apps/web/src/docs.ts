@@ -80,7 +80,7 @@ document.querySelectorAll<HTMLAnchorElement>(".docs-nav a[href*='#']").forEach((
   });
 });
 
-const inventory = document.querySelector<HTMLElement>("[data-function-source]");
+const inventory = document.querySelector<HTMLElement>("[data-assembly-inventory]");
 function describeFunction(name: string) {
   const verb = name.split(".").at(-1)?.replaceAll("-", " ") ?? name;
   return `Performs ${verb} through this interface, returning a portable YALisp value or a documented condition.`;
