@@ -15,6 +15,9 @@ export default defineConfig({
         docs: "docs/index.html",
         foundation: "docs/foundation/index.html",
         compiler: "docs/compiler/index.html",
+        seed: "docs/seed/index.html",
+        bootstrap: "docs/bootstrap/index.html",
+        applications: "docs/applications/index.html",
         assembly: "docs/assembly/index.html",
         systemInterface: "docs/system-interface/index.html",
         host: "docs/host/index.html"
