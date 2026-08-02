@@ -54,3 +54,10 @@ test("documentation explains the bootstrapped core REPL", async () => {
   assert.ok(docs.includes('id="core-repl"'));
   assert.match(docs, /bootstrapped compiler/i);
 });
+
+test("each reference interface has a dedicated page", async () => {
+  for (const page of ["assembly", "system-interface", "host"]) {
+    const document = await readFile(new URL(`../docs/${page}/index.html`, import.meta.url), "utf8");
+    assert.match(document, /normative YALisp/i);
+  }
+});

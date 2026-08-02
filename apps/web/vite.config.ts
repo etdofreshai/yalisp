@@ -12,7 +12,10 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: "index.html",
-        docs: "docs/index.html"
+        docs: "docs/index.html",
+        assembly: "docs/assembly/index.html",
+        systemInterface: "docs/system-interface/index.html",
+        host: "docs/host/index.html"
       }
     }
   }
