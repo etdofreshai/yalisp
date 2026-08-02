@@ -10,9 +10,9 @@ RUN npm ci
 COPY apps ./apps
 COPY packages ./packages
 
-EXPOSE 80
+EXPOSE 5173
 
-CMD ["npm", "run", "dev", "--workspace", "@yalisp/web", "--", "--port", "80", "--strictPort"]
+CMD ["npm", "run", "dev", "--workspace", "@yalisp/web", "--", "--port", "5173", "--strictPort"]
 
 EXPOSE 80
 

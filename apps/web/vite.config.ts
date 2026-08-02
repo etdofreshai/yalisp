@@ -2,7 +2,8 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   server: {
-    host: true
+    host: true,
+    allowedHosts: ["yalisp.etdofresh.com"]
   },
   preview: {
     host: true

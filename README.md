@@ -27,5 +27,5 @@ npm run build
 
 ## Development deployment
 
-The root `Dockerfile` runs the Vite development server on port 80 with live
+The root `Dockerfile` runs the Vite development server on port 5173 with live
 reload enabled. Dokploy deploys the `main` branch to `yalisp.etdofresh.com`.
