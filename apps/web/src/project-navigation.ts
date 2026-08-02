@@ -7,6 +7,20 @@ type NavigationOptions = {
 };
 
 const pageAnchors: Record<string, Array<[string, string, string?]>> = {
+  "/": [
+    ["why", "Why YALisp"],
+    ["language", "The language"]
+  ],
+  "/docs/": [
+    ["introduction", "Introduction", "01"],
+    ["getting-started", "Getting started", "02"],
+    ["language", "Language guide", "03"],
+    ["core-repl", "REPL that grows into a compiler", "04"],
+    ["foundation", "Foundation", "05"],
+    ["reference-interfaces", "Interfaces", "06"],
+    ["game-runtime", "Game runtime", "07"],
+    ["examples", "Examples", "08"]
+  ],
   "/docs/seed/": [
     ["supported-surface", "Supported surface", "01.01"],
     ["source", "Checked-in source", "01.02"],
@@ -46,7 +60,63 @@ const pageAnchors: Record<string, Array<[string, string, string?]>> = {
   ]
 };
 
-const normalizePath = (path: string) => path.replace(/index\.html$/, "");
+export const normalizePath = (path: string) => {
+  const cleanPath = path.replace(/index\.html$/, "").replace(/\/+$/, "");
+  return cleanPath ? `${cleanPath}/` : "/";
+};
+
+function setActiveAnchor(navigation: HTMLElement, path: string, hash: string) {
+  navigation.querySelectorAll<HTMLAnchorElement>(".project-nav-anchor").forEach((link) => {
+    const active = link.dataset.ownerPath === path && link.dataset.anchorId === hash;
+    link.classList.toggle("active", active);
+    if (active) link.setAttribute("aria-current", "location");
+    else link.removeAttribute("aria-current");
+  });
+}
+
+function trackActiveSection(navigation: HTMLElement, path: string) {
+  const anchors = pageAnchors[path] ?? [];
+  const sections = anchors
+    .map(([hash]) => document.getElementById(hash))
+    .filter((section): section is HTMLElement => section !== null);
+  if (!sections.length) return;
+
+  const updateFromScroll = () => {
+    const activationLine = Math.max(96, window.innerHeight * 0.24);
+    let activeSection = sections[0]!;
+    for (const section of sections) {
+      if (section.getBoundingClientRect().top > activationLine) break;
+      activeSection = section;
+    }
+    setActiveAnchor(navigation, path, activeSection.id);
+  };
+
+  let frame = 0;
+  const queueScrollUpdate = () => {
+    if (frame) return;
+    frame = window.requestAnimationFrame(() => {
+      frame = 0;
+      updateFromScroll();
+    });
+  };
+  const updateFromHash = () => {
+    const hash = window.location.hash.slice(1);
+    if (anchors.some(([anchor]) => anchor === hash)) setActiveAnchor(navigation, path, hash);
+    else queueScrollUpdate();
+  };
+
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver(queueScrollUpdate, {
+      rootMargin: "-20% 0px -70% 0px",
+      threshold: [0, 1]
+    });
+    sections.forEach((section) => observer.observe(section));
+  }
+  window.addEventListener("scroll", queueScrollUpdate, { passive: true });
+  window.addEventListener("resize", queueScrollUpdate);
+  window.addEventListener("hashchange", updateFromHash);
+  updateFromHash();
+}
 
 export function mountProjectNavigation(host: HTMLElement, options: NavigationOptions) {
   const currentPath = normalizePath(options.currentPath ?? window.location.pathname);
@@ -57,13 +127,13 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
   };
   const anchorLink = (path: string, hash: string, label: string, number?: string) => {
     const active = currentPath === path && currentHash === `#${hash}`;
-    return `<a class="project-nav-link project-nav-anchor${number ? " has-number" : ""}${active ? " active" : ""}" href="${path}#${hash}"${active ? ' aria-current="location"' : ""}><span class="project-nav-subindex"${number ? "" : ' aria-hidden="true"'}>${number ?? "#"}</span><span>${label}</span></a>`;
+    return `<a class="project-nav-link project-nav-anchor${number ? " has-number" : ""}${active ? " active" : ""}" href="${path}#${hash}" data-owner-path="${path}" data-anchor-id="${hash}"${active ? ' aria-current="location"' : ""}><span class="project-nav-subindex"${number ? "" : ' aria-hidden="true"'}>${number ?? "#"}</span><span>${label}</span></a>`;
   };
-  const currentPageAnchors = (path: string) => {
-    if (currentPath !== path) return "";
+  const anchorGroup = (path: string) => {
     const anchors = pageAnchors[path] ?? [];
     if (!anchors.length) return "";
-    return `<ul class="project-nav-children project-nav-anchor-list">${anchors
+    const expanded = currentPath === path;
+    return `<ul class="project-nav-children project-nav-anchor-list" data-anchor-group data-owner-path="${path}"${expanded ? "" : " hidden"}>${anchors
       .map(([hash, label, number]) => `<li>${anchorLink(path, hash, label, number)}</li>`)
       .join("")}</ul>`;
   };
@@ -76,33 +146,24 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
         <ul class="project-nav-tree">
           <li class="project-nav-overview">
             ${pageLink("/", "Project overview")}
-            <ul class="project-nav-children project-nav-anchor-list">
-              <li>${anchorLink("/", "why", "Why YALisp")}</li>
-              <li>${anchorLink("/", "language", "The language")}</li>
-            </ul>
+            ${anchorGroup("/")}
           </li>
           <li class="project-nav-overview">
             ${pageLink("/docs/", "Documentation overview")}
-            <ul class="project-nav-children project-nav-anchor-list">
-              <li>${anchorLink("/docs/", "introduction", "Introduction", "01")}</li>
-              <li>${anchorLink("/docs/", "getting-started", "Getting started", "02")}</li>
-              <li>${anchorLink("/docs/", "language", "Language guide", "03")}</li>
-              <li>${anchorLink("/docs/", "core-repl", "REPL that grows into a compiler", "04")}</li>
-              <li>${anchorLink("/docs/", "examples", "Examples", "08")}</li>
-            </ul>
+            ${anchorGroup("/docs/")}
           </li>
           <li class="project-nav-context">${pageLink("/docs/foundation/", "Foundation overview")}</li>
           <li class="project-nav-stage">
             ${pageLink("/docs/seed/", '<span class="project-nav-index">01</span><span>Seed</span>')}
-            ${currentPageAnchors("/docs/seed/")}
+            ${anchorGroup("/docs/seed/")}
           </li>
           <li class="project-nav-stage">
             ${pageLink("/docs/bootstrap/", '<span class="project-nav-index">02</span><span>Bootstrap</span>')}
-            ${currentPageAnchors("/docs/bootstrap/")}
+            ${anchorGroup("/docs/bootstrap/")}
           </li>
           <li class="project-nav-stage">
             ${pageLink("/docs/compiler/", '<span class="project-nav-index">03</span><span>Compiler</span>')}
-            ${currentPageAnchors("/docs/compiler/")}
+            ${anchorGroup("/docs/compiler/")}
           </li>
           <li class="project-nav-stage">
             ${pageLink("/docs/applications/", '<span class="project-nav-index">04</span><span>Applications</span>')}
@@ -110,10 +171,10 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
           <li class="project-nav-stage project-nav-interface-group">
             <a class="project-nav-link project-nav-section-link" href="/docs/#reference-interfaces"><span class="project-nav-index">05</span><span>Interfaces</span></a>
             <ul class="project-nav-children project-nav-page-list">
-              <li>${pageLink("/docs/assembly/", '<span class="project-nav-subindex">05.01</span><span>Assembly</span>', " project-nav-page-child")}${currentPageAnchors("/docs/assembly/")}</li>
-              <li>${pageLink("/docs/system-interface/", '<span class="project-nav-subindex">05.02</span><span>System interface</span>', " project-nav-page-child")}${currentPageAnchors("/docs/system-interface/")}</li>
-              <li>${pageLink("/docs/dom/", '<span class="project-nav-subindex">05.03</span><span>DOM</span>', " project-nav-page-child")}${currentPageAnchors("/docs/dom/")}</li>
-              <li>${pageLink("/docs/sdl/", '<span class="project-nav-subindex">05.04</span><span>SDL</span>', " project-nav-page-child")}${currentPageAnchors("/docs/sdl/")}</li>
+              <li>${pageLink("/docs/assembly/", '<span class="project-nav-subindex">05.01</span><span>Assembly</span>', " project-nav-page-child")}${anchorGroup("/docs/assembly/")}</li>
+              <li>${pageLink("/docs/system-interface/", '<span class="project-nav-subindex">05.02</span><span>System interface</span>', " project-nav-page-child")}${anchorGroup("/docs/system-interface/")}</li>
+              <li>${pageLink("/docs/dom/", '<span class="project-nav-subindex">05.03</span><span>DOM</span>', " project-nav-page-child")}${anchorGroup("/docs/dom/")}</li>
+              <li>${pageLink("/docs/sdl/", '<span class="project-nav-subindex">05.04</span><span>SDL</span>', " project-nav-page-child")}${anchorGroup("/docs/sdl/")}</li>
             </ul>
           </li>
           <li class="project-nav-stage">
@@ -125,5 +186,7 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
       <a class="project-nav-source" href="https://github.com/etdofreshai/yalisp">View source <span aria-hidden="true">↗</span></a>
     </div>`;
 
-  return host.querySelector<HTMLElement>(`#${options.navigationId}`)!;
+  const navigation = host.querySelector<HTMLElement>(`#${options.navigationId}`)!;
+  trackActiveSection(navigation, currentPath);
+  return navigation;
 }

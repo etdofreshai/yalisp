@@ -68,8 +68,8 @@ test("landing and inner pages mount the same semantic navigation with different 
     "project-nav-page-child",
     "project-nav-anchor",
     'pageLink("/", "Project overview")',
-    'anchorLink("/", "why", "Why YALisp")',
-    'anchorLink("/", "language", "The language")',
+    '["why", "Why YALisp"]',
+    '["language", "The language"]',
     'pageLink("/docs/foundation/"',
     'pageLink("/playground/"',
     'pageLink("/docs/sdl/"',
@@ -124,10 +124,19 @@ test("sidebar nested numbers mirror printed page section numbers without inventi
     assert.ok(navigation.includes(`"${nested}"]`), `${hash} is missing nested number ${nested}`);
   }
 
-  for (const [hash, printed] of [["introduction", "01"], ["getting-started", "02"], ["language", "03"], ["core-repl", "04"], ["examples", "08"]]) {
+  for (const [hash, printed, label] of [
+    ["introduction", "01", "Introduction"],
+    ["getting-started", "02", "Getting started"],
+    ["language", "03", "Language guide"],
+    ["core-repl", "04", "REPL that grows into a compiler"],
+    ["foundation", "05", "Foundation"],
+    ["reference-interfaces", "06", "Interfaces"],
+    ["game-runtime", "07", "Game runtime"],
+    ["examples", "08", "Examples"]
+  ]) {
     assert.ok(docs.includes(`id="${hash}"`));
     assert.ok(docs.includes(`<p class="section-number">${printed}</p>`));
-    assert.ok(navigation.includes(`"${hash}",`));
+    assert.ok(navigation.includes(`["${hash}", "${label}", "${printed}"]`));
   }
 
   for (const marker of [
@@ -137,9 +146,31 @@ test("sidebar nested numbers mirror printed page section numbers without inventi
     '<span class="project-nav-subindex">05.04</span><span>SDL</span>'
   ]) assert.ok(navigation.includes(marker), `missing numbered interface child ${marker}`);
 
-  assert.ok(navigation.includes('anchorLink("/", "why", "Why YALisp")'));
+  assert.ok(navigation.includes('["why", "Why YALisp"]'));
   assert.ok(navigation.includes('["assembly", "Assembly overview"]'));
   assert.ok(navigation.includes('number ? "" : \' aria-hidden="true"\''), "numbered subsection labels should remain in accessible link names");
+});
+
+test("anchor groups disclose only for their owning route and track the active section", async () => {
+  const navStyles = await readFile(new URL("../src/project-navigation.css", import.meta.url), "utf8");
+
+  for (const marker of [
+    "const expanded = currentPath === path",
+    'data-anchor-group data-owner-path="${path}"${expanded ? "" : " hidden"}',
+    'data-owner-path="${path}" data-anchor-id="${hash}"',
+    'link.setAttribute("aria-current", "location")',
+    'link.removeAttribute("aria-current")',
+    'window.addEventListener("hashchange", updateFromHash)',
+    'window.addEventListener("scroll", queueScrollUpdate, { passive: true })',
+    'new IntersectionObserver(queueScrollUpdate',
+    'rootMargin: "-20% 0px -70% 0px"',
+    "getBoundingClientRect().top",
+    'normalizePath(options.currentPath ?? window.location.pathname)'
+  ]) assert.ok(navigation.includes(marker), `missing active-anchor behavior: ${marker}`);
+
+  assert.match(navigation, /replace\(\/\\\/\+\$\/, ""\)/);
+  assert.match(navStyles, /\.project-nav-anchor-list\[hidden\]\s*\{\s*display: none/);
+  assert.match(navStyles, /\.project-nav-anchor\.active[^}]*box-shadow: inset 2px 0 var\(--accent\)/);
 });
 
 test("expanded rails use their width while keeping navigation aligned left", async () => {

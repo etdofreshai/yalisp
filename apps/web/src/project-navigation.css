@@ -13,10 +13,13 @@
 .project-nav-subindex { color: var(--muted); font: .52rem/1 "DM Mono", monospace; letter-spacing: .02em; white-space: nowrap; }
 .project-nav-context > .project-nav-page, .project-nav-overview > .project-nav-page { color: var(--muted); font-size: .69rem; font-family: "DM Mono", monospace; font-weight: 400; }
 .project-nav-children { margin: .08rem 0 .3rem !important; }
+.project-nav-anchor-list[hidden] { display: none; }
 .project-nav-page-child { display: grid; grid-template-columns: max-content minmax(0, 1fr); padding: .32rem .35rem .32rem .8rem; color: var(--ink); font: 500 .7rem/1.3 "DM Mono", monospace; column-gap: .55rem; }
 .project-nav-anchor { display: grid; min-height: 1.9rem; grid-template-columns: .65rem minmax(0, 1fr); padding: .24rem .35rem .24rem .8rem; color: var(--muted); font: 400 .6rem/1.35 "DM Mono", monospace; }
 .project-nav-anchor.has-number { grid-template-columns: max-content minmax(0, 1fr); column-gap: .55rem; }
 .project-nav-anchor .project-nav-subindex { color: color-mix(in srgb, var(--muted) 68%, transparent); }
+.project-nav-anchor.active { color: var(--ink); box-shadow: inset 2px 0 var(--accent); }
+.project-nav-anchor.active .project-nav-subindex { color: var(--ink); }
 .project-nav-page-list .project-nav-anchor { padding-left: 1.2rem; }
 .project-nav-utility { padding-top: .55rem; margin-top: .45rem; border-top: 1px solid var(--line); }
 .project-nav-playground { color: #c9f85a; font-family: "DM Mono", monospace; }
