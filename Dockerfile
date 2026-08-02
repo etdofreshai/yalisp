@@ -12,7 +12,7 @@ COPY packages ./packages
 
 EXPOSE 5173
 
-CMD ["npm", "run", "dev", "--workspace", "@yalisp/web", "--", "--port", "5173", "--strictPort"]
+CMD ["sh", "-c", "npm run build --workspace @yalisp/site-content && npm run dev --workspace @yalisp/web -- --port 5173 --strictPort"]
 
 EXPOSE 80
 
