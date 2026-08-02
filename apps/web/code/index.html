@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101310" />
+    <meta name="description" content="Read the actual checked-in YALISP seed and bootstrap source" />
+    <title>Code · YALISP</title>
+    <style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style><script src="/theme-init.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to source</a>
+    <header class="docs-header">
+      <a class="brand" href="/" aria-label="YALISP home">Y<span>A</span>LISP</a>
+      <div class="header-actions">
+        <button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle><span aria-hidden="true">☀</span><span>Light</span></button>
+        <button class="docs-menu" type="button" aria-label="Toggle project navigation" aria-expanded="false" data-docs-menu><span></span><span></span></button>
+      </div>
+    </header>
+    <div class="docs-shell code-shell" data-docs-shell>
+      <aside class="docs-nav" aria-label="Project navigation"></aside>
+      <main id="content" class="code-main">
+        <p class="eyebrow">Project / Code</p>
+        <section>
+          <p class="section-number">Checked-in source</p>
+          <h1>Read what<br /><em>actually runs.</em></h1>
+          <p class="lede">This page renders YALISP source directly from the same checked-in files used to build and boot the Playground. It does not substitute illustrative snippets for implementation.</p>
+          <div class="code-index" aria-label="Source index">
+            <a href="#seed-source"><span>01</span><strong>WebAssembly seed · bootstrap.wat</strong></a>
+            <a href="#bootstrap-source"><span>02</span><strong>Lisp bootstrap · boot.lisp</strong></a>
+            <a href="#compiler-source"><span>03</span><strong>Compiler · current status</strong></a>
+          </div>
+        </section>
+        <section id="seed-source" class="interface-section">
+          <p class="section-number">01 / WebAssembly seed</p>
+          <h2>The executable<br /><em>interpreter kernel.</em></h2>
+          <p>The build assembles this checked-in WAT file into the generated <code>seed.wasm</code> artifact used by the browser.</p>
+          <div class="code-source">
+            <div class="code-source-header"><span>apps/web/src/seed/bootstrap.wat</span><a href="https://github.com/etdofreshai/yalisp/blob/main/apps/web/src/seed/bootstrap.wat">GitHub ↗</a></div>
+            <pre tabindex="0"><code data-seed-source>Loading checked-in WAT source…</code></pre>
+          </div>
+        </section>
+        <section id="bootstrap-source" class="interface-section">
+          <p class="section-number">02 / Lisp bootstrap</p>
+          <h2>Lisp grows<br /><em>the seed.</em></h2>
+          <p>The Playground loads this checked-in Lisp program into the WAT interpreter to add derived helpers and macros.</p>
+          <div class="code-source">
+            <div class="code-source-header"><span>apps/web/public/yalisp/boot.lisp</span><a href="https://github.com/etdofreshai/yalisp/blob/main/apps/web/public/yalisp/boot.lisp">GitHub ↗</a></div>
+            <pre tabindex="0"><code data-bootstrap-source>Loading checked-in Lisp source…</code></pre>
+          </div>
+        </section>
+        <section id="compiler-source" class="interface-section">
+          <p class="section-number">03 / Compiler</p>
+          <h2>No source<br /><em>before its time.</em></h2>
+          <div class="code-unavailable">
+            <strong>Compiler source is not implemented</strong>
+            <p>YALISP currently interprets its seed and bootstrap. There is no checked-in YALISP compiler source or verified compiled execution path to display yet; this section will show the real source only after that milestone exists.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/code.ts"></script>
+  </body>
+</html>

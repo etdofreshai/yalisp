@@ -18,8 +18,11 @@ docsNav.innerHTML = `
   <button class="sidebar-toggle" type="button" aria-label="Collapse documentation navigation" aria-expanded="true" data-sidebar-toggle><span aria-hidden="true">←</span><span>Collapse</span></button>
   <div class="sidebar-content">
     <a class="back-link" href="/">← Back to launch page</a>
-    <p class="nav-label">Documentation</p>
+    <p class="nav-label">Project</p>
     <nav>
+      <a class="${isCurrent("/playground/")}" href="/playground/">Playground</a>
+      <a class="${isCurrent("/code/")}" href="/code/">Code</a>
+      <p class="nav-label nav-section-label">Documentation</p>
       <a class="${currentPath === "/docs/" ? "active" : ""}" href="/docs/#introduction">Introduction</a>
       <a href="/docs/#getting-started">Getting started</a>
       <a href="/docs/#language">Language guide</a>

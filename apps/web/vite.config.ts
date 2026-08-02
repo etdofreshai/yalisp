@@ -13,6 +13,7 @@ export default defineConfig({
       input: {
         main: "index.html",
         playground: "playground/index.html",
+        code: "code/index.html",
         docs: "docs/index.html",
         foundation: "docs/foundation/index.html",
         compiler: "docs/compiler/index.html",

@@ -11,6 +11,7 @@ test("landing page exposes its essential semantic and social contracts", () => {
     'id="why"',
     'id="language"',
     'href="/playground/"',
+    'href="/code/"',
     'class="nav-playground"',
     'class="rail-status"',
     'data-theme-bootstrap',
@@ -58,10 +59,28 @@ test("documentation navigation is shared and remembers its collapsed state", asy
     "yalisp-sidebar-collapsed",
     "sidebar-collapsed",
     'href="/docs/foundation/"',
+    'href="/code/"',
+    'href="/playground/"',
     'href="/docs/sdl/"'
   ]) {
     assert.ok(docsBehavior.includes(marker) || overview.includes(marker), `missing ${marker}`);
   }
+});
+
+test("Code page renders only actual checked-in sources and an honest compiler boundary", async () => {
+  const page = await readFile(new URL("../code/index.html", import.meta.url), "utf8");
+  const behavior = await readFile(new URL("../src/code.ts", import.meta.url), "utf8");
+  const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url), "utf8");
+  const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
+
+  for (const marker of ["data-seed-source", "data-bootstrap-source", "Compiler source is not implemented", 'src="/src/code.ts"']) {
+    assert.ok(page.includes(marker), `Code page is missing ${marker}`);
+  }
+  assert.match(behavior, /bootstrap\.wat\?raw/);
+  assert.match(behavior, /fetch\("\/yalisp\/boot\.lisp"\)/);
+  assert.ok(wat.includes("(module"));
+  assert.ok(bootstrap.includes("(define"));
+  assert.doesNotMatch(page, /data-compiler-source/);
 });
 
 test("documentation resolves its theme before first paint", async () => {
