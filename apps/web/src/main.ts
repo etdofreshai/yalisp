@@ -8,8 +8,9 @@ const menuButton = document.querySelector<HTMLButtonElement>("[data-menu]");
 const header = document.querySelector<HTMLElement>("[data-header]");
 const copyButton = document.querySelector<HTMLButtonElement>("[data-copy]");
 const year = document.querySelector<HTMLElement>("[data-year]");
+const themeToggle = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
 
-if (!featureList || !code || !principleRow || !menuButton || !header || !copyButton || !year) {
+if (!featureList || !code || !principleRow || !menuButton || !header || !copyButton || !year || !themeToggle) {
   throw new Error("The YALisp landing page is missing a required UI element.");
 }
 
@@ -45,6 +46,26 @@ principleRow.innerHTML = principles
   .join("");
 
 year.textContent = new Date().getFullYear().toString();
+
+const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+
+function setTheme(theme: "light" | "dark") {
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem("yalisp-theme", theme);
+  const isDark = theme === "dark";
+  themeToggle!.setAttribute("aria-pressed", String(isDark));
+  themeToggle!.setAttribute("aria-label", `Switch to ${isDark ? "light" : "dark"} mode`);
+  themeToggle!.querySelector(".theme-toggle-icon")!.textContent = isDark ? "☀" : "◐";
+  themeToggle!.querySelector(".theme-toggle-label")!.textContent = isDark ? "Light" : "Dark";
+  if (themeColor) themeColor.content = isDark ? "#101310" : "#f0eeea";
+}
+
+const savedTheme = localStorage.getItem("yalisp-theme");
+setTheme(savedTheme === "light" ? "light" : "dark");
+
+themeToggle.addEventListener("click", () => {
+  setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+});
 
 menuButton.addEventListener("click", () => {
   const isOpen = header.classList.toggle("menu-open");
@@ -92,4 +113,3 @@ const observer = new IntersectionObserver(
 );
 
 document.querySelectorAll(".reveal-on-scroll").forEach((element) => observer.observe(element));
-

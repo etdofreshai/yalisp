@@ -10,9 +10,21 @@
   --ink: #f2f0e8;
   --muted: #aaa9a1;
   --line: rgba(242, 240, 232, 0.17);
+  --grid-line: rgba(242, 240, 232, 0.035);
   --acid: #c9f85a;
   --orange: #fa5b35;
   --night: #090b09;
+}
+
+:root[data-theme="light"] {
+  color: #20211e;
+  background: #f0eeea;
+  --paper: #f0eeea;
+  --ink: #20211e;
+  --muted: #74766f;
+  --line: rgba(32, 33, 30, 0.18);
+  --grid-line: rgba(32, 33, 30, 0.035);
+  --night: #181a17;
 }
 
 * {
@@ -28,8 +40,8 @@ body {
   min-width: 320px;
   overflow-x: hidden;
   background:
-    linear-gradient(rgba(242, 240, 232, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(242, 240, 232, 0.035) 1px, transparent 1px),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
     var(--paper);
   background-size: 48px 48px;
 }
@@ -70,6 +82,37 @@ button {
   justify-content: space-between;
   padding: 2rem 4vw;
   border-bottom: 1px solid var(--line);
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  font-family: "DM Mono", monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.theme-toggle-icon {
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 .brand {
@@ -641,6 +684,8 @@ footer p:last-child {
     background: transparent;
     cursor: pointer;
   }
+
+  .theme-toggle { padding: 0.65rem 0.75rem; }
 
   .menu-button span {
     display: block;

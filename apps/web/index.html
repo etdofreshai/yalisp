@@ -7,7 +7,7 @@
       name="description"
       content="YALisp is a small, readable Lisp built in TypeScript for curious programmers."
     />
-    <meta name="theme-color" content="#f0eeea" />
+    <meta name="theme-color" content="#101310" />
     <meta property="og:title" content="YALisp — Make the machine feel small again" />
     <meta
       property="og:description"
@@ -28,9 +28,15 @@
         <a href="#language">The language</a>
         <a class="nav-repo" href="https://github.com/etdofreshai/yalisp">GitHub <span aria-hidden="true">↗</span></a>
       </nav>
-      <button class="menu-button" type="button" aria-label="Toggle navigation" aria-expanded="false" data-menu>
-        <span></span><span></span>
-      </button>
+      <div class="header-controls">
+        <button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle>
+          <span class="theme-toggle-icon" aria-hidden="true">☀</span>
+          <span class="theme-toggle-label">Light</span>
+        </button>
+        <button class="menu-button" type="button" aria-label="Toggle navigation" aria-expanded="false" data-menu>
+          <span></span><span></span>
+        </button>
+      </div>
     </header>
 
     <main id="main">
@@ -125,4 +131,3 @@
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
-
