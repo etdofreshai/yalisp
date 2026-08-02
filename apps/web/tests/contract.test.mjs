@@ -93,3 +93,15 @@ test("foundation documentation explains the bootstrapping path", async () => {
     assert.ok(foundation.includes(marker), `missing ${marker}`);
   }
 });
+
+test("applications documentation uses the shared documentation shell", async () => {
+  const applications = await readFile(new URL("../docs/applications/index.html", import.meta.url), "utf8");
+  for (const marker of [
+    'class="docs-header"',
+    "data-docs-shell",
+    'class="docs-nav"',
+    'src="/src/docs.ts"'
+  ]) {
+    assert.ok(applications.includes(marker), `missing ${marker}`);
+  }
+});
