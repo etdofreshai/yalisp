@@ -25,13 +25,14 @@ test("interactive controls have TypeScript behavior", () => {
   assert.ok(source.includes('aria-expanded'));
 });
 
-test("documentation presents the three reference interfaces", async () => {
+test("documentation presents the four reference interfaces", async () => {
   const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
   for (const marker of [
     'id="reference-interfaces"',
     'id="assembly"',
     'id="system-interface"',
-    'id="host"'
+    'id="host"',
+    'id="sdl"'
   ]) {
     assert.ok(docs.includes(marker), `missing ${marker}`);
   }
@@ -56,7 +57,7 @@ test("documentation explains the bootstrapped core REPL", async () => {
 });
 
 test("each reference interface has a dedicated page", async () => {
-  for (const page of ["assembly", "system-interface", "host"]) {
+  for (const page of ["assembly", "system-interface", "host", "sdl"]) {
     const document = await readFile(new URL(`../docs/${page}/index.html`, import.meta.url), "utf8");
     assert.match(document, /normative YALisp/i);
   }
