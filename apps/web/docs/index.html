@@ -66,8 +66,20 @@
           </div>
           <p class="interface-note">Bootstrapping keeps the trusted base small: begin with the minimum low-level support required to run Lisp, then use Lisp to grow the compiler and the interactive environment. As the implementation matures, more of the language can live in YALisp rather than in a separate host runtime.</p>
         </section>
-        <section id="reference-interfaces">
+        <section id="foundation" class="interface-section">
           <p class="section-number">05</p>
+          <h2>Foundation</h2>
+          <p>YALisp grows from a small executable seed into a bootstrapped compiler and then practical applications. The overview gives the path; each stage has its own detailed reference.</p>
+          <div class="interface-map" aria-label="YALisp foundation documentation">
+            <a href="/docs/foundation/"><span>01</span><strong>Foundation</strong><small>The complete bootstrapping path</small></a>
+            <a href="/docs/seed/"><span>02</span><strong>Seed</strong><small>The minimal trusted runtime</small></a>
+            <a href="/docs/bootstrap/"><span>03</span><strong>Bootstrap</strong><small>Growing the language from Lisp</small></a>
+            <a href="/docs/compiler/"><span>04</span><strong>Compiler</strong><small>Interpreted, JIT, and ahead-of-time modes</small></a>
+            <a href="/docs/applications/"><span>05</span><strong>Applications</strong><small>Using the language in real tools</small></a>
+          </div>
+        </section>
+        <section id="reference-interfaces">
+          <p class="section-number">06</p>
           <h2>Reference interfaces</h2>
           <p>This documentation is the source of truth for YALisp interface contracts. The standard interface is organized as four layers. Each layer has a narrow job, so a program can be direct when it needs to be and portable when it can be.</p>
           <div class="interface-map" aria-label="The four YALisp reference interfaces">
@@ -78,7 +90,7 @@
           </div>
           <p class="interface-note">The <a href="/docs/foundation/">Foundation</a> page explains how the WebAssembly seed, bootstrap, and self-hosted compiler make these interfaces usable from YALisp.</p>
         </section>
-        <section id="assembly" class="interface-section">
+        <section hidden id="assembly" class="interface-section">
           <p class="section-number">05.1</p>
           <h2>Assembly</h2>
           <p>The assembly module is the direct translation layer. It exposes WebAssembly instructions to Lisp with as little policy or wrapping as possible. Use it when you need predictable low-level behavior. Its public names keep the WebAssembly shape: dots stay as dots and signedness suffixes become hyphenated Lisp names.</p>
@@ -97,7 +109,7 @@
           </div>
           <p class="interface-note">Naming follows the underlying WebAssembly operation where practical—for example, an integer addition is exposed through the assembly interface rather than hidden behind a separate runtime.</p>
         </section>
-        <section id="system-interface" class="interface-section">
+        <section hidden id="system-interface" class="interface-section">
           <p class="section-number">05.2</p>
           <h2>System interface</h2>
           <p>The system interface is built on the WebAssembly System Interface. It gives programs a portable way to work with the outside world without binding the language to one operating system.</p>
@@ -108,7 +120,7 @@
           </div>
           <p class="interface-note">This layer aims to track the WebAssembly system interface closely, so the same YALisp program can move between compatible runtimes with minimal adaptation.</p>
         </section>
-        <section id="host" class="interface-section">
+        <section hidden id="host" class="interface-section">
           <p class="section-number">05.3</p>
           <h2>Host</h2>
           <p>The host module covers the interactive capabilities that are intentionally outside the system interface: windows, rendering surfaces, input devices, audio, and browser-style document APIs.</p>
@@ -119,7 +131,7 @@
           </div>
           <p class="interface-note">Hosts may expose different backends, but their public YALisp surface should describe the same capabilities. Platform-specific extensions belong here, clearly marked as extensions.</p>
         </section>
-        <section id="sdl" class="interface-section">
+        <section hidden id="sdl" class="interface-section">
           <p class="section-number">05.4</p>
           <h2>SDL</h2>
           <p>SDL is the concrete multimedia profile for native YALisp programs. It supplies windows, accelerated 2D rendering, audio, input, and game-facing devices through a carefully scoped SDL 3 vocabulary.</p>
@@ -131,7 +143,7 @@
           <p class="interface-note">The SDL profile is an extension beneath the Host Interface, not a replacement for it. Portable editor and document code should target Host; native games, demos, and tools may explicitly require SDL.</p>
         </section>
         <section id="examples">
-          <p class="section-number">06</p>
+          <p class="section-number">07</p>
           <h2>Examples</h2>
           <p>Short programs to explore, change, and use as a starting point for your own experiments.</p>
         </section>

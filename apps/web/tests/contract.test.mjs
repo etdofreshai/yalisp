@@ -25,6 +25,19 @@ test("interactive controls have TypeScript behavior", () => {
   assert.ok(source.includes('aria-expanded'));
 });
 
+test("documentation navigation is shared and remembers its collapsed state", async () => {
+  const docsBehavior = await readFile(new URL("../src/docs.ts", import.meta.url), "utf8");
+  const overview = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  for (const marker of [
+    "yalisp-sidebar-collapsed",
+    "sidebar-collapsed",
+    'href="/docs/foundation/"',
+    'href="/docs/sdl/"'
+  ]) {
+    assert.ok(docsBehavior.includes(marker) || overview.includes(marker), `missing ${marker}`);
+  }
+});
+
 test("documentation presents the four reference interfaces", async () => {
   const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
   for (const marker of [
