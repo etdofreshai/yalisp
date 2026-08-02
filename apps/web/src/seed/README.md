@@ -31,8 +31,9 @@ Bootstrap stage. It adds real Lisp-written macros and functions including
 `reduce`, `append`, and structural equality.
 
 This intentionally does not claim garbage collection, language-level
-recoverable errors, modules, filesystem or DOM access, a compiler, JIT
-execution, or AOT execution.
+recoverable errors, modules, or filesystem or DOM access. The separate
+Lisp-written M1 compiler supports only the documented one-parameter integer
+arithmetic subset; it is not part of the seed itself.
 Curated web examples use a fresh instance so the seed's fixed bump-allocated
 heap remains bounded. The interpreter benchmark is also bounded and reports
 only measured interpreter execution. Heap, reader, and primitive type guards

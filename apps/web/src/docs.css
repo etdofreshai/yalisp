@@ -137,7 +137,10 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 .seed-benchmark > p:not(.section-number) { margin: 0 0 1rem; font-size: .86rem !important; line-height: 1.6 !important; }
 .seed-benchmark > button { width: 100%; padding: .75rem; }
 .seed-benchmark > button:disabled { cursor: wait; opacity: .55; }
-.seed-benchmark > output { display: block; min-height: 3.8rem; padding: .9rem; margin-top: .7rem; border: 1px solid var(--line); color: #c9f85a; font: .72rem/1.55 "DM Mono", monospace; }
+.seed-benchmark-results { display: grid; gap: .7rem; margin-top: .7rem; }
+.seed-benchmark-results article { min-width: 0; padding: .9rem; border: 1px solid var(--line); }
+.seed-benchmark-results strong { display: block; margin-bottom: .55rem; color: var(--ink); font-size: .78rem; font-weight: 500; }
+.seed-benchmark-results output { display: block; min-height: 3.3rem; overflow-wrap: anywhere; color: #c9f85a; font: .7rem/1.55 "DM Mono", monospace; }
 .seed-mode-grid { display: grid; gap: 1px; margin-top: .7rem; background: var(--line); }
 .seed-mode-grid span { display: block; padding: .8rem; background: var(--paper); }
 .seed-mode-grid strong, .seed-mode-grid small { display: block; }
@@ -146,6 +149,7 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 @media (min-width: 620px) {
   .seed-example-grid { grid-template-columns: 1fr 1fr; }
   .seed-mode-grid { grid-template-columns: repeat(3, 1fr); }
+  .seed-benchmark-results { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
   .docs-header { padding: 0 5vw; }

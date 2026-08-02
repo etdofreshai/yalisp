@@ -67,20 +67,22 @@ test("documentation navigation is shared and remembers its collapsed state", asy
   }
 });
 
-test("Code page renders only actual checked-in sources and an honest compiler boundary", async () => {
+test("Code page renders only actual checked-in seed, bootstrap, and compiler sources", async () => {
   const page = await readFile(new URL("../code/index.html", import.meta.url), "utf8");
   const behavior = await readFile(new URL("../src/code.ts", import.meta.url), "utf8");
   const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url), "utf8");
   const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
+  const compiler = await readFile(new URL("../public/yalisp/compiler.lisp", import.meta.url), "utf8");
 
-  for (const marker of ["data-seed-source", "data-bootstrap-source", "Compiler source is not implemented", 'src="/src/code.ts"']) {
+  for (const marker of ["data-seed-source", "data-bootstrap-source", "data-compiler-source", "signed 30-bit fixnum range", 'src="/src/code.ts"']) {
     assert.ok(page.includes(marker), `Code page is missing ${marker}`);
   }
   assert.match(behavior, /bootstrap\.wat\?raw/);
-  assert.match(behavior, /fetch\("\/yalisp\/boot\.lisp"\)/);
+  assert.match(behavior, /"\/yalisp\/boot\.lisp"/);
+  assert.match(behavior, /"\/yalisp\/compiler\.lisp"/);
   assert.ok(wat.includes("(module"));
   assert.ok(bootstrap.includes("(define"));
-  assert.doesNotMatch(page, /data-compiler-source/);
+  assert.ok(compiler.includes("(defn cc.compile"));
 });
 
 test("documentation resolves its theme before first paint", async () => {
@@ -147,7 +149,7 @@ test("documentation explains the executable interpreter and Lisp bootstrap", asy
   const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
   assert.ok(docs.includes('id="core-repl"'));
   assert.match(docs, /WAT interpreter extended by <code>boot\.lisp<\/code>/i);
-  assert.match(docs, /Compiler, JIT, and AOT stages remain future verified milestones/i);
+  assert.match(docs, /first bounded compiler now lowers a proven arithmetic subset/i);
 });
 
 test("language guide distinguishes evidenced syntax from planned features", async () => {
@@ -159,8 +161,8 @@ test("language guide distinguishes evidenced syntax from planned features", asyn
     assert.ok(docs.includes(marker), `language guide is missing ${marker}`);
   }
   assert.match(docs, /Module syntax is not implemented/);
-  assert.match(docs, /conceptual pipeline, not executable YALisp/);
-  assert.match(docs, /no callable <code>compile<\/code>, <code>apply<\/code>, or <code>eval<\/code> form is implemented/);
+  assert.match(docs, /This exact <code>cc\.compile<\/code> form is executed/);
+  assert.match(docs, /no general <code>apply<\/code> or <code>eval<\/code> function is exposed/);
 });
 
 test("each interface has a dedicated page", async () => {
@@ -215,7 +217,7 @@ test("seed and bootstrap docs link to the first-class executable Playground", as
   for (const marker of ['href="/playground/"', "real WebAssembly interpreter", "no simulated results"]) {
     assert.ok(seed.includes(marker), `seed page is missing ${marker}`);
   }
-  for (const marker of ['href="/playground/"', "boot.lisp", "Fibonacci", "JIT and AOT unavailable"]) {
+  for (const marker of ['href="/playground/"', "boot.lisp", "Fibonacci", "compiler.lisp", "interpreter, JIT, and AOT paths"]) {
     assert.ok(bootstrap.includes(marker), `bootstrap page is missing ${marker}`);
   }
   assert.ok(!seed.includes("data-bootstrap-demo"));

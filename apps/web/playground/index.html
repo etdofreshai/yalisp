@@ -29,7 +29,7 @@
       <section class="interface-section">
         <p class="section-number">Current boundary</p>
         <h2>Measured honestly.<br /><em>Limited explicitly.</em></h2>
-        <p>The current YALISP runtime is the interpreter generated from <code>bootstrap.wat</code> plus <code>boot.lisp</code>. Guarded reader, type, and heap failures report their kernel diagnostic and discard that run. JIT and AOT are shown as unavailable because their Lispish implementations have not been ported and verified here. The benchmark reports only real interpreter work performed after you tap Run.</p>
+        <p>The full gallery remains interpreted by the seed generated from <code>bootstrap.wat</code> plus <code>boot.lisp</code>. The compiler milestone is narrower: <code>compiler.lisp</code> lowers one-parameter integer expressions built from binary <code>+</code>, <code>-</code>, and <code>*</code>. The benchmark compares that exact supported workload through the interpreter, a fresh browser JIT module, and the compiler-produced AOT artifact. It does not imply that arbitrary gallery programs compile.</p>
       </section>
     </main>
     <script type="module" src="/src/playground.ts"></script>

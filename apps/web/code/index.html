@@ -28,7 +28,7 @@
           <div class="code-index" aria-label="Source index">
             <a href="#seed-source"><span>01</span><strong>WebAssembly seed · bootstrap.wat</strong></a>
             <a href="#bootstrap-source"><span>02</span><strong>Lisp bootstrap · boot.lisp</strong></a>
-            <a href="#compiler-source"><span>03</span><strong>Compiler · current status</strong></a>
+            <a href="#compiler-source"><span>03</span><strong>Lisp compiler · compiler.lisp</strong></a>
           </div>
         </section>
         <section id="seed-source" class="interface-section">
@@ -51,10 +51,12 @@
         </section>
         <section id="compiler-source" class="interface-section">
           <p class="section-number">03 / Compiler</p>
-          <h2>No source<br /><em>before its time.</em></h2>
-          <div class="code-unavailable">
-            <strong>Compiler source is not implemented</strong>
-            <p>YALISP currently interprets its seed and bootstrap. There is no checked-in YALISP compiler source or verified compiled execution path to display yet; this section will show the real source only after that milestone exists.</p>
+          <h2>Lisp lowers<br /><em>a proven subset.</em></h2>
+          <p>This compiler is evaluated by the YALISP seed after <code>boot.lisp</code>. It lowers one-parameter integer functions made from binary <code>+</code>, <code>-</code>, and <code>*</code> expressions to a WebAssembly function payload. Unsupported forms return <code>nil</code> and remain interpreted.</p>
+          <p class="interface-note">The supported subset is intentionally small. Equivalence is verified only while values stay within the seed's signed 30-bit fixnum range. This is not yet a general compiler or self-hosting system.</p>
+          <div class="code-source">
+            <div class="code-source-header"><span>apps/web/public/yalisp/compiler.lisp</span><a href="https://github.com/etdofreshai/yalisp/blob/main/apps/web/public/yalisp/compiler.lisp">GitHub ↗</a></div>
+            <pre tabindex="0"><code data-compiler-source>Loading checked-in compiler source…</code></pre>
           </div>
         </section>
       </main>

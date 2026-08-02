@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build-seed": "node scripts/build-seed.mjs",
+    "build-seed": "node scripts/build-seed.mjs && node scripts/build-aot.mjs",
     "prebuild": "npm run build-seed",
     "predev": "npm run build-seed",
     "pretest": "npm run build-seed",

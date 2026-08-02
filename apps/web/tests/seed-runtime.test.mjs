@@ -143,19 +143,23 @@ test("fixed input and heap limits fail truthfully instead of crossing WebAssembl
   assert.match(exhaustion.message, /unreachable/);
 });
 
-test("bounded benchmark workload performs actual interpreter evaluations", async () => {
+test("bounded benchmark workload performs actual interpreter evaluations and exposes verified compiled paths", async () => {
   const session = await createSession();
   session.evaluateQuietly("(define benchmark-step (lambda (x) (+ (* x x) 1)))");
   let result = "";
   for (let index = 0; index < 1000; index += 1) result = session.evaluate("(benchmark-step 21)");
   assert.equal(result, "442");
-  assert.match(uiSource, /const benchmarkIterations = 1000/);
-  assert.match(uiSource, /const benchmarkChunkSize = 50/);
+  assert.match(uiSource, /const benchmarkIterations = 20000/);
+  assert.match(uiSource, /const benchmarkChunkSize = 1000/);
   assert.match(uiSource, /performance\.now\(\)/);
   assert.match(uiSource, /requestAnimationFrame/);
   assert.match(uiSource, /const diagnostic = output/);
   assert.match(uiSource, /WebAssembly trap; this fresh session was discarded/);
   assert.match(uiSource, /source exceeds the seed's/);
-  assert.match(uiSource, /JIT<\/strong><small>Unavailable/);
-  assert.match(uiSource, /AOT<\/strong><small>Unavailable/);
+  assert.match(uiSource, /prepareJitRunner/);
+  assert.match(uiSource, /cc\.compile/);
+  assert.match(uiSource, /aot-benchmark\.wasm/);
+  assert.match(uiSource, /Run interpreter \+ JIT \+ AOT/);
+  assert.match(uiSource, /JIT preparation includes the Lisp-written compiler/);
+  assert.match(uiSource, /AOT uses the checked-in artifact/);
 });
