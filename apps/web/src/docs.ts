@@ -51,9 +51,9 @@ function setSidebarCollapsed(collapsed: boolean) {
 setSidebarCollapsed(localStorage.getItem("yalisp-sidebar-collapsed") === "true");
 sidebarToggle.addEventListener("click", () => setSidebarCollapsed(!shell!.classList.contains("sidebar-collapsed")));
 
-function setTheme(theme: "light" | "dark") {
+function setTheme(theme: "light" | "dark", persist = false) {
   document.documentElement.dataset.theme = theme;
-  localStorage.setItem("yalisp-theme", theme);
+  if (persist) localStorage.setItem("yalisp-theme", theme);
   const isDark = theme === "dark";
   themeToggle!.setAttribute("aria-pressed", String(isDark));
   themeToggle!.setAttribute("aria-label", `Switch to ${isDark ? "light" : "dark"} mode`);
@@ -62,10 +62,10 @@ function setTheme(theme: "light" | "dark") {
   if (themeColor) themeColor.content = isDark ? "#101310" : "#f0eeea";
 }
 
-setTheme(localStorage.getItem("yalisp-theme") === "light" ? "light" : "dark");
+setTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
 
 themeToggle.addEventListener("click", () => {
-  setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+  setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true);
 });
 
 menuButton.addEventListener("click", () => {

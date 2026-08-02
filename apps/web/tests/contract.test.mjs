@@ -38,6 +38,26 @@ test("documentation navigation is shared and remembers its collapsed state", asy
   }
 });
 
+test("documentation resolves its theme before first paint", async () => {
+  const themeBootstrap = await readFile(new URL("../public/theme-init.js", import.meta.url), "utf8");
+  const docsBehavior = await readFile(new URL("../src/docs.ts", import.meta.url), "utf8");
+  const pages = ["", "applications/", "assembly/", "bootstrap/", "compiler/", "foundation/", "host/", "sdl/", "seed/", "system-interface/"];
+
+  assert.ok(themeBootstrap.includes("prefers-color-scheme: light"));
+  assert.ok(themeBootstrap.includes('localStorage.getItem("yalisp-theme")'));
+  assert.ok(docsBehavior.includes("document.documentElement.dataset.theme"));
+  assert.ok(docsBehavior.includes("setTheme(document.documentElement.dataset.theme"));
+
+  for (const page of pages) {
+    const document = await readFile(new URL(`../docs/${page}index.html`, import.meta.url), "utf8");
+    const bootstrap = document.indexOf("data-theme-bootstrap");
+    const initializer = document.indexOf('src="/theme-init.js"');
+    const body = document.indexOf("<body>");
+    assert.ok(bootstrap !== -1 && bootstrap < body, `theme canvas is not initialized in ${page || "docs/"}`);
+    assert.ok(initializer !== -1 && initializer < body, `theme preference is not initialized in ${page || "docs/"}`);
+  }
+});
+
 test("documentation presents the four reference interfaces", async () => {
   const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
   for (const marker of [
