@@ -11,6 +11,10 @@ test("landing page exposes its essential semantic and social contracts", () => {
     'id="why"',
     'id="language"',
     'href="/playground/"',
+    'class="nav-playground"',
+    'class="rail-status"',
+    'data-theme-bootstrap',
+    'src="/theme-init.js"',
     "https://github.com/etdofreshai/yalisp",
     'data-features',
     'data-code',
@@ -36,6 +40,15 @@ test("interactive controls have TypeScript behavior", () => {
   assert.ok(source.includes('navigator.clipboard.writeText'));
   assert.ok(source.includes('IntersectionObserver'));
   assert.ok(source.includes('aria-expanded'));
+  assert.ok(source.includes('document.documentElement.dataset.theme'));
+});
+
+test("landing shell provides a persistent desktop rail and responsive mobile navigation", async () => {
+  const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(styles, /--rail-width:/);
+  assert.match(styles, /\.site-header\s*\{[\s\S]*position: fixed/);
+  assert.match(styles, /main,\s*\nfooter\s*\{\s*margin-left: var\(--rail-width\)/);
+  assert.match(styles, /@media \(max-width: 900px\)[\s\S]*main,\s*\n\s*footer \{ margin-left: 0; \}/);
 });
 
 test("documentation navigation is shared and remembers its collapsed state", async () => {

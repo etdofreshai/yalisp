@@ -60,8 +60,7 @@ function setTheme(theme: "light" | "dark") {
   if (themeColor) themeColor.content = isDark ? "#101310" : "#f0eeea";
 }
 
-const savedTheme = localStorage.getItem("yalisp-theme");
-setTheme(savedTheme === "light" ? "light" : "dark");
+setTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");
 
 themeToggle.addEventListener("click", () => {
   setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
