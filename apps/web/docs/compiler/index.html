@@ -24,7 +24,7 @@
           </div>
           <p class="interface-note"><a href="/playground/">Run the measured comparison in the Playground.</a> It reports interpreter preparation/run time, JIT compilation preparation separately from run time, and AOT browser preparation separately from run time. Every displayed number is measured after the visitor taps Run.</p>
         </section>
-        <section id="source" class="interface-section">
+        <section id="supported-subset" class="interface-section">
           <p class="section-number">01 / Supported subset</p>
           <h2>Small enough<br /><em>to prove.</em></h2>
           <div class="reference-grid">
@@ -34,7 +34,7 @@
           </div>
           <p class="interface-note">Equivalence is guaranteed only while inputs and intermediate results stay in the seed's signed 30-bit fixnum range. This milestone is not a general YALISP compiler, module system, or self-hosting compiler.</p>
         </section>
-        <section class="interface-section">
+        <section id="source" class="interface-section">
           <p class="section-number">02 / Source</p>
           <h2>Inspect the<br /><em>actual compiler.</em></h2>
           <p>The compiler is adapted from Lispish's integer lowering design at commit <code>b7214f1</code>, while retaining YALISP's smaller current runtime boundary.</p>

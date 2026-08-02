@@ -1,22 +1,29 @@
 .project-navigation { display: flex; flex: 1; min-width: 0; min-height: 0; flex-direction: column; }
-.project-nav-label { margin: 0 0 .8rem; color: var(--muted); font: .6rem/1.4 "DM Mono", monospace; letter-spacing: .09em; text-transform: uppercase; }
+.project-nav-label { margin: 0 0 .8rem; padding-left: .2rem; color: var(--muted); font: .6rem/1.4 "DM Mono", monospace; letter-spacing: .09em; text-align: left; text-transform: uppercase; }
 .project-nav { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .project-nav ul { padding: 0; margin: 0; list-style: none; }
 .project-nav-tree { display: grid; gap: .12rem; }
 .project-nav-tree > li { min-width: 0; }
-.project-nav-link { display: flex; min-width: 0; align-items: center; gap: .65rem; border-radius: 1px; transition: background 160ms ease, color 160ms ease; }
+.project-nav-link { display: flex; min-width: 0; min-height: 2.25rem; align-items: center; justify-content: flex-start; gap: .4rem; border-radius: 1px; text-align: left; transition: background 160ms ease, color 160ms ease; }
 .project-nav-link:hover, .project-nav-link.active { background: color-mix(in srgb, var(--ink) 10%, transparent); }
-.project-nav-page, .project-nav-section-link { padding: .48rem .58rem; color: var(--ink); font-size: .78rem; font-weight: 500; line-height: 1.25; }
+.project-nav-page, .project-nav-section-link { padding: .42rem .35rem .42rem .2rem; color: var(--ink); font-size: .78rem; font-weight: 500; line-height: 1.25; }
 .project-nav-section-link { color: var(--muted); font-family: "DM Mono", monospace; font-size: .7rem; font-weight: 400; }
-.project-nav-stage > .project-nav-page, .project-nav-stage > .project-nav-section-link { display: grid; grid-template-columns: 1.55rem minmax(0, 1fr); }
+.project-nav-stage > .project-nav-page, .project-nav-stage > .project-nav-section-link { display: grid; grid-template-columns: 1.7rem minmax(0, 1fr); }
 .project-nav-index { color: var(--muted); font: .56rem/1 "DM Mono", monospace; letter-spacing: .04em; }
+.project-nav-subindex { color: var(--muted); font: .52rem/1 "DM Mono", monospace; letter-spacing: .02em; white-space: nowrap; }
 .project-nav-context > .project-nav-page, .project-nav-overview > .project-nav-page { color: var(--muted); font-size: .69rem; font-family: "DM Mono", monospace; font-weight: 400; }
 .project-nav-children { margin: .08rem 0 .3rem !important; }
-.project-nav-page-child { padding: .38rem .58rem .38rem 2.22rem; color: var(--ink); font: 500 .7rem/1.3 "DM Mono", monospace; }
-.project-nav-anchor { padding: .23rem .58rem .23rem 2.22rem; color: var(--muted); font: 400 .6rem/1.35 "DM Mono", monospace; }
-.project-nav-anchor span { color: color-mix(in srgb, var(--muted) 60%, transparent); }
-.project-nav-page-list .project-nav-anchor { padding-left: 3rem; }
+.project-nav-page-child { display: grid; grid-template-columns: max-content minmax(0, 1fr); padding: .32rem .35rem .32rem .8rem; color: var(--ink); font: 500 .7rem/1.3 "DM Mono", monospace; column-gap: .55rem; }
+.project-nav-anchor { display: grid; min-height: 1.9rem; grid-template-columns: .65rem minmax(0, 1fr); padding: .24rem .35rem .24rem .8rem; color: var(--muted); font: 400 .6rem/1.35 "DM Mono", monospace; }
+.project-nav-anchor.has-number { grid-template-columns: max-content minmax(0, 1fr); column-gap: .55rem; }
+.project-nav-anchor .project-nav-subindex { color: color-mix(in srgb, var(--muted) 68%, transparent); }
+.project-nav-page-list .project-nav-anchor { padding-left: 1.2rem; }
 .project-nav-utility { padding-top: .55rem; margin-top: .45rem; border-top: 1px solid var(--line); }
 .project-nav-playground { color: #c9f85a; font-family: "DM Mono", monospace; }
-.project-nav-source { display: inline-flex; width: fit-content; margin-top: 1rem; color: var(--muted); font: .64rem/1.4 "DM Mono", monospace; }
+.project-nav-source { display: inline-flex; width: fit-content; margin: 1rem 0 0 .2rem; color: var(--muted); font: .64rem/1.4 "DM Mono", monospace; }
 .project-nav-source:hover { color: var(--ink); }
+
+@media (max-width: 760px) {
+  .project-nav-link { min-height: 2.6rem; }
+  .project-nav-anchor { min-height: 2.5rem; }
+}

@@ -91,7 +91,7 @@ button {
 .site-header.menu-open {
   width: var(--rail-width);
   align-items: stretch;
-  padding: 2rem 1.5rem 1.5rem;
+  padding: 2rem .75rem 1.5rem 1rem;
 }
 
 .header-controls {
@@ -789,7 +789,7 @@ footer p:last-child {
     left: 0;
     display: none;
     max-height: calc(100svh - 76px);
-    padding: 1.5rem 5vw;
+    padding: 1.5rem 1rem 1.5rem 1.25rem;
     border-bottom: 1px solid var(--line);
     background: var(--paper);
     overflow: hidden;

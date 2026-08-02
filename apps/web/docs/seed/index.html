@@ -15,7 +15,7 @@
         <p class="lede">The YALISP seed is a real WebAssembly interpreter assembled from checked-in WAT. It reads S-expressions, evaluates a deliberately small language, and prints actual results in the browser.</p>
         <p class="interface-note">This implementation is derived from the verified M9 seed in <a href="https://github.com/ETdoFreshAI/lispish/tree/c78a2be/boot">Lispish commit c78a2be</a>. YALISP keeps that seed boundary: one <code>host.write</code> import, a fixed four-page memory, and no simulated results.</p>
       </section>
-      <section class="interface-section">
+      <section id="supported-surface" class="interface-section">
         <p class="section-number">01 / Supported surface</p><h2>Enough Lisp<br /><em>to grow Lisp.</em></h2>
         <div class="reference-grid"><article><code>values</code><h3>Small tagged model</h3><p>Integers, booleans, nil, symbols, strings, pairs, closures, macros, and primitives live in WebAssembly memory.</p></article><article><code>forms</code><h3>Seven evaluator forms</h3><p><code>quote</code>, <code>if</code>, <code>lambda</code>, <code>macro</code>, <code>define</code>, <code>set!</code>, and <code>begin</code> are implemented by the seed.</p></article><article><code>primitives</code><h3>Lists, numbers, and strings</h3><p>Cons cells, arithmetic, comparisons, type predicates, and a small string surface are available before bootstrap.</p></article></div>
         <p class="interface-note">The seed does not provide garbage collection, recoverable errors, modules, system or DOM access, or compilation. Each gallery run starts a fresh bounded instance.</p>
@@ -28,7 +28,7 @@
           <pre tabindex="0"><code data-seed-source>Loading checked-in WAT source…</code></pre>
         </div>
       </section>
-      <section class="interface-section">
+      <section id="live-seed" class="interface-section">
         <p class="section-number">03 / Live seed</p><h2>Tap a form.<br /><em>Run the real evaluator.</em></h2>
         <p>The Playground lets you switch between Seed and Bootstrap so the additional Lisp-written capabilities remain visible without turning this explanation into the application itself.</p>
         <p class="interface-note"><a href="/playground/">Open the YALISP Playground</a> to run Seed and Bootstrap examples side by side and measure the real interpreter.</p>

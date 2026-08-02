@@ -86,11 +86,68 @@ test("landing and inner pages mount the same semantic navigation with different 
   assert.match(navStyles, /\.project-nav-anchor[^}]*color: var\(--muted\)/);
   assert.match(navStyles, /\.project-nav-section-link[^}]*color: var\(--muted\)/);
   assert.match(navStyles, /\.project-nav-page-child[^}]*font: 500/);
+  assert.match(navStyles, /\.project-nav-link[^}]*justify-content: flex-start/);
+  assert.match(navStyles, /\.project-nav-link[^}]*text-align: left/);
+  assert.match(navStyles, /\.project-nav-link[^}]*min-height: 2\.25rem/);
   assert.ok(source.includes('initialState: "collapsed"'));
   assert.ok(docsBehavior.includes('initialState: "expanded"'));
   assert.ok(docsBehavior.includes("setSidebarCollapsed(false)"));
   assert.ok(playgroundBehavior.includes('import "./docs"'));
   assert.ok(!navigation.includes('href="/code/"'), "shared navigation still advertises the retired Code destination");
+});
+
+test("sidebar nested numbers mirror printed page section numbers without inventing them", async () => {
+  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const seed = await readFile(new URL("../docs/seed/index.html", import.meta.url), "utf8");
+  const bootstrap = await readFile(new URL("../docs/bootstrap/index.html", import.meta.url), "utf8");
+  const compiler = await readFile(new URL("../docs/compiler/index.html", import.meta.url), "utf8");
+  const system = await readFile(new URL("../docs/system-interface/index.html", import.meta.url), "utf8");
+  const dom = await readFile(new URL("../docs/dom/index.html", import.meta.url), "utf8");
+  const sdl = await readFile(new URL("../docs/sdl/index.html", import.meta.url), "utf8");
+
+  for (const [document, hash, printed, nested] of [
+    [seed, "supported-surface", "01 / Supported surface", "01.01"],
+    [seed, "source", "02 / Checked-in source", "01.02"],
+    [seed, "live-seed", "03 / Live seed", "01.03"],
+    [bootstrap, "source", "01 / Checked-in source", "02.01"],
+    [bootstrap, "live-bootstrap", "02 / Live bootstrap", "02.02"],
+    [bootstrap, "compiler-status", "03 / Compiler status", "02.03"],
+    [compiler, "supported-subset", "01 / Supported subset", "03.01"],
+    [compiler, "source", "02 / Source", "03.02"],
+    [system, "profiles", "04 / Profiles", "05.02.04"],
+    [dom, "extension-safety", "06 / Extension safety", "05.03.06"],
+    [sdl, "profiles", "06 / Profiles and boundaries", "05.04.06"]
+  ]) {
+    assert.ok(document.includes(`id="${hash}"`), `${hash} is not a real section target`);
+    assert.ok(document.includes(printed), `${hash} is missing its printed section number`);
+    assert.ok(navigation.includes(`["${hash}",`), `${hash} is absent from the shared tree`);
+    assert.ok(navigation.includes(`"${nested}"]`), `${hash} is missing nested number ${nested}`);
+  }
+
+  for (const [hash, printed] of [["introduction", "01"], ["getting-started", "02"], ["language", "03"], ["core-repl", "04"], ["examples", "08"]]) {
+    assert.ok(docs.includes(`id="${hash}"`));
+    assert.ok(docs.includes(`<p class="section-number">${printed}</p>`));
+    assert.ok(navigation.includes(`"${hash}",`));
+  }
+
+  for (const marker of [
+    '<span class="project-nav-subindex">05.01</span><span>Assembly</span>',
+    '<span class="project-nav-subindex">05.02</span><span>System interface</span>',
+    '<span class="project-nav-subindex">05.03</span><span>DOM</span>',
+    '<span class="project-nav-subindex">05.04</span><span>SDL</span>'
+  ]) assert.ok(navigation.includes(marker), `missing numbered interface child ${marker}`);
+
+  assert.ok(navigation.includes('anchorLink("/", "why", "Why YALisp")'));
+  assert.ok(navigation.includes('["assembly", "Assembly overview"]'));
+  assert.ok(navigation.includes('number ? "" : \' aria-hidden="true"\''), "numbered subsection labels should remain in accessible link names");
+});
+
+test("expanded rails use their width while keeping navigation aligned left", async () => {
+  const docsStyles = await readFile(new URL("../src/docs.css", import.meta.url), "utf8");
+  const landingStyles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
+  assert.match(docsStyles, /grid-template-columns: clamp\(250px, 22vw, 310px\)/);
+  assert.match(docsStyles, /\.docs-nav[^}]*padding: 3\.5rem \.65rem 1\.5rem \.9rem/);
+  assert.match(landingStyles, /\.site-header\.menu-open[^}]*padding: 2rem \.75rem 1\.5rem 1rem/);
 });
 
 test("documentation and Playground shells provide hosts for the common project tree", async () => {

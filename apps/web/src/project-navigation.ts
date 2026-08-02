@@ -6,30 +6,43 @@ type NavigationOptions = {
   navigationId: string;
 };
 
-const pageAnchors: Record<string, Array<[string, string]>> = {
-  "/docs/seed/": [["source", "Checked-in source"]],
-  "/docs/bootstrap/": [["source", "Checked-in source"]],
-  "/docs/compiler/": [["source", "Checked-in source"]],
+const pageAnchors: Record<string, Array<[string, string, string?]>> = {
+  "/docs/seed/": [
+    ["supported-surface", "Supported surface", "01.01"],
+    ["source", "Checked-in source", "01.02"],
+    ["live-seed", "Live seed", "01.03"]
+  ],
+  "/docs/bootstrap/": [
+    ["source", "Checked-in source", "02.01"],
+    ["live-bootstrap", "Live bootstrap", "02.02"],
+    ["compiler-status", "Compiler status", "02.03"]
+  ],
+  "/docs/compiler/": [
+    ["supported-subset", "Supported subset", "03.01"],
+    ["source", "Source", "03.02"]
+  ],
   "/docs/assembly/": [["assembly", "Assembly overview"]],
   "/docs/system-interface/": [
-    ["model", "Model"],
-    ["interfaces", "Functions"],
-    ["contracts", "Contracts"],
-    ["profiles", "Profiles"]
+    ["model", "Model", "05.02.01"],
+    ["interfaces", "Portable interfaces", "05.02.02"],
+    ["contracts", "Contract rules", "05.02.03"],
+    ["profiles", "Profiles", "05.02.04"]
   ],
   "/docs/dom/": [
-    ["architecture", "Architecture"],
-    ["application-root", "Application root"],
-    ["documents", "Documents"],
-    ["rendering", "Rendering"],
-    ["events", "Events"]
+    ["architecture", "Boundary", "05.03.01"],
+    ["application-root", "Application root", "05.03.02"],
+    ["documents", "Documents and commands", "05.03.03"],
+    ["rendering", "Rendering", "05.03.04"],
+    ["events", "Input and lifecycle", "05.03.05"],
+    ["extension-safety", "Extension safety", "05.03.06"]
   ],
   "/docs/sdl/": [
-    ["model", "Model"],
-    ["video-render", "2D graphics"],
-    ["audio", "Audio"],
-    ["input", "Input"],
-    ["gpu-3d", "3D and GPU"]
+    ["model", "Model", "05.04.01"],
+    ["video-render", "2D graphics", "05.04.02"],
+    ["audio", "Audio", "05.04.03"],
+    ["input", "Input and devices", "05.04.04"],
+    ["gpu-3d", "3D and GPU", "05.04.05"],
+    ["profiles", "Profiles and boundaries", "05.04.06"]
   ]
 };
 
@@ -42,16 +55,16 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
     const active = currentPath === path;
     return `<a class="project-nav-link project-nav-page${extraClass}${active ? " active" : ""}" href="${path}"${active ? ' aria-current="page"' : ""}>${label}</a>`;
   };
-  const anchorLink = (path: string, hash: string, label: string) => {
+  const anchorLink = (path: string, hash: string, label: string, number?: string) => {
     const active = currentPath === path && currentHash === `#${hash}`;
-    return `<a class="project-nav-link project-nav-anchor${active ? " active" : ""}" href="${path}#${hash}"${active ? ' aria-current="location"' : ""}><span aria-hidden="true">#</span>${label}</a>`;
+    return `<a class="project-nav-link project-nav-anchor${number ? " has-number" : ""}${active ? " active" : ""}" href="${path}#${hash}"${active ? ' aria-current="location"' : ""}><span class="project-nav-subindex"${number ? "" : ' aria-hidden="true"'}>${number ?? "#"}</span><span>${label}</span></a>`;
   };
   const currentPageAnchors = (path: string) => {
     if (currentPath !== path) return "";
     const anchors = pageAnchors[path] ?? [];
     if (!anchors.length) return "";
     return `<ul class="project-nav-children project-nav-anchor-list">${anchors
-      .map(([hash, label]) => `<li>${anchorLink(path, hash, label)}</li>`)
+      .map(([hash, label, number]) => `<li>${anchorLink(path, hash, label, number)}</li>`)
       .join("")}</ul>`;
   };
 
@@ -71,10 +84,11 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
           <li class="project-nav-overview">
             ${pageLink("/docs/", "Documentation overview")}
             <ul class="project-nav-children project-nav-anchor-list">
-              <li>${anchorLink("/docs/", "introduction", "Introduction")}</li>
-              <li>${anchorLink("/docs/", "getting-started", "Getting started")}</li>
-              <li>${anchorLink("/docs/", "language", "Language guide")}</li>
-              <li>${anchorLink("/docs/", "examples", "Examples")}</li>
+              <li>${anchorLink("/docs/", "introduction", "Introduction", "01")}</li>
+              <li>${anchorLink("/docs/", "getting-started", "Getting started", "02")}</li>
+              <li>${anchorLink("/docs/", "language", "Language guide", "03")}</li>
+              <li>${anchorLink("/docs/", "core-repl", "REPL that grows into a compiler", "04")}</li>
+              <li>${anchorLink("/docs/", "examples", "Examples", "08")}</li>
             </ul>
           </li>
           <li class="project-nav-context">${pageLink("/docs/foundation/", "Foundation overview")}</li>
@@ -96,10 +110,10 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
           <li class="project-nav-stage project-nav-interface-group">
             <a class="project-nav-link project-nav-section-link" href="/docs/#reference-interfaces"><span class="project-nav-index">05</span><span>Interfaces</span></a>
             <ul class="project-nav-children project-nav-page-list">
-              <li>${pageLink("/docs/assembly/", "Assembly", " project-nav-page-child")}${currentPageAnchors("/docs/assembly/")}</li>
-              <li>${pageLink("/docs/system-interface/", "System interface", " project-nav-page-child")}${currentPageAnchors("/docs/system-interface/")}</li>
-              <li>${pageLink("/docs/dom/", "DOM", " project-nav-page-child")}${currentPageAnchors("/docs/dom/")}</li>
-              <li>${pageLink("/docs/sdl/", "SDL", " project-nav-page-child")}${currentPageAnchors("/docs/sdl/")}</li>
+              <li>${pageLink("/docs/assembly/", '<span class="project-nav-subindex">05.01</span><span>Assembly</span>', " project-nav-page-child")}${currentPageAnchors("/docs/assembly/")}</li>
+              <li>${pageLink("/docs/system-interface/", '<span class="project-nav-subindex">05.02</span><span>System interface</span>', " project-nav-page-child")}${currentPageAnchors("/docs/system-interface/")}</li>
+              <li>${pageLink("/docs/dom/", '<span class="project-nav-subindex">05.03</span><span>DOM</span>', " project-nav-page-child")}${currentPageAnchors("/docs/dom/")}</li>
+              <li>${pageLink("/docs/sdl/", '<span class="project-nav-subindex">05.04</span><span>SDL</span>', " project-nav-page-child")}${currentPageAnchors("/docs/sdl/")}</li>
             </ul>
           </li>
           <li class="project-nav-stage">
