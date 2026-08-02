@@ -12,8 +12,7 @@ COPY packages ./packages
 
 EXPOSE 5173
 
-HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -q --spider http://127.0.0.1:5173/ || exit 1
+HEALTHCHECK NONE
 
 CMD ["npm", "run", "dev", "--workspace", "@yalisp/web", "--", "--port", "5173", "--strictPort"]
 
