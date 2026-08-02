@@ -48,6 +48,12 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 .reference-grid article { padding: 1.5rem; background: var(--paper); }
 .reference-grid h3 { margin: .8rem 0 .55rem; font-size: 1rem; font-weight: 500; letter-spacing: -.025em; }
 .reference-grid p { margin: 0; font-size: .9rem !important; line-height: 1.65 !important; }
+.interface-catalog { display: grid; gap: 1px; margin-top: 1.5rem; border: 1px solid var(--line); background: var(--line); }
+.interface-catalog article { padding: 1.25rem 1.5rem; background: var(--paper); }
+.interface-catalog h3 { margin: 0 0 .65rem; font-size: .92rem; font-weight: 500; }
+.interface-catalog p { max-width: none !important; margin: 0; color: var(--ink) !important; font-family: "DM Mono", monospace; font-size: .7rem !important; line-height: 1.8 !important; }
+.interface-catalog code { color: #fa5b35; }
+.interface-catalog small { display: block; margin-top: .7rem; color: var(--muted); font-size: .82rem; line-height: 1.5; }
 .interface-note { padding: 1.2rem 1.3rem; margin-top: 1.5rem; border-left: 2px solid #fa5b35; background: color-mix(in srgb, #fa5b35 7%, transparent); font-size: .92rem !important; }
 @media (max-width: 760px) {
   .docs-header { padding: 0 5vw; }

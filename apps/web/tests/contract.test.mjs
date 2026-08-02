@@ -37,6 +37,18 @@ test("documentation presents the three reference interfaces", async () => {
   }
 });
 
+test("assembly documentation exposes its primary instruction groups", async () => {
+  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  for (const marker of [
+    "assembly.i32.add",
+    "assembly.memory.grow",
+    "assembly.v128.load",
+    "assembly.type"
+  ]) {
+    assert.ok(docs.includes(marker), `missing ${marker}`);
+  }
+});
+
 test("documentation explains the bootstrapped core REPL", async () => {
   const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
   assert.ok(docs.includes('id="core-repl"'));

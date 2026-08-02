@@ -68,7 +68,7 @@
         <section id="reference-interfaces">
           <p class="section-number">05</p>
           <h2>Reference interfaces</h2>
-          <p>The standard interface is organized as three layers. Each layer has a narrow job, so a program can be direct when it needs to be and portable when it can be.</p>
+          <p>This documentation is the source of truth for YALisp interface contracts. The standard interface is organized as three layers. Each layer has a narrow job, so a program can be direct when it needs to be and portable when it can be.</p>
           <div class="interface-map" aria-label="The three YALisp reference interfaces">
             <a href="#assembly"><span>01</span><strong>Assembly</strong><small>WebAssembly primitives</small></a>
             <a href="#system-interface"><span>02</span><strong>System interface</strong><small>Portable system services</small></a>
@@ -78,11 +78,19 @@
         <section id="assembly" class="interface-section">
           <p class="section-number">05.1</p>
           <h2>Assembly</h2>
-          <p>The assembly module is the direct translation layer. It exposes WebAssembly instructions to Lisp with as little policy or wrapping as possible. Use it when you need predictable low-level behavior.</p>
+          <p>The assembly module is the direct translation layer. It exposes WebAssembly instructions to Lisp with as little policy or wrapping as possible. Use it when you need predictable low-level behavior. Its public names keep the WebAssembly shape: dots stay as dots and signedness suffixes become hyphenated Lisp names.</p>
           <div class="reference-grid">
-            <article><code>numeric</code><h3>Integer and floating-point operations</h3><p>Arithmetic, comparisons, conversions, and bit-level operations map directly to WebAssembly numeric instructions.</p></article>
-            <article><code>memory</code><h3>Linear memory</h3><p>Load, store, size, and growth operations make WebAssembly memory explicit and available to Lisp code.</p></article>
             <article><code>control</code><h3>Control flow</h3><p>Blocks, branches, calls, and return values provide the small set of primitives required to construct compiled control flow.</p></article>
+            <article><code>memory</code><h3>Linear memory</h3><p>Load, store, size, growth, fill, copy, and initialization make WebAssembly memory explicit and available to Lisp code.</p></article>
+            <article><code>numeric</code><h3>Numeric instructions</h3><p>Integer and floating-point arithmetic, comparisons, conversions, and bit-level operations map directly to WebAssembly numeric instructions.</p></article>
+          </div>
+          <div class="interface-catalog" aria-label="Assembly interface groups">
+            <article><h3>Control and references</h3><p><code>assembly.block</code>, <code>assembly.if</code>, <code>assembly.br-if</code>, <code>assembly.call</code>, <code>assembly.ref.null</code></p><small>Build structured control flow and work with WebAssembly references.</small></article>
+            <article><h3>Locals, globals, and tables</h3><p><code>assembly.local.get</code>, <code>assembly.global.set</code>, <code>assembly.table.grow</code>, <code>assembly.table.copy</code></p><small>Access execution state and indirect-call tables without hiding the runtime model.</small></article>
+            <article><h3>Linear memory</h3><p><code>assembly.i32.load</code>, <code>assembly.f64.store</code>, <code>assembly.memory.size</code>, <code>assembly.memory.grow</code></p><small>Read, write, and manage raw WebAssembly linear memory.</small></article>
+            <article><h3>Scalar numeric types</h3><p><code>assembly.i32.add</code>, <code>assembly.i64.div-s</code>, <code>assembly.f32.sqrt</code>, <code>assembly.f64.convert-i32-s</code></p><small>Use the integer and floating-point instruction families by their underlying type.</small></article>
+            <article><h3>Vectors and atomics</h3><p><code>assembly.v128.load</code>, <code>assembly.i32x4.add</code>, <code>assembly.f32x4.mul</code>, <code>assembly.i32.atomic.rmw-add</code></p><small>Access SIMD and shared-memory operations where the selected WebAssembly runtime supports them.</small></article>
+            <article><h3>Module construction</h3><p><code>assembly.type</code>, <code>assembly.function</code>, <code>assembly.memory</code>, <code>assembly.export</code></p><small>Describe the pieces of a WebAssembly module when YALisp needs to produce one directly.</small></article>
           </div>
           <p class="interface-note">Naming follows the underlying WebAssembly operation where practical—for example, an integer addition is exposed through the assembly interface rather than hidden behind a separate runtime.</p>
         </section>
