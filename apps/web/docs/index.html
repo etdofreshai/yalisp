@@ -55,6 +55,45 @@
           <p class="section-number">03</p>
           <h2>Language guide</h2>
           <p>Expressions, functions, and the core ideas that keep the language small, readable, and capable of describing its own implementation.</p>
+          <p class="interface-note">Implementation status: this repository currently ships the TypeScript website and its canonical YALisp example, not a runnable YALisp reader, evaluator, or compiler. The examples below stay within forms evidenced by that source and distinguish language goals from implemented behavior.</p>
+          <div class="language-examples">
+            <article class="language-example">
+              <p class="example-label">01 / Arithmetic</p>
+              <h3>Calls use prefix notation</h3>
+              <pre><code>(* 6 7)  ; =&gt; 42
+(- 6 1)  ; =&gt; 5</code></pre>
+              <p>The published factorial example uses <code>*</code> and <code>-</code> in this position. These small expressions show the same call shape without claiming a broader numeric tower that is not implemented yet.</p>
+            </article>
+            <article class="language-example">
+              <p class="example-label">02 / Functions</p>
+              <h3>Bind a lambda with <code>define</code></h3>
+              <pre><code>(define factorial
+  (lambda (n)
+    (if (&lt;= n 1)
+      1
+      (* n (factorial (- n 1))))))
+
+(factorial 6)  ; =&gt; 720</code></pre>
+              <p>This is the exact example maintained by the current site source: a named recursive function, one parameter, a conditional, and ordinary prefix calls.</p>
+            </article>
+            <article class="language-example">
+              <p class="example-label">03 / Organization</p>
+              <h3>Module syntax is not implemented</h3>
+              <p>No YALisp module form, import form, loader, or module test exists in the current repository. Names such as <code>assembly.module</code> describe candidate WebAssembly module construction operations; they do not establish a YALisp source-module syntax.</p>
+            </article>
+            <article class="language-example">
+              <p class="example-label">04 / Self-description</p>
+              <h3>The compiler path is the current contract</h3>
+              <pre class="compiler-model"><code>source form
+    ↓ read
+syntax value
+    ↓ compile
+executable work
+    ↓ run
+result</code></pre>
+              <p>This is a conceptual pipeline, not executable YALisp. The project intends to grow toward a compiler written in YALisp, but no callable <code>compile</code>, <code>apply</code>, or <code>eval</code> form is implemented or tested in this repository today.</p>
+            </article>
+          </div>
         </section>
         <section id="core-repl">
           <p class="section-number">04</p>
@@ -72,11 +111,11 @@
           <h2>Foundation</h2>
           <p>YALisp grows from a small executable seed into a bootstrapped compiler and then practical applications. The overview gives the path; each stage has its own detailed reference.</p>
           <div class="interface-map" aria-label="YALisp foundation documentation">
-            <a href="/docs/foundation/"><span>01</span><strong>Foundation</strong><small>The complete bootstrapping path</small></a>
-            <a href="/docs/seed/"><span>02</span><strong>Seed</strong><small>The minimal trusted runtime</small></a>
-            <a href="/docs/bootstrap/"><span>03</span><strong>Bootstrap</strong><small>Growing the language from Lisp</small></a>
-            <a href="/docs/compiler/"><span>04</span><strong>Compiler</strong><small>Interpreted, JIT, and ahead-of-time modes</small></a>
-            <a href="/docs/applications/"><span>05</span><strong>Applications</strong><small>Using the language in real tools</small></a>
+            <a href="/docs/foundation/" aria-label="Foundation overview"><span aria-hidden="true">—</span><strong>Foundation</strong><small>The complete bootstrapping path</small></a>
+            <a href="/docs/seed/"><span>01</span><strong>Seed</strong><small>The minimal trusted runtime</small></a>
+            <a href="/docs/bootstrap/"><span>02</span><strong>Bootstrap</strong><small>Growing the language from Lisp</small></a>
+            <a href="/docs/compiler/"><span>03</span><strong>Compiler</strong><small>Interpreted, JIT, and ahead-of-time modes</small></a>
+            <a href="/docs/applications/"><span>04</span><strong>Applications</strong><small>Using the language in real tools</small></a>
           </div>
         </section>
         <section id="reference-interfaces">

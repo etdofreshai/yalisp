@@ -100,6 +100,19 @@ test("documentation explains the bootstrapped core REPL", async () => {
   assert.match(docs, /bootstrapped compiler/i);
 });
 
+test("language guide distinguishes evidenced syntax from planned features", async () => {
+  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const siteBehavior = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+
+  for (const marker of ["(define factorial", "(lambda (n)", "(factorial 6)"]) {
+    assert.ok(siteBehavior.includes(marker), `site source is missing ${marker}`);
+    assert.ok(docs.includes(marker), `language guide is missing ${marker}`);
+  }
+  assert.match(docs, /Module syntax is not implemented/);
+  assert.match(docs, /conceptual pipeline, not executable YALisp/);
+  assert.match(docs, /no callable <code>compile<\/code>, <code>apply<\/code>, or <code>eval<\/code> form is implemented/);
+});
+
 test("each reference interface has a dedicated page", async () => {
   for (const page of ["assembly", "system-interface", "host", "sdl"]) {
     const document = await readFile(new URL(`../docs/${page}/index.html`, import.meta.url), "utf8");
@@ -108,9 +121,19 @@ test("each reference interface has a dedicated page", async () => {
 });
 
 test("foundation documentation explains the bootstrapping path", async () => {
+  const overview = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
   const foundation = await readFile(new URL("../docs/foundation/index.html", import.meta.url), "utf8");
   for (const marker of ["Seed", "Bootstrap", "Compiler", "Applications"]) {
     assert.ok(foundation.includes(marker), `missing ${marker}`);
+  }
+  for (const marker of [
+    'aria-label="Foundation overview"',
+    '<span>01</span><strong>Seed</strong>',
+    '<span>02</span><strong>Bootstrap</strong>',
+    '<span>03</span><strong>Compiler</strong>',
+    '<span>04</span><strong>Applications</strong>'
+  ]) {
+    assert.ok(overview.includes(marker), `missing ${marker}`);
   }
 });
 
