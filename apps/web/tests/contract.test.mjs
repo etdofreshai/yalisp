@@ -41,7 +41,7 @@ test("documentation navigation is shared and remembers its collapsed state", asy
 test("documentation resolves its theme before first paint", async () => {
   const themeBootstrap = await readFile(new URL("../public/theme-init.js", import.meta.url), "utf8");
   const docsBehavior = await readFile(new URL("../src/docs.ts", import.meta.url), "utf8");
-  const pages = ["", "applications/", "assembly/", "bootstrap/", "compiler/", "foundation/", "host/", "sdl/", "seed/", "system-interface/"];
+  const pages = ["", "applications/", "assembly/", "bootstrap/", "compiler/", "dom/", "foundation/", "host/", "sdl/", "seed/", "system-interface/"];
 
   assert.ok(themeBootstrap.includes("prefers-color-scheme: light"));
   assert.ok(themeBootstrap.includes('localStorage.getItem("yalisp-theme")'));
@@ -58,14 +58,18 @@ test("documentation resolves its theme before first paint", async () => {
   }
 });
 
-test("documentation presents the four reference interfaces", async () => {
+test("documentation presents the four interfaces and planned game runtime", async () => {
   const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
   for (const marker of [
     'id="reference-interfaces"',
     'id="assembly"',
     'id="system-interface"',
-    'id="host"',
-    'id="sdl"'
+    'id="dom"',
+    'id="sdl"',
+    'id="game-runtime"',
+    "simulation update",
+    "render update",
+    "competing third update loop"
   ]) {
     assert.ok(docs.includes(marker), `missing ${marker}`);
   }
@@ -113,11 +117,31 @@ test("language guide distinguishes evidenced syntax from planned features", asyn
   assert.match(docs, /no callable <code>compile<\/code>, <code>apply<\/code>, or <code>eval<\/code> form is implemented/);
 });
 
-test("each reference interface has a dedicated page", async () => {
-  for (const page of ["assembly", "system-interface", "host", "sdl"]) {
+test("each interface has a dedicated page", async () => {
+  for (const page of ["assembly", "system-interface", "dom", "sdl"]) {
     const document = await readFile(new URL(`../docs/${page}/index.html`, import.meta.url), "utf8");
     assert.match(document, /normative YALisp/i);
   }
+});
+
+test("DOM documentation defines planned adapters and a provisional application root", async () => {
+  const page = await readFile(new URL("../docs/dom/index.html", import.meta.url), "utf8");
+  const legacy = await readFile(new URL("../docs/host/index.html", import.meta.url), "utf8");
+
+  for (const marker of [
+    'id="dom"',
+    "native browser DOM",
+    "lightweight in-memory document tree",
+    "dom.application-root.create",
+    "Illustrative name only",
+    "To be defined later",
+    "no DOM runtime binding is implemented"
+  ]) {
+    assert.ok(page.includes(marker), `missing ${marker}`);
+  }
+  assert.ok(!page.includes("host.documents"));
+  assert.ok(legacy.includes('location.replace("/docs/dom/")'));
+  assert.ok(legacy.includes('rel="canonical" href="https://yalisp.etdofresh.com/docs/dom/"'));
 });
 
 test("foundation documentation explains the bootstrapping path", async () => {

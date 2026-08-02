@@ -28,10 +28,10 @@ docsNav.innerHTML = `
       <a class="nav-child${isCurrent("/docs/bootstrap/")}" href="/docs/bootstrap/">Bootstrap</a>
       <a class="nav-child${isCurrent("/docs/compiler/")}" href="/docs/compiler/">Compiler</a>
       <a class="nav-child${isCurrent("/docs/applications/")}" href="/docs/applications/">Applications</a>
-      <a class="${currentPath === "/docs/" ? "" : ""}" href="/docs/#reference-interfaces">Reference interfaces</a>
+      <a class="${currentPath === "/docs/" ? "" : ""}" href="/docs/#reference-interfaces">Interfaces</a>
       <a class="nav-child${isCurrent("/docs/assembly/")}" href="/docs/assembly/">Assembly</a>
       <a class="nav-child${isCurrent("/docs/system-interface/")}" href="/docs/system-interface/">System interface</a>
-      <a class="nav-child${isCurrent("/docs/host/")}" href="/docs/host/">Host</a>
+      <a class="nav-child${isCurrent("/docs/dom/")}" href="/docs/dom/">DOM</a>
       <a class="nav-child${isCurrent("/docs/sdl/")}" href="/docs/sdl/">SDL</a>
       <a href="/docs/#examples">Examples</a>
     </nav>

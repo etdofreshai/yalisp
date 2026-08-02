@@ -20,7 +20,8 @@ export default defineConfig({
         applications: "docs/applications/index.html",
         assembly: "docs/assembly/index.html",
         systemInterface: "docs/system-interface/index.html",
-        host: "docs/host/index.html",
+        dom: "docs/dom/index.html",
+        legacyHost: "docs/host/index.html",
         sdl: "docs/sdl/index.html"
       }
     }

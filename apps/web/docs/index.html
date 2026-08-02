@@ -30,11 +30,12 @@
           <a href="#getting-started">Getting started</a>
           <a href="#language">Language guide</a>
           <a href="/docs/foundation/">Foundation</a>
-          <a href="#reference-interfaces">Reference interfaces</a>
+          <a href="#reference-interfaces">Interfaces</a>
           <a class="nav-child" href="/docs/assembly/">Assembly</a>
           <a class="nav-child" href="/docs/system-interface/">System interface</a>
-          <a class="nav-child" href="/docs/host/">Host</a>
+          <a class="nav-child" href="/docs/dom/">DOM</a>
           <a class="nav-child" href="/docs/sdl/">SDL</a>
+          <a href="#game-runtime">Game runtime</a>
           <a href="#examples">Examples</a>
         </nav>
         <a class="source-link" href="https://github.com/etdofreshai/yalisp">View source <span aria-hidden="true">↗</span></a>
@@ -44,7 +45,7 @@
         <section id="introduction">
           <p class="section-number">01</p>
           <h1>Start small.<br /><em>Understand everything.</em></h1>
-          <p class="lede">A small Lisp with portable interfaces for computation, systems work, and interactive hosts.</p>
+          <p class="lede">A small Lisp with portable interfaces for computation, systems work, and interactive applications.</p>
         </section>
         <section id="getting-started">
           <p class="section-number">02</p>
@@ -120,12 +121,12 @@ result</code></pre>
         </section>
         <section id="reference-interfaces">
           <p class="section-number">06</p>
-          <h2>Reference interfaces</h2>
-          <p>This documentation is the source of truth for YALisp interface contracts. The standard interface is organized as four layers. Each layer has a narrow job, so a program can be direct when it needs to be and portable when it can be.</p>
-          <div class="interface-map" aria-label="The four YALisp reference interfaces">
+          <h2>Interfaces</h2>
+          <p>YALisp’s interface contracts are organized as four layers. Each layer has a narrow job, so a program can be direct when it needs to be and portable when it can be.</p>
+          <div class="interface-map" aria-label="The four YALisp interfaces">
             <a href="/docs/assembly/"><span>01</span><strong>Assembly</strong><small>WebAssembly primitives</small></a>
             <a href="/docs/system-interface/"><span>02</span><strong>System interface</strong><small>Portable system services</small></a>
-            <a href="/docs/host/"><span>03</span><strong>Host</strong><small>Rendering and interaction</small></a>
+            <a href="/docs/dom/"><span>03</span><strong>DOM</strong><small>Portable documents and events</small></a>
             <a href="/docs/sdl/"><span>04</span><strong>SDL</strong><small>Concrete multimedia runtime</small></a>
           </div>
           <p class="interface-note">The <a href="/docs/foundation/">Foundation</a> page explains how the WebAssembly seed, bootstrap, and self-hosted compiler make these interfaces usable from YALisp.</p>
@@ -160,16 +161,16 @@ result</code></pre>
           </div>
           <p class="interface-note">This layer aims to track the WebAssembly system interface closely, so the same YALisp program can move between compatible runtimes with minimal adaptation.</p>
         </section>
-        <section hidden id="host" class="interface-section">
+        <section hidden id="dom" class="interface-section">
           <p class="section-number">05.3</p>
-          <h2>Host</h2>
-          <p>The host module covers the interactive capabilities that are intentionally outside the system interface: windows, rendering surfaces, input devices, audio, and browser-style document APIs.</p>
+          <h2>DOM</h2>
+          <p>The DOM Interface is the portable document-and-event contract for application structure, rendering surfaces, input, lifecycle, commands, and accessibility. It is not limited to the browser-native object model.</p>
           <div class="reference-grid">
-            <article><code>display</code><h3>Windows and rendering</h3><p>Create surfaces, draw frames, manage graphics resources, and present output through an SDL-like or browser-backed host.</p></article>
-            <article><code>input</code><h3>Events and devices</h3><p>Receive keyboard, pointer, touch, gamepad, window, and lifecycle events through one event-oriented interface.</p></article>
-            <article><code>document</code><h3>DOM-style interaction</h3><p>Create and update visual elements, respond to user actions, and render application interfaces when the host provides a document model.</p></article>
+            <article><code>browser</code><h3>Native DOM binding</h3><p>A planned browser binding forwards the portable contract directly to native browser DOM nodes and events.</p></article>
+            <article><code>sdl</code><h3>Lightweight tree binding</h3><p>A planned SDL or bare-metal binding forwards it to YALisp’s in-memory document wrapper, SDL events, and SDL-backed presentation.</p></article>
+            <article><code>application-root</code><h3>Proposed bootstrap</h3><p>An illustrative helper would create one root surface, wire lifecycle and input, and select the correct binding. Its API remains to be defined.</p></article>
           </div>
-          <p class="interface-note">Hosts may expose different backends, but their public YALisp surface should describe the same capabilities. Platform-specific extensions belong here, clearly marked as extensions.</p>
+          <p class="interface-note">This describes the intended contract and adapter model. No DOM binding or application-root helper is implemented in the repository yet.</p>
         </section>
         <section hidden id="sdl" class="interface-section">
           <p class="section-number">05.4</p>
@@ -180,10 +181,24 @@ result</code></pre>
             <article><code>render</code><h3>2D frames and textures</h3><p>Create renderers and textures, clear a frame, draw geometry or copies, and present output through SDL’s accelerated 2D path.</p></article>
             <article><code>audio</code><h3>Playback and capture</h3><p>Open audio devices, move samples through streams, and control playback without tying programs to a platform mixer.</p></article>
           </div>
-          <p class="interface-note">The SDL profile is an extension beneath the Host Interface, not a replacement for it. Portable editor and document code should target Host; native games, demos, and tools may explicitly require SDL.</p>
+          <p class="interface-note">The SDL profile supplies concrete native multimedia capabilities beneath the DOM binding rather than replacing the portable DOM contract. Portable document code should target DOM; native games, demos, and tools may explicitly require SDL.</p>
+        </section>
+        <section id="game-runtime" class="interface-section">
+          <p class="section-number">07</p>
+          <h2>Game runtime</h2>
+          <p>This is the intended architecture for game-facing runtime services above the existing interfaces. It defines responsibilities and timing relationships only; these facilities and their callable APIs are not implemented yet.</p>
+          <div class="reference-grid">
+            <article><code>simulation update</code><h3>Stable world steps</h3><p>Gameplay and physics advance on a distinct update loop, commonly at a slower fixed cadence, so simulation remains predictable when rendering speeds up or slows down.</p></article>
+            <article><code>render update</code><h3>Independently paced frames</h3><p>Presentation samples the latest simulation state on its own cadence. It may interpolate visual state without changing the authoritative simulation step.</p></article>
+            <article><code>time</code><h3>Clocks and time scale</h3><p>Runtime time separates elapsed real time, simulation time, frame deltas, and a controlled time scale for pause, slow motion, or acceleration.</p></article>
+            <article><code>input and events</code><h3>Intent enters the simulation</h3><p>DOM or SDL events are normalized, buffered, and consumed at defined update boundaries rather than coupling gameplay directly to platform callbacks.</p></article>
+            <article><code>graphics and assets</code><h3>Sprites, sheets, and resources</h3><p>Game-facing primitives cover sprites and sprite sheets alongside loading, ownership, reuse, and release of textures, audio, and other assets.</p></article>
+            <article><code>networking</code><h3>Synchronize with simulation</h3><p>Future networking exchanges simulation inputs or state on simulation boundaries. It participates in that timing model instead of introducing a competing third update loop.</p></article>
+          </div>
+          <p class="interface-note">To be defined later: update scheduling APIs, interpolation and rollback policy, asset formats and lifetimes, input buffering rules, networking authority and transport, and the final names of every callable operation.</p>
         </section>
         <section id="examples">
-          <p class="section-number">07</p>
+          <p class="section-number">08</p>
           <h2>Examples</h2>
           <p>Short programs to explore, change, and use as a starting point for your own experiments.</p>
         </section>
