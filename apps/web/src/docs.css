@@ -61,6 +61,10 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 .bootstrap-flow span { position: absolute; top: 1.55rem; left: 1.5rem; color: #fa5b35; font-family: "DM Mono", monospace; font-size: .68rem; }
 .bootstrap-flow h2 { margin: 0 0 .5rem; font-size: 1.2rem; letter-spacing: -.04em; line-height: 1; }
 .bootstrap-flow p { margin: 0; font-size: .9rem !important; line-height: 1.65 !important; }
+.inventory { margin-top: 2.5rem; border-top: 1px solid var(--line); }
+.inventory details { border-bottom: 1px solid var(--line); }
+.inventory summary { padding: 1rem 0; cursor: pointer; font-family: "DM Mono", monospace; font-size: .8rem; }
+.function-list { padding: 0 0 1.25rem; margin: 0; color: var(--muted); font-family: "DM Mono", monospace; font-size: .72rem !important; line-height: 1.9 !important; }
 @media (max-width: 760px) {
   .docs-header { padding: 0 5vw; }
   .docs-menu { display: inline-flex; }

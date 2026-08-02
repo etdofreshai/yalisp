@@ -37,3 +37,35 @@ document.querySelectorAll<HTMLAnchorElement>(".docs-nav a[href^='#']").forEach((
     menuButton.setAttribute("aria-expanded", "false");
   });
 });
+
+const inventory = document.querySelector<HTMLElement>("[data-function-source]");
+if (inventory) {
+  const source = inventory.dataset.functionSource!;
+  fetch(source)
+    .then((response) => {
+      if (!response.ok) throw new Error("inventory unavailable");
+      return response.text();
+    })
+    .then((text) => {
+      let group = "General";
+      const groups = new Map<string, string[]>();
+      for (const line of text.split("\n")) {
+        const header = line.match(/^;;; \d+\. (.+)$/);
+        if (header) { group = header[1]; continue; }
+        const fn = line.match(/^\(defn (assembly\.[^\s(]+)/);
+        if (fn) groups.set(group, [...(groups.get(group) ?? []), fn[1]]);
+      }
+      inventory.replaceChildren(...[...groups].map(([title, functions]) => {
+        const details = document.createElement("details");
+        details.open = title === "Control flow";
+        const summary = document.createElement("summary");
+        summary.textContent = `${title} (${functions.length})`;
+        const list = document.createElement("p");
+        list.className = "function-list";
+        list.textContent = functions.join(" · ");
+        details.append(summary, list);
+        return details;
+      }));
+    })
+    .catch(() => { inventory.textContent = "The researched inventory could not be loaded."; });
+}
