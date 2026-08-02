@@ -25,9 +25,7 @@ npm test
 npm run build
 ```
 
-## Deployment
+## Development deployment
 
-The root `Dockerfile` builds every workspace and serves the generated site with
-nginx on port 80. Dokploy deploys the `main` branch to
-`yalisp.etdofresh.com`.
-
+The root `Dockerfile` runs the Vite development server on port 80 with live
+reload enabled. Dokploy deploys the `main` branch to `yalisp.etdofresh.com`.

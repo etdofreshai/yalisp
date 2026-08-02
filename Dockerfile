@@ -1,4 +1,4 @@
-FROM node:24-alpine AS build
+FROM node:24-alpine
 
 WORKDIR /app
 
@@ -9,15 +9,12 @@ RUN npm ci
 
 COPY apps ./apps
 COPY packages ./packages
-RUN npm run build
 
-FROM nginx:1.29-alpine
+EXPOSE 80
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+CMD ["npm", "run", "dev", "--workspace", "@yalisp/web", "--", "--port", "80", "--strictPort"]
 
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget -q --spider http://127.0.0.1/ || exit 1
-
