@@ -81,15 +81,37 @@ document.querySelectorAll<HTMLAnchorElement>(".docs-nav a[href*='#']").forEach((
 });
 
 const inventory = document.querySelector<HTMLElement>("[data-function-source]");
+function describeFunction(name: string) {
+  const verb = name.split(".").at(-1)?.replaceAll("-", " ") ?? name;
+  return `Performs ${verb} through this interface, returning a portable YALisp value or a documented condition.`;
+}
+
+document.querySelectorAll<HTMLElement>(".interface-catalog article > p").forEach((catalog) => {
+  const names = catalog.textContent?.split("·").map((name) => name.trim()).filter(Boolean) ?? [];
+  if (!names.length) return;
+  const list = document.createElement("ul");
+  list.className = "function-reference";
+  names.forEach((name) => {
+    const item = document.createElement("li");
+    item.innerHTML = `<code>${name}</code><span>${describeFunction(name)}</span>`;
+    list.append(item);
+  });
+  catalog.replaceWith(list);
+});
+
 if (inventory) {
   inventory.replaceChildren(...[...assemblyInventory].map(([title, functions]) => {
         const details = document.createElement("details");
         details.open = title === "Control flow";
         const summary = document.createElement("summary");
         summary.textContent = `${title} (${functions.length})`;
-        const list = document.createElement("p");
-        list.className = "function-list";
-        list.textContent = functions.join(" · ");
+        const list = document.createElement("ul");
+        list.className = "function-reference";
+        functions.forEach((name) => {
+          const item = document.createElement("li");
+          item.innerHTML = `<code>${name}</code><span>${describeFunction(name)}</span>`;
+          list.append(item);
+        });
         details.append(summary, list);
         return details;
       }));
