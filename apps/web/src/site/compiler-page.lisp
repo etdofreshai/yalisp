@@ -14,7 +14,7 @@
     (list (cls 'project-nav-link) (href path))) number " " label)))
 (defn menu-state (state) (car state))
 (defn theme-state (state) (car (cdr state)))
-(defn shell-class (state) (if (eq? (menu-state state) 'open) "docs-shell nav-open" 'docs-shell))
+(defn shell-class (state) (if (eq? (menu-state state) 'open) "docs-shell nav-open sidebar-collapsed" 'docs-shell))
 (defn menu-aria (state) (if (eq? (menu-state state) 'open) "true" "false"))
 (defn theme-name (state) (if (eq? (theme-state state) 'dark) 'dark 'light))
 (defn theme-label (state) (if (eq? (theme-state state) 'dark) "Light" "Dark"))
@@ -56,7 +56,7 @@
         (el 'button (list (cls 'theme-toggle) (at 'type 'button) (click 'toggle-theme)) (theme-icon state) (theme-label state))
         (el 'button (list (cls 'docs-menu) (at 'type 'button) (click 'toggle-menu) (aria 'aria-label "Toggle documentation navigation") (aria 'aria-expanded (menu-aria state))) (el 'span nil) (el 'span nil))))
     (el 'div (list (cls (shell-class state)))
-      (el 'aside (list (cls 'docs-nav) (aria 'aria-label "Project navigation")) (docs-navigation))
+      (el 'aside (list (cls 'docs-nav) (aria 'aria-label "Project navigation") (at 'data-project-navigation 'true)) nil)
       (el 'main (list (id 'content))
         (el 'p (list (cls 'eyebrow)) "Foundation / Compiler")
         (el 'section nil

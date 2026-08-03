@@ -12,6 +12,11 @@ type RenderOptions = {
   sectionEventPrefix?: string;
 };
 
+type DomApplicationHooks = {
+  beforeRender?: () => void;
+  afterRender?: (root: HTMLElement) => void;
+};
+
 function isList(value: LispValue): value is LispList {
   return Array.isArray(value);
 }
@@ -83,7 +88,11 @@ function appendNode(
  * event bridge: element structure, attributes, text, and event state all come
  * from the checked-in Lisp program.
  */
-export async function runDomApplication(root: HTMLElement, source: string | readonly string[]) {
+export async function runDomApplication(
+  root: HTMLElement,
+  source: string | readonly string[],
+  hooks: DomApplicationHooks = {}
+) {
   const session = await createSeedSession("bootstrap");
   for (const module of typeof source === "string" ? [source] : source) {
     session.evaluateQuietly(module);
@@ -127,11 +136,13 @@ export async function runDomApplication(root: HTMLElement, source: string | read
   }, { passive: true });
 
   const render = () => {
+    hooks.beforeRender?.();
     const tree = parseLispValue(session.evaluateDom(`(app.view '${printLispValue(state)})`));
     root.replaceChildren();
     const options: RenderOptions = {};
     appendNode(root, tree, dispatch, options);
     sectionEventPrefix = options.sectionEventPrefix;
+    hooks.afterRender?.(root);
   };
 
   render();

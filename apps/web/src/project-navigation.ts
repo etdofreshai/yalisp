@@ -105,7 +105,7 @@ function trackActiveSection(navigation: HTMLElement, path: string) {
   const sections = anchors
     .map(([hash]) => document.getElementById(hash))
     .filter((section): section is HTMLElement => section !== null);
-  if (!sections.length) return;
+  if (!sections.length) return () => {};
 
   const updateFromScroll = () => {
     const activationLine = Math.max(96, window.innerHeight * 0.24);
@@ -131,17 +131,27 @@ function trackActiveSection(navigation: HTMLElement, path: string) {
     else queueScrollUpdate();
   };
 
+  let observer: IntersectionObserver | undefined;
   if ("IntersectionObserver" in window) {
-    const observer = new IntersectionObserver(queueScrollUpdate, {
+    const sectionObserver = new IntersectionObserver(queueScrollUpdate, {
       rootMargin: "-20% 0px -70% 0px",
       threshold: [0, 1]
     });
-    sections.forEach((section) => observer.observe(section));
+    sections.forEach((section) => sectionObserver.observe(section));
+    observer = sectionObserver;
   }
   window.addEventListener("scroll", queueScrollUpdate, { passive: true });
   window.addEventListener("resize", queueScrollUpdate);
   window.addEventListener("hashchange", updateFromHash);
   updateFromHash();
+
+  return () => {
+    observer?.disconnect();
+    window.removeEventListener("scroll", queueScrollUpdate);
+    window.removeEventListener("resize", queueScrollUpdate);
+    window.removeEventListener("hashchange", updateFromHash);
+    if (frame) window.cancelAnimationFrame(frame);
+  };
 }
 
 export function mountProjectNavigation(host: HTMLElement, options: NavigationOptions) {
@@ -172,7 +182,6 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
   host.dataset.navigationDefault = options.initialState;
   host.innerHTML = `
     <div class="project-navigation">
-      <p class="project-nav-label">Project navigation</p>
       <nav id="${options.navigationId}" class="project-nav" aria-label="Project navigation">
         <ul class="project-nav-tree">
           <li class="project-nav-overview">
@@ -222,6 +231,6 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
     </div>`;
 
   const navigation = host.querySelector<HTMLElement>(`#${options.navigationId}`)!;
-  trackActiveSection(navigation, currentPath);
-  return navigation;
+  const dispose = trackActiveSection(navigation, currentPath);
+  return { navigation, dispose };
 }

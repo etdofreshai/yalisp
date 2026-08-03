@@ -16,31 +16,21 @@ if (!menuButton || !shell || !themeToggle || !docsNav) {
 const currentPath = window.location.pathname.replace(/index\.html$/, "");
 shell.dataset.navigationDefault = "expanded";
 docsNav.setAttribute("aria-label", "Project navigation");
-const projectNav = mountProjectNavigation(docsNav, {
+const { navigation: projectNav } = mountProjectNavigation(docsNav, {
   currentPath,
   initialState: "expanded",
   navigationId: "project-navigation"
 });
-const sidebarToggle = document.createElement("button");
-sidebarToggle.className = "sidebar-toggle";
-sidebarToggle.type = "button";
-sidebarToggle.dataset.sidebarToggle = "";
-sidebarToggle.innerHTML = '<span aria-hidden="true">←</span><span>Collapse</span>';
-docsNav.prepend(sidebarToggle);
 menuButton.setAttribute("aria-controls", projectNav.id);
 menuButton.setAttribute("aria-label", "Toggle project navigation");
-menuButton.setAttribute("aria-expanded", "false");
+menuButton.setAttribute("aria-expanded", "true");
 
 function setSidebarCollapsed(collapsed: boolean) {
   shell!.classList.toggle("sidebar-collapsed", collapsed);
-  sidebarToggle.setAttribute("aria-expanded", String(!collapsed));
-  sidebarToggle.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} documentation navigation`);
-  sidebarToggle.querySelector("span")!.textContent = collapsed ? "→" : "←";
-  sidebarToggle.querySelector("span + span")!.textContent = collapsed ? "Expand" : "Collapse";
+  menuButton!.setAttribute("aria-expanded", String(!collapsed));
 }
 
 setSidebarCollapsed(false);
-sidebarToggle.addEventListener("click", () => setSidebarCollapsed(!shell!.classList.contains("sidebar-collapsed")));
 
 function setTheme(theme: "light" | "dark", persist = false) {
   document.documentElement.dataset.theme = theme;
@@ -60,8 +50,12 @@ themeToggle.addEventListener("click", () => {
 });
 
 menuButton.addEventListener("click", () => {
-  const isOpen = shell.classList.toggle("nav-open");
-  menuButton.setAttribute("aria-expanded", String(isOpen));
+  if (window.matchMedia("(max-width: 760px)").matches) {
+    const isOpen = shell.classList.toggle("nav-open");
+    menuButton.setAttribute("aria-expanded", String(isOpen));
+    return;
+  }
+  setSidebarCollapsed(!shell.classList.contains("sidebar-collapsed"));
 });
 
 document.querySelectorAll<HTMLAnchorElement>(".project-navigation a").forEach((link) => {

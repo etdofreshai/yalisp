@@ -22,7 +22,7 @@ test("landing page exposes its essential semantic and social contracts", () => {
   ]) {
     assert.ok(html.includes(marker), `missing ${marker}`);
   }
-  for (const marker of ["(defn app.view", "(defn app.event", "(defn site-nav", "'main", "(id 'why)", "(id 'language)", "https://github.com/ETdoFreshAI/yalisp"]) {
+  for (const marker of ["(defn app.view", "(defn app.event", "data-project-navigation", "'main", "(id 'why)", "(id 'language)", "https://github.com/ETdoFreshAI/yalisp"]) {
     assert.ok(landing.includes(marker), `DOM Lisp landing source is missing ${marker}`);
   }
   for (const marker of ['pageLink("/playground/"', 'pageLink("/examples/"', 'pageLink("/docs/"', "project-nav-playground", "https://github.com/etdofreshai/yalisp"]) {
@@ -51,14 +51,13 @@ test("landing behavior is a thin TypeScript DOM bridge over executable Lisp", ()
   assert.ok(landing.includes("'document-theme"));
 });
 
-test("landing shell starts with a compact rail and exposes its shared tree through the menu", async () => {
+test("landing uses the same top bar and collapsed navigation drawer as the rest of the site", async () => {
   const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
-  assert.match(styles, /--rail-width:/);
-  assert.match(styles, /\.site-header\s*\{[\s\S]*width: 76px/);
-  assert.match(styles, /\.site-header\.menu-open\s*\{[\s\S]*width: var\(--rail-width\)/);
-  assert.match(styles, /\.site-header:not\(\.menu-open\) \.landing-project-navigation/);
-  assert.match(styles, /main,\s*\nfooter\s*\{\s*margin-left: 76px/);
-  assert.match(styles, /@media \(max-width: 900px\)[\s\S]*main,\s*\n\s*footer \{ margin-left: 0; \}/);
+  assert.match(styles, /\.site-header\s*\{[\s\S]*grid-template-columns: 2\.5rem minmax\(0, 1fr\) auto/);
+  assert.match(styles, /\.site-nav-drawer\s*\{[\s\S]*transform: translateX\(-102%\)/);
+  assert.match(styles, /\.site-header\.menu-open \+ \.site-nav-drawer \{ transform: translateX\(0\)/);
+  assert.match(styles, /\.site-header > \.brand\s*\{[\s\S]*grid-column: 2/);
+  assert.match(styles, /\.site-header \.theme-toggle \{ grid-row: 1; grid-column: 3/);
 });
 
 test("landing and inner pages mount the same semantic navigation with different defaults", async () => {
@@ -92,7 +91,7 @@ test("landing and inner pages mount the same semantic navigation with different 
   assert.match(navStyles, /\.project-nav-link[^}]*justify-content: flex-start/);
   assert.match(navStyles, /\.project-nav-link[^}]*text-align: left/);
   assert.match(navStyles, /\.project-nav-link[^}]*min-height: 2\.25rem/);
-  assert.ok(landing.includes("(defn site-nav"));
+  assert.ok(landing.includes("data-project-navigation"));
   assert.ok(docsBehavior.includes('initialState: "expanded"'));
   assert.ok(docsBehavior.includes("setSidebarCollapsed(false)"));
   assert.ok(playgroundBehavior.includes('import "./docs"'));
@@ -278,12 +277,13 @@ test("Vite redirects canonical page routes to their trailing-slash form", async 
   assert.ok(viteConfig.includes('response.setHeader("Location", `${url.pathname}/${url.search}`)'));
 });
 
-test("expanded rails use their width while keeping navigation aligned left", async () => {
+test("shared navigation uses a consistent desktop sidebar and left-aligned content", async () => {
   const docsStyles = await readFile(new URL("../src/docs.css", import.meta.url), "utf8");
   const landingStyles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
   assert.match(docsStyles, /grid-template-columns: clamp\(250px, 22vw, 310px\)/);
-  assert.match(docsStyles, /\.docs-nav[^}]*padding: 3\.5rem \.65rem 1\.5rem \.9rem/);
-  assert.match(landingStyles, /\.site-header\.menu-open[^}]*padding: 2rem \.75rem 1\.5rem 1rem/);
+  assert.match(docsStyles, /\.docs-nav[^}]*padding: 1\.5rem \.65rem 1\.5rem \.9rem/);
+  assert.match(docsStyles, /\.docs-header[^}]*grid-template-columns: 2\.5rem minmax\(0, 1fr\) auto/);
+  assert.match(landingStyles, /\.site-nav-drawer[^}]*width: min\(21rem, 88vw\)/);
 });
 
 test("documentation and Playground shells provide hosts for the common project tree", async () => {
