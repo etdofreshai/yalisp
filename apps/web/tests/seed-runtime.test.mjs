@@ -9,7 +9,6 @@ const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url)
 const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
 const generatedWasm = await readFile(new URL("../public/yalisp/seed.wasm", import.meta.url));
 const uiSource = await readFile(new URL("../src/seed-runtime.ts", import.meta.url), "utf8");
-const pongSource = await readFile(new URL("../public/examples/pong/logic.lisp", import.meta.url), "utf8");
 const breakoutSource = await readFile(new URL("../public/examples/breakout/logic.lisp", import.meta.url), "utf8");
 const asteroidsSource = await readFile(new URL("../public/examples/asteroids/logic.lisp", import.meta.url), "utf8");
 const wabt = await wabtInit();
@@ -91,11 +90,6 @@ test("CLI Hello World prints the actual seed evaluator value", () => {
   assert.equal(command.status, 0, command.stderr);
   assert.equal(command.stderr, "");
   assert.equal(command.stdout.trim(), "Hello, world!");
-});
-
-test("Pong state probe executes in the actual seed", async () => {
-  const session = await createSession();
-  assert.equal(session.evaluate(pongSource), "(124 -4)");
 });
 
 test("Breakout state probe executes in the actual seed", async () => {

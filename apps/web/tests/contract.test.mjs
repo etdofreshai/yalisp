@@ -298,21 +298,26 @@ test("Examples start with a truthful executable CLI milestone", async () => {
   assert.ok(behavior.includes("session.evaluate(source)"));
 });
 
-test("Pong separates the executable browser host from its real YALISP probe", async () => {
+test("Pong exposes the complete source package that its runner imports", async () => {
   const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
   const pong = await readFile(new URL("../examples/pong/index.html", import.meta.url), "utf8");
-  const source = await readFile(new URL("../public/examples/pong/logic.lisp", import.meta.url), "utf8");
-  const behavior = await readFile(new URL("../src/game-demos.ts", import.meta.url), "utf8");
+  const source = await readFile(new URL("../src/examples/pong/app.ts", import.meta.url), "utf8");
+  const runtime = await readFile(new URL("../src/examples/runtime/portable-app.ts", import.meta.url), "utf8");
+  const behavior = await readFile(new URL("../src/examples.ts", import.meta.url), "utf8");
 
   assert.ok(gallery.includes('href="/examples/pong/"'));
-  for (const marker of ["data-game-demo=\"pong\"", "Interactive Pong reference", "Run YALISP state probe", "does not claim the complete game runs inside YALISP"]) {
+  for (const marker of ["data-portable-app=\"pong\"", "Complete executable package", "data-application-source=\"pong\"", "does not run in the WAT seed"]) {
     assert.ok(pong.includes(marker), `Pong page is missing ${marker}`);
   }
-  assert.ok(source.includes("pong.next-x"));
-  assert.ok(source.includes("pong.bounce-x"));
-  assert.ok(behavior.includes("stepPong"));
-  assert.ok(behavior.includes("pointerdown"));
-  assert.ok(behavior.includes("ArrowUp"));
+  for (const marker of ["export type Ball", "export type Paddle", "createPongState", "updatePong", "drawPong", "mountPong", "ArrowUp", "data-app-action"]) {
+    assert.ok(source.includes(marker), `Pong app source is missing ${marker}`);
+  }
+  for (const marker of ["interface PortableCanvasApplication", "class CanvasDrawingSurface", "mountCanvasApplication", "pointerdown", "requestAnimationFrame"]) {
+    assert.ok(runtime.includes(marker), `portable runtime is missing ${marker}`);
+  }
+  assert.ok(behavior.includes('import { mountPong } from "./examples/pong/app"'));
+  assert.ok(behavior.includes('import pongApplicationSource from "./examples/pong/app?raw"'));
+  assert.ok(behavior.includes("mountPong"));
 });
 
 test("Breakout separates the executable browser host from its real YALISP probe", async () => {

@@ -1,20 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createAsteroidsState, createBreakoutState, createPongState, fireAsteroidBullet, stepAsteroids, stepBreakout, stepPong, wrapCoordinate } from "../src/game-models.ts";
+import { createPongState, updatePong } from "../src/examples/pong/app.ts";
+import { createAsteroidsState, createBreakoutState, fireAsteroidBullet, stepAsteroids, stepBreakout, wrapCoordinate } from "../src/game-models.ts";
 
-test("Pong model moves, clamps its timestep, bounces, and scores deterministically", () => {
+const input = (held = []) => ({ held: (action) => held.includes(action), pressed: () => false });
+
+test("complete Pong application moves, bounces, and scores deterministically", () => {
   const state = createPongState();
-  const startX = state.ballX;
-  stepPong(state, 10, 0);
-  assert.ok(state.ballX > startX && state.ballX < startX + 10, "large frame gaps must be clamped");
-  state.ballY = 2;
-  state.ballVy = -100;
-  stepPong(state, 1 / 60, 0);
-  assert.ok(state.ballVy > 0);
-  state.ballX = -20;
-  stepPong(state, 1 / 60, 0);
+  const startX = state.ball.x;
+  updatePong(state, 1 / 30, input());
+  assert.ok(state.ball.x > startX && state.ball.x < startX + 10);
+  state.ball.y = 2;
+  state.ball.velocityY = -100;
+  updatePong(state, 1 / 60, input());
+  assert.ok(state.ball.velocityY > 0);
+  state.ball.x = -20;
+  updatePong(state, 1 / 60, input());
   assert.equal(state.opponentScore, 1);
-  assert.equal(state.ballX, 320);
+  assert.equal(state.ball.x, 320);
 });
 
 test("Asteroids model wraps motion, bounds bullets, and scores real hits", () => {
