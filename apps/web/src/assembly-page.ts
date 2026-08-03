@@ -1,4 +1,3 @@
-import "./docs.css";
 import "./project-navigation.css";
 import { mountDomLispChrome } from "./dom-lisp-chrome";
 import { assemblyInventory } from "./assembly-inventory";

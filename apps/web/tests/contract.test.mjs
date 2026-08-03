@@ -15,6 +15,8 @@ const applicationsPageSource = await readFile(new URL("../src/site/applications-
 const navigation = await readFile(new URL("../src/project-navigation.ts", import.meta.url), "utf8");
 const sidebarState = await readFile(new URL("../src/sidebar-state.ts", import.meta.url), "utf8");
 const domLispChrome = await readFile(new URL("../src/dom-lisp-chrome.ts", import.meta.url), "utf8");
+const chromeStyles = await readFile(new URL("../src/chrome.css", import.meta.url), "utf8");
+const loadingShell = await readFile(new URL("../public/page-shell.js", import.meta.url), "utf8");
 
 test("landing page exposes its essential semantic and social contracts", () => {
   for (const marker of [
@@ -55,14 +57,14 @@ test("landing behavior is a thin TypeScript DOM bridge over executable Lisp", ()
 
 test("landing integrates its open desktop rail while retaining a mobile drawer", async () => {
   const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
-  assert.match(styles, /\.site-header\s*\{[\s\S]*grid-template-columns: 2\.5rem minmax\(0, 1fr\) auto/);
+  assert.match(chromeStyles, /\.site-header, \.docs-header\s*\{[\s\S]*grid-template-columns: 2\.5rem minmax\(0, 1fr\) auto/);
   assert.match(styles, /\.site-nav-drawer\s*\{[\s\S]*transform: translateX\(-102%\)/);
   assert.match(styles, /\.site-header\.menu-open \+ \.site-nav-drawer \{ transform: translateX\(0\)/);
   assert.match(styles, /@media \(min-width: 761px\)[\s\S]*grid-template-columns: 0 minmax\(0, 1fr\)/);
   assert.match(styles, /\[data-dom-lisp-root\]:has\(\.site-header\.menu-open\)\s*\{[\s\S]*grid-template-columns: var\(--rail-width\) minmax\(0, 1fr\)/);
   assert.match(styles, /\[data-dom-lisp-root\]:has\(\.site-nav-drawer\) > main\s*\{[\s\S]*grid-column: 2/);
-  assert.match(styles, /\.site-header > \.brand\s*\{[\s\S]*grid-column: 2/);
-  assert.match(styles, /\.site-header \.theme-toggle \{ grid-row: 1; grid-column: 3/);
+  assert.match(chromeStyles, /\.site-header > \.brand, \.docs-header \.brand\s*\{[\s\S]*grid-column: 2/);
+  assert.match(chromeStyles, /\.theme-toggle\s*\{[\s\S]*grid-column: 3/);
 });
 
 test("landing and inner pages mount the same semantic navigation with different defaults", async () => {
@@ -279,7 +281,7 @@ test("shared navigation uses a consistent desktop sidebar and left-aligned conte
   const landingStyles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
   assert.match(docsStyles, /grid-template-columns: clamp\(250px, 22vw, 310px\)/);
   assert.match(docsStyles, /\.docs-nav[^}]*padding: 1\.5rem \.65rem 1\.5rem \.9rem/);
-  assert.match(docsStyles, /\.docs-header[^}]*grid-template-columns: 2\.5rem minmax\(0, 1fr\) auto/);
+  assert.match(chromeStyles, /\.site-header, \.docs-header[^}]*grid-template-columns: 2\.5rem minmax\(0, 1fr\) auto/);
   assert.match(landingStyles, /\.site-nav-drawer[^}]*width: min\(21rem, 88vw\)/);
 });
 
@@ -291,12 +293,24 @@ test("documentation and Playground shells provide hosts for the common project t
       assert.ok(document.includes("data-dom-lisp-root"), "docs/ is missing its DOM Lisp host");
       const launcher = page === "" ? "docs-overview" : page === "applications/" ? "applications-page" : page === "assembly/" ? "assembly-page" : page === "foundation/" ? "foundation" : page === "seed/" ? "seed-page" : page === "bootstrap/" ? "bootstrap-page" : "compiler-page";
       assert.ok(document.includes(`src="/src/${launcher}.ts"`), `${page || "docs/"} is missing its thin DOM Lisp launcher`);
+      assert.ok(document.includes('href="/src/docs.css"'), `${page || "docs/"} does not load shared chrome before its DOM Lisp program`);
+      assert.ok(document.includes('src="/page-shell.js"'), `${page || "docs/"} is missing the shared loading shell`);
     } else assert.ok(document.includes('class="docs-nav"'), `${page} is missing the shared navigation host`);
   }
   const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
   assert.ok(playground.includes("data-docs-shell"));
   assert.ok(playground.includes('class="docs-nav"'));
   assert.ok(playground.includes("data-docs-menu"));
+});
+
+test("all top bars use one shared chrome contract and DOM Lisp pages avoid an empty first paint", () => {
+  assert.ok(chromeStyles.includes(".site-header, .docs-header"));
+  assert.ok(chromeStyles.includes(".site-header > .brand, .docs-header .brand"));
+  assert.ok(chromeStyles.includes(".header-controls, .header-actions"));
+  assert.ok(loadingShell.includes('class="docs-header"'));
+  assert.ok(loadingShell.includes("Y<span>A</span>LISP"));
+  assert.ok(loadingShell.includes("root.childElementCount"));
+  assert.ok(loadingShell.includes('document.documentElement.dataset.theme !== "light"'));
 });
 
 test("Hello World exposes its complete Lisp application and generic launchers", async () => {
