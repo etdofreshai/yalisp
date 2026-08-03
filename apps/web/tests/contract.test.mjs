@@ -248,7 +248,8 @@ test("Vite redirects canonical page routes to their trailing-slash form", async 
     "/playground",
     "/examples",
     "/examples/hello-world",
-    "/examples/pong"
+    "/examples/pong",
+    "/examples/breakout"
   ]) assert.ok(viteConfig.includes(`"${route}"`), `missing canonical redirect route ${route}`);
   assert.ok(viteConfig.includes("configureServer(server)"));
   assert.ok(viteConfig.includes("configurePreviewServer(server)"));
@@ -311,6 +312,18 @@ test("Pong separates the executable browser host from its real YALISP probe", as
   assert.ok(behavior.includes("stepPong"));
   assert.ok(behavior.includes("pointerdown"));
   assert.ok(behavior.includes("ArrowUp"));
+});
+
+test("Breakout separates the executable browser host from its real YALISP probe", async () => {
+  const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
+  const page = await readFile(new URL("../examples/breakout/index.html", import.meta.url), "utf8");
+  const source = await readFile(new URL("../public/examples/breakout/logic.lisp", import.meta.url), "utf8");
+  assert.ok(gallery.includes('href="/examples/breakout/"'));
+  for (const marker of ["data-game-demo=\"breakout\"", "Interactive Breakout reference", "Run YALISP state probe", "browser-host reference—not a claim"]) {
+    assert.ok(page.includes(marker), `Breakout page is missing ${marker}`);
+  }
+  assert.ok(source.includes("breakout.bounce-y"));
+  assert.ok(source.includes("breakout.hit-score"));
 });
 
 test("Foundation docs own their actual checked-in sources and retire the standalone Code destination", async () => {

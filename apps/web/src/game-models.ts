@@ -45,3 +45,39 @@ export function stepPong(state: PongState, dt: number, playerDirection: -1 | 0 |
   if (state.ballX > pongWidth + ballRadius) { state.playerScore += 1; resetPongBall(state, -1); }
   return state;
 }
+
+export type BreakoutBrick = { x: number; y: number; alive: boolean };
+export type BreakoutState = {
+  ballX: number; ballY: number; ballVx: number; ballVy: number;
+  paddleX: number; score: number; lives: number; bricks: BreakoutBrick[];
+};
+
+export function createBreakoutState(): BreakoutState {
+  const bricks = Array.from({ length: 32 }, (_, index) => ({
+    x: 36 + (index % 8) * 72,
+    y: 50 + Math.floor(index / 8) * 28,
+    alive: true
+  }));
+  return { ballX: 320, ballY: 278, ballVx: 155, ballVy: -190, paddleX: 272, score: 0, lives: 3, bricks };
+}
+
+function resetBreakoutBall(state: BreakoutState) {
+  state.ballX = 320; state.ballY = 278; state.ballVx = 155; state.ballVy = -190;
+}
+
+export function stepBreakout(state: BreakoutState, dt: number, direction: -1 | 0 | 1) {
+  const step = Math.min(Math.max(dt, 0), 1 / 30);
+  state.paddleX = Math.min(544, Math.max(0, state.paddleX + direction * 330 * step));
+  state.ballX += state.ballVx * step; state.ballY += state.ballVy * step;
+  if (state.ballX <= 8) { state.ballX = 8; state.ballVx = Math.abs(state.ballVx); }
+  if (state.ballX >= 632) { state.ballX = 632; state.ballVx = -Math.abs(state.ballVx); }
+  if (state.ballY <= 8) { state.ballY = 8; state.ballVy = Math.abs(state.ballVy); }
+  if (state.ballVy > 0 && state.ballY >= 320 && state.ballY <= 338 && state.ballX >= state.paddleX && state.ballX <= state.paddleX + 96) {
+    state.ballY = 320; state.ballVy = -Math.abs(state.ballVy);
+    state.ballVx += (state.ballX - (state.paddleX + 48)) * 1.5;
+  }
+  const hit = state.bricks.find((brick) => brick.alive && state.ballX >= brick.x && state.ballX <= brick.x + 64 && state.ballY >= brick.y && state.ballY <= brick.y + 18);
+  if (hit) { hit.alive = false; state.score += 10; state.ballVy = -state.ballVy; }
+  if (state.ballY > 370) { state.lives -= 1; resetBreakoutBall(state); }
+  return state;
+}
