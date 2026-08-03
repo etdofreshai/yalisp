@@ -20,4 +20,12 @@
 .example-output span { margin-bottom: .5rem; color: var(--muted); font: .62rem "DM Mono", monospace; text-transform: uppercase; }
 .example-output output { min-height: 1.4rem; overflow-wrap: anywhere; color: #c9f85a; font: .82rem/1.6 "DM Mono", monospace; white-space: pre-wrap; }
 .example-command { padding: .9rem 1rem; margin: 1rem 0 0; overflow-x: auto; border: 1px solid var(--line); color: var(--ink); font: .72rem/1.6 "DM Mono", monospace; white-space: nowrap; }
+.game-frame { min-width: 0; margin-top: 2rem; border: 1px solid var(--line); background: #080a08; }
+.game-frame canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #080a08; touch-action: none; }
+.game-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .75rem; border-top: 1px solid var(--line); background: var(--paper); }
+.game-toolbar button, .game-touch button { min-height: 2.9rem; padding: .65rem 1rem; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; font: .7rem "DM Mono", monospace; }
+.game-toolbar button:hover, .game-touch button:hover, .game-touch button.active { background: var(--ink); color: var(--paper); }
+.game-toolbar output { color: #c9f85a; font: .67rem/1.4 "DM Mono", monospace; text-align: right; }
+.game-touch { display: grid; grid-template-columns: repeat(2, 1fr); gap: .65rem; padding: .75rem; border-top: 1px solid var(--line); background: var(--paper); }
+.game-instructions { margin: .8rem 0 0; color: var(--muted); font: .68rem/1.6 "DM Mono", monospace; }
 @media (min-width: 700px) { .example-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -247,7 +247,8 @@ test("Vite redirects canonical page routes to their trailing-slash form", async 
     "/docs/dom",
     "/playground",
     "/examples",
-    "/examples/hello-world"
+    "/examples/hello-world",
+    "/examples/pong"
   ]) assert.ok(viteConfig.includes(`"${route}"`), `missing canonical redirect route ${route}`);
   assert.ok(viteConfig.includes("configureServer(server)"));
   assert.ok(viteConfig.includes("configurePreviewServer(server)"));
@@ -293,6 +294,23 @@ test("Examples start with a truthful executable CLI milestone", async () => {
   assert.equal(exampleSource.trim(), '"Hello, world!"');
   assert.ok(behavior.includes('createSeedSession("seed")'));
   assert.ok(behavior.includes("session.evaluate(source)"));
+});
+
+test("Pong separates the executable browser host from its real YALISP probe", async () => {
+  const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
+  const pong = await readFile(new URL("../examples/pong/index.html", import.meta.url), "utf8");
+  const source = await readFile(new URL("../public/examples/pong/logic.lisp", import.meta.url), "utf8");
+  const behavior = await readFile(new URL("../src/game-demos.ts", import.meta.url), "utf8");
+
+  assert.ok(gallery.includes('href="/examples/pong/"'));
+  for (const marker of ["data-game-demo=\"pong\"", "Interactive Pong reference", "Run YALISP state probe", "does not claim the complete game runs inside YALISP"]) {
+    assert.ok(pong.includes(marker), `Pong page is missing ${marker}`);
+  }
+  assert.ok(source.includes("pong.next-x"));
+  assert.ok(source.includes("pong.bounce-x"));
+  assert.ok(behavior.includes("stepPong"));
+  assert.ok(behavior.includes("pointerdown"));
+  assert.ok(behavior.includes("ArrowUp"));
 });
 
 test("Foundation docs own their actual checked-in sources and retire the standalone Code destination", async () => {

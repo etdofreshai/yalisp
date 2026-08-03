@@ -1,6 +1,7 @@
 import "./docs";
 import "./examples.css";
 import { createSeedSession } from "./seed-runtime";
+import { mountGameDemo } from "./game-demos";
 
 const runner = document.querySelector<HTMLElement>("[data-yalispexample]");
 
@@ -41,3 +42,5 @@ if (runner) {
     }
   });
 }
+
+document.querySelectorAll<HTMLElement>("[data-game-demo]").forEach(mountGameDemo);
