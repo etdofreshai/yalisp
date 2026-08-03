@@ -320,16 +320,20 @@ test("Pong exposes the complete source package that its runner imports", async (
   assert.ok(behavior.includes("mountPong"));
 });
 
-test("Breakout separates the executable browser host from its real YALISP probe", async () => {
+test("Breakout exposes the complete source package that its runner imports", async () => {
   const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
   const page = await readFile(new URL("../examples/breakout/index.html", import.meta.url), "utf8");
-  const source = await readFile(new URL("../public/examples/breakout/logic.lisp", import.meta.url), "utf8");
+  const source = await readFile(new URL("../src/examples/breakout/app.ts", import.meta.url), "utf8");
+  const behavior = await readFile(new URL("../src/examples.ts", import.meta.url), "utf8");
   assert.ok(gallery.includes('href="/examples/breakout/"'));
-  for (const marker of ["data-game-demo=\"breakout\"", "Interactive Breakout reference", "Run YALISP state probe", "browser-host reference—not a claim"]) {
+  for (const marker of ["data-portable-app=\"breakout\"", "Complete executable package", "data-application-source=\"breakout\"", "does not run in the WAT seed"]) {
     assert.ok(page.includes(marker), `Breakout page is missing ${marker}`);
   }
-  assert.ok(source.includes("breakout.bounce-y"));
-  assert.ok(source.includes("breakout.hit-score"));
+  for (const marker of ["export type Brick", "createBreakoutState", "updateBreakout", "drawBreakout", "mountBreakout", "ArrowLeft", "data-app-action"]) {
+    assert.ok(source.includes(marker), `Breakout app source is missing ${marker}`);
+  }
+  assert.ok(behavior.includes('import { mountBreakout } from "./examples/breakout/app"'));
+  assert.ok(behavior.includes('import breakoutApplicationSource from "./examples/breakout/app?raw"'));
 });
 
 test("Asteroids separates the executable browser host from its real YALISP probe", async () => {

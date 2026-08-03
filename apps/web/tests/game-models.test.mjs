@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createPongState, updatePong } from "../src/examples/pong/app.ts";
-import { createAsteroidsState, createBreakoutState, fireAsteroidBullet, stepAsteroids, stepBreakout, wrapCoordinate } from "../src/game-models.ts";
+import { createBreakoutState, updateBreakout } from "../src/examples/breakout/app.ts";
+import { createAsteroidsState, fireAsteroidBullet, stepAsteroids, wrapCoordinate } from "../src/game-models.ts";
 
 const input = (held = []) => ({ held: (action) => held.includes(action), pressed: () => false });
 
@@ -38,12 +39,12 @@ test("Asteroids model wraps motion, bounds bullets, and scores real hits", () =>
 test("Breakout model removes a hit brick and guards lost balls with lives", () => {
   const state = createBreakoutState();
   const brick = state.bricks[0];
-  state.ballX = brick.x + 8; state.ballY = brick.y + 8; state.ballVx = 0; state.ballVy = 1;
-  stepBreakout(state, 0, 0);
+  state.ball.x = brick.x + 8; state.ball.y = brick.y + 8; state.ball.velocityX = 0; state.ball.velocityY = 1;
+  updateBreakout(state, 0, input());
   assert.equal(brick.alive, false);
   assert.equal(state.score, 10);
-  state.ballY = 371;
-  stepBreakout(state, 0, 0);
+  state.ball.y = 371;
+  updateBreakout(state, 0, input());
   assert.equal(state.lives, 2);
-  assert.equal(state.ballY, 278);
+  assert.equal(state.ball.y, 278);
 });

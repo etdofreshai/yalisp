@@ -1,4 +1,39 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="theme-color" content="#101310" /><meta name="description" content="Play Breakout and run its real YALISP state probe" /><title>Breakout · YALISP Examples</title><style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style><script src="/theme-init.js"></script></head>
-  <body><a class="skip-link" href="#content">Skip to example</a><header class="docs-header"><a class="brand" href="/" aria-label="YALISP home">Y<span>A</span>LISP</a><div class="header-actions"><button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle><span aria-hidden="true">☀</span><span>Light</span></button><button class="docs-menu" type="button" aria-label="Toggle project navigation" aria-expanded="false" data-docs-menu><span></span><span></span></button></div></header>
-    <div class="docs-shell playground-shell" data-docs-shell><aside class="docs-nav" aria-label="Project navigation"></aside><main id="content" class="examples-main"><p class="eyebrow"><a href="/examples/">Examples</a> / Breakout</p><section><p class="section-number">03 / Game</p><h1>Break the wall.<br /><em>Keep the boundary.</em></h1><p class="lede">The browser host provides a playable brick field; the actual seed evaluates the checked-in movement, bounce, and scoring probe.</p><div class="example-meta"><span class="example-badge">Interactive canvas</span><span class="example-badge">Real YALISP probe</span><span class="example-badge">No simulated output</span></div><div class="game-frame" data-game-demo="breakout"><canvas width="640" height="360" aria-label="Interactive Breakout reference"></canvas><div class="game-toolbar"><button type="button" data-game-toggle aria-pressed="false">Play Breakout</button><output data-game-status>0 points · 3 lives · paused</output></div><div class="game-touch" aria-label="Breakout touch controls"><button type="button" data-breakout-direction="left">Move left</button><button type="button" data-breakout-direction="right">Move right</button></div></div><p class="game-instructions">Keyboard: A/D or ←/→. Touch: hold either movement button. Ball loss, brick collision, score, and lives are measured browser state.</p><div class="example-runner" data-yalispexample data-source="/examples/breakout/logic.lisp"><div class="example-runner-header"><span>public/examples/breakout/logic.lisp</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/public/examples/breakout/logic.lisp">Source ↗</a></div><pre><code data-example-source>Loading checked-in source…</code></pre><button type="button" data-example-run disabled>Run YALISP state probe</button><div class="example-output"><span>Actual seed output: next x, bounced y, hit score</span><output data-example-output>Not run yet.</output></div></div><p class="interface-note">Execution boundary: the canvas, animation loop, keyboard/touch input, collision field, and lives system run in TypeScript. The displayed <code>logic.lisp</code> runs in the WAT seed. Until the planned DOM/SDL and Game Runtime bindings exist, this is a browser-host reference—not a claim that the complete game executes in YALISP.</p></section></main></div><script type="module" src="/src/examples.ts"></script></body></html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101310" />
+    <meta name="description" content="Play Breakout and inspect its complete executable application package" />
+    <title>Breakout · YALISP Examples</title>
+    <style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style>
+    <script src="/theme-init.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to example</a>
+    <header class="docs-header"><a class="brand" href="/" aria-label="YALISP home">Y<span>A</span>LISP</a><div class="header-actions"><button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle><span aria-hidden="true">☀</span><span>Light</span></button><button class="docs-menu" type="button" aria-label="Toggle project navigation" aria-expanded="false" data-docs-menu><span></span><span></span></button></div></header>
+    <div class="docs-shell playground-shell" data-docs-shell>
+      <aside class="docs-nav" aria-label="Project navigation"></aside>
+      <main id="content" class="examples-main">
+        <p class="eyebrow"><a href="/examples/">Examples</a> / Breakout</p>
+        <section>
+          <p class="section-number">03 / Game</p>
+          <h1>Break the wall.<br /><em>See the whole app.</em></h1>
+          <p class="lede">The exact TypeScript package shown below defines the ball, paddle, bricks, input mapping, update and collision rules, scoring, lives, and every drawing command used by this playable page.</p>
+          <div class="example-meta"><span class="example-badge">Executed source shown</span><span class="example-badge">Portable app contract</span><span class="example-badge">Canvas DOM binding</span></div>
+          <div class="game-frame" data-portable-app="breakout">
+            <canvas width="640" height="360" aria-label="Interactive Breakout application"></canvas>
+            <div class="game-toolbar"><button type="button" data-game-toggle aria-pressed="false">Play Breakout</button><output data-game-status>0 points · 3 lives · paused</output></div>
+            <div class="game-touch" aria-label="Breakout touch controls"><button type="button" data-app-action="left">Move left</button><button type="button" data-app-action="right">Move right</button></div>
+          </div>
+          <p class="game-instructions">Keyboard: A/D or ←/→. Touch: hold either movement button. The app package owns game state and drawing; the shared binding owns DOM events and frame scheduling.</p>
+          <p class="source-package-intro"><strong>Complete executable package.</strong> <code>app.ts</code> is imported by this page. It targets the concrete portable contract in <code>portable-app.ts</code>.</p>
+          <article class="source-package"><div class="example-runner-header"><span>src/examples/breakout/app.ts</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/breakout/app.ts">Source ↗</a></div><pre><code data-application-source="breakout">Loading bundled application source…</code></pre></article>
+          <details class="runtime-source"><summary>Shared runtime adapter · src/examples/runtime/portable-app.ts</summary><pre><code data-portable-runtime-source>Loading bundled runtime source…</code></pre></details>
+          <p class="interface-note">Authenticity boundary: this is an implemented TypeScript portable-application contract with a browser Canvas 2D adapter. Its shape vocabulary deliberately mirrors the planned SDL drawing layer, but it is not the unimplemented YALISP DOM/SDL binding and does not run in the WAT seed.</p>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/examples.ts"></script>
+  </body>
+</html>
