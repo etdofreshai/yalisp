@@ -336,16 +336,20 @@ test("Breakout exposes the complete source package that its runner imports", asy
   assert.ok(behavior.includes('import breakoutApplicationSource from "./examples/breakout/app?raw"'));
 });
 
-test("Asteroids separates the executable browser host from its real YALISP probe", async () => {
+test("Asteroids exposes the complete source package that its runner imports", async () => {
   const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
   const page = await readFile(new URL("../examples/asteroids/index.html", import.meta.url), "utf8");
-  const source = await readFile(new URL("../public/examples/asteroids/logic.lisp", import.meta.url), "utf8");
+  const source = await readFile(new URL("../src/examples/asteroids/app.ts", import.meta.url), "utf8");
+  const behavior = await readFile(new URL("../src/examples.ts", import.meta.url), "utf8");
   assert.ok(gallery.includes('href="/examples/asteroids/"'));
-  for (const marker of ["data-game-demo=\"asteroids\"", "Interactive Asteroids reference", "Run YALISP state probe", "not a complete YALISP game runtime"]) {
+  for (const marker of ["data-portable-app=\"asteroids\"", "Complete executable package", "data-application-source=\"asteroids\"", "does not run in the WAT seed"]) {
     assert.ok(page.includes(marker), `Asteroids page is missing ${marker}`);
   }
-  assert.ok(source.includes("asteroids.wrap"));
-  assert.ok(source.includes("asteroids.hit-score"));
+  for (const marker of ["export type Asteroid", "export type Bullet", "createAsteroidsState", "updateAsteroids", "drawAsteroids", "fireBullet", "mountAsteroids", "data-app-action"]) {
+    assert.ok(source.includes(marker), `Asteroids app source is missing ${marker}`);
+  }
+  assert.ok(behavior.includes('import { mountAsteroids } from "./examples/asteroids/app"'));
+  assert.ok(behavior.includes('import asteroidsApplicationSource from "./examples/asteroids/app?raw"'));
 });
 
 test("documentation links all four examples and preserves their runtime boundary", async () => {
