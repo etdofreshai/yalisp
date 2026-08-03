@@ -3,6 +3,7 @@ import "./project-navigation.css";
 import { assemblyInventory } from "./assembly-inventory";
 import { mountProjectNavigation } from "./project-navigation";
 import { mountSidebarState } from "./sidebar-state";
+import { renderTopBar } from "./top-bar";
 
 const menuButton = document.querySelector<HTMLButtonElement>("[data-docs-menu]");
 const shell = document.querySelector<HTMLElement>("[data-docs-shell]");
@@ -23,8 +24,8 @@ const { navigation: projectNav } = mountProjectNavigation(docsNav, {
   navigationId: "project-navigation"
 });
 menuButton.setAttribute("aria-controls", projectNav.id);
-menuButton.setAttribute("aria-label", "Toggle project navigation");
 menuButton.setAttribute("aria-expanded", "true");
+renderTopBar();
 
 const disposeSidebarState = mountSidebarState({
   root: document,
@@ -42,12 +43,8 @@ menuButton.addEventListener("click", () => {
 function setTheme(theme: "light" | "dark", persist = false) {
   document.documentElement.dataset.theme = theme;
   if (persist) localStorage.setItem("yalisp-theme", theme);
-  const isDark = theme === "dark";
-  themeToggle!.setAttribute("aria-pressed", String(isDark));
-  themeToggle!.setAttribute("aria-label", `Switch to ${isDark ? "light" : "dark"} mode`);
-  themeToggle!.querySelector("span")!.textContent = isDark ? "☀" : "◐";
-  themeToggle!.querySelector("span + span")!.textContent = isDark ? "Light" : "Dark";
-  if (themeColor) themeColor.content = isDark ? "#101310" : "#f0eeea";
+  renderTopBar();
+  if (themeColor) themeColor.content = theme === "dark" ? "#101310" : "#f0eeea";
 }
 
 setTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark");

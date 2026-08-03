@@ -17,6 +17,8 @@ const sidebarState = await readFile(new URL("../src/sidebar-state.ts", import.me
 const domLispChrome = await readFile(new URL("../src/dom-lisp-chrome.ts", import.meta.url), "utf8");
 const chromeStyles = await readFile(new URL("../src/chrome.css", import.meta.url), "utf8");
 const loadingShell = await readFile(new URL("../public/page-shell.js", import.meta.url), "utf8");
+const topBar = await readFile(new URL("../src/top-bar.ts", import.meta.url), "utf8");
+const docsScript = await readFile(new URL("../src/docs.ts", import.meta.url), "utf8");
 
 test("landing page exposes its essential semantic and social contracts", () => {
   for (const marker of [
@@ -311,6 +313,11 @@ test("all top bars use one shared chrome contract and DOM Lisp pages avoid an em
   assert.ok(loadingShell.includes("Y<span>A</span>LISP"));
   assert.ok(loadingShell.includes("root.childElementCount"));
   assert.ok(loadingShell.includes('document.documentElement.dataset.theme !== "light"'));
+  assert.ok(topBar.includes("export function renderTopBar"));
+  assert.ok(topBar.includes('"Toggle project navigation"'));
+  assert.ok(topBar.includes('isDark ? "☀" : "◐"'));
+  assert.ok(domLispChrome.includes("renderTopBar(root)"));
+  assert.ok(docsScript.includes("renderTopBar()"));
 });
 
 test("Hello World exposes its complete Lisp application and generic launchers", async () => {

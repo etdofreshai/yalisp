@@ -1,5 +1,6 @@
 import { mountProjectNavigation } from "./project-navigation";
 import { mountSidebarState } from "./sidebar-state";
+import { renderTopBar } from "./top-bar";
 
 /**
  * The DOM Lisp pages declare the shell and menu state. This tiny browser-side
@@ -7,6 +8,7 @@ import { mountSidebarState } from "./sidebar-state";
  * landing, docs, Playground, and examples never drift into separate menus.
  */
 export function mountDomLispChrome(root: HTMLElement, initialState: "collapsed" | "expanded") {
+  renderTopBar(root);
   const host = root.querySelector<HTMLElement>("[data-project-navigation]");
   if (!host) return () => {};
 
