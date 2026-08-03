@@ -1,4 +1,5 @@
 import { mountProjectNavigation } from "./project-navigation";
+import { mountSidebarState } from "./sidebar-state";
 
 /**
  * The DOM Lisp pages declare the shell and menu state. This tiny browser-side
@@ -15,16 +16,18 @@ export function mountDomLispChrome(root: HTMLElement, initialState: "collapsed" 
     navigationId: "project-navigation"
   });
 
-  const closeMenu = () => {
-    const shell = root.querySelector<HTMLElement>(".docs-shell");
-    const header = root.querySelector<HTMLElement>(".site-header");
-    shell?.classList.remove("nav-open", "sidebar-collapsed");
-    header?.classList.remove("menu-open");
-  };
-  navigation.querySelectorAll<HTMLAnchorElement>("a").forEach((link) => link.addEventListener("click", closeMenu));
+  const menuButton = root.querySelector<HTMLButtonElement>(".menu-button, .docs-menu");
+  if (!menuButton) throw new Error("The DOM Lisp shell needs a navigation button.");
+  const disposeSidebar = mountSidebarState({
+    root,
+    menuButton,
+    defaultDesktopOpen: initialState === "expanded",
+    header: root.querySelector<HTMLElement>(".site-header"),
+    shell: root.querySelector<HTMLElement>(".docs-shell")
+  });
 
   return () => {
+    disposeSidebar();
     dispose();
-    navigation.querySelectorAll<HTMLAnchorElement>("a").forEach((link) => link.removeEventListener("click", closeMenu));
   };
 }

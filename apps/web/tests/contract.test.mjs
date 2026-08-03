@@ -13,6 +13,8 @@ const bootstrapPageSource = await readFile(new URL("../src/site/bootstrap-page.l
 const compilerPageSource = await readFile(new URL("../src/site/compiler-page.lisp", import.meta.url), "utf8");
 const applicationsPageSource = await readFile(new URL("../src/site/applications-page.lisp", import.meta.url), "utf8");
 const navigation = await readFile(new URL("../src/project-navigation.ts", import.meta.url), "utf8");
+const sidebarState = await readFile(new URL("../src/sidebar-state.ts", import.meta.url), "utf8");
+const domLispChrome = await readFile(new URL("../src/dom-lisp-chrome.ts", import.meta.url), "utf8");
 
 test("landing page exposes its essential semantic and social contracts", () => {
   for (const marker of [
@@ -87,9 +89,20 @@ test("landing and inner pages mount the same semantic navigation with different 
   assert.match(navStyles, /\.project-nav-link[^}]*min-height: 2\.25rem/);
   assert.ok(landing.includes("data-project-navigation"));
   assert.ok(docsBehavior.includes('initialState: "expanded"'));
-  assert.ok(docsBehavior.includes("setSidebarCollapsed(false)"));
+  assert.ok(docsBehavior.includes("mountSidebarState"));
+  assert.ok(docsBehavior.includes("defaultDesktopOpen: true"));
   assert.ok(playgroundBehavior.includes('import "./docs"'));
   assert.ok(!navigation.includes('href="/code/"'), "shared navigation still advertises the retired Code destination");
+});
+
+test("desktop sidebar state persists between routes while mobile navigation stays transient", () => {
+  assert.ok(sidebarState.includes('"yalisp-sidebar-desktop-open"'));
+  assert.ok(sidebarState.includes("localStorage.setItem(desktopSidebarKey"));
+  assert.ok(sidebarState.includes("if (options.root instanceof Document) applyDesktop(nextOpen)"));
+  assert.ok(sidebarState.includes('target.closest(".project-navigation a")'));
+  assert.ok(sidebarState.includes("if (isMobile()) closeMobile()"));
+  assert.ok(domLispChrome.includes("defaultDesktopOpen: initialState === \"expanded\""));
+  assert.ok(source.includes('mountDomLispChrome(renderedRoot, "collapsed")'));
 });
 
 test("sidebar nested numbers mirror printed page section numbers without inventing them", async () => {

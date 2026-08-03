@@ -2,6 +2,7 @@ import "./docs.css";
 import "./project-navigation.css";
 import { assemblyInventory } from "./assembly-inventory";
 import { mountProjectNavigation } from "./project-navigation";
+import { mountSidebarState } from "./sidebar-state";
 
 const menuButton = document.querySelector<HTMLButtonElement>("[data-docs-menu]");
 const shell = document.querySelector<HTMLElement>("[data-docs-shell]");
@@ -25,12 +26,18 @@ menuButton.setAttribute("aria-controls", projectNav.id);
 menuButton.setAttribute("aria-label", "Toggle project navigation");
 menuButton.setAttribute("aria-expanded", "true");
 
-function setSidebarCollapsed(collapsed: boolean) {
-  shell!.classList.toggle("sidebar-collapsed", collapsed);
-  menuButton!.setAttribute("aria-expanded", String(!collapsed));
-}
+const disposeSidebarState = mountSidebarState({
+  root: document,
+  menuButton,
+  defaultDesktopOpen: true,
+  shell
+});
 
-setSidebarCollapsed(false);
+menuButton.addEventListener("click", () => {
+  if (!window.matchMedia("(max-width: 760px)").matches) return;
+  const isOpen = shell.classList.toggle("nav-open");
+  menuButton.setAttribute("aria-expanded", String(isOpen));
+});
 
 function setTheme(theme: "light" | "dark", persist = false) {
   document.documentElement.dataset.theme = theme;
@@ -49,15 +56,6 @@ themeToggle.addEventListener("click", () => {
   setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true);
 });
 
-menuButton.addEventListener("click", () => {
-  if (window.matchMedia("(max-width: 760px)").matches) {
-    const isOpen = shell.classList.toggle("nav-open");
-    menuButton.setAttribute("aria-expanded", String(isOpen));
-    return;
-  }
-  setSidebarCollapsed(!shell.classList.contains("sidebar-collapsed"));
-});
-
 document.querySelectorAll<HTMLAnchorElement>(".project-navigation a").forEach((link) => {
   link.addEventListener("click", () => {
     shell.classList.remove("nav-open");
@@ -71,6 +69,8 @@ document.addEventListener("keydown", (event) => {
   menuButton.setAttribute("aria-expanded", "false");
   menuButton.focus();
 });
+
+window.addEventListener("pagehide", () => disposeSidebarState(), { once: true });
 
 const inventory = document.querySelector<HTMLElement>("[data-assembly-inventory]");
 function describeFunction(name: string) {
