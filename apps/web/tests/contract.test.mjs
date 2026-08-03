@@ -171,6 +171,23 @@ test("anchor groups disclose only for their owning route and track the active se
   assert.match(navStyles, /\.project-nav-anchor\.active[^}]*box-shadow: inset 2px 0 var\(--accent\)/);
 });
 
+test("DOM Lisp forwards hash and scroll section changes into the documentation state", async () => {
+  const host = await readFile(new URL("../src/dom-lisp.ts", import.meta.url), "utf8");
+  for (const marker of [
+    'const sectionChangeAttribute = "on-section-change"',
+    'window.addEventListener("hashchange", syncActiveSection)',
+    'window.addEventListener("scroll", () =>',
+    'root.querySelectorAll<HTMLElement>("main section[id]")',
+    'dispatch(`${sectionEventPrefix}-${selected}`)'
+  ]) assert.ok(host.includes(marker), `missing generic section bridge: ${marker}`);
+  for (const marker of [
+    "(at 'on-section-change 'section)",
+    "(defn active-state",
+    "'section-foundation",
+    "(aria 'aria-current \"location\")"
+  ]) assert.ok(docsOverview.includes(marker), `missing Lisp-owned active-section behavior: ${marker}`);
+});
+
 test("Docs, Foundation, and Interfaces disclosures use exact normalized route ownership", () => {
   for (const route of ["/docs", "/docs/", "/docs//", "/docs/index.html", "/docs/#reference-interfaces", "/docs/?from=nav#foundation"]) {
     assert.deepEqual(getNavigationOwnerState(route), {
