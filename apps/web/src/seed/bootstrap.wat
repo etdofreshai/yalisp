@@ -26,15 +26,15 @@
 ;; Memory map:
 ;;   [0,    64)  scratch (integer formatting)
 ;;   [64, 1024)  constant strings
-;;   [1024, 8192) input buffer (host writes source here)
-;;   [8192, .  )  heap (bump allocated; no GC yet)
+;;   [1024, 32768) input buffer (host writes source here)
+;;   [32768, .  )  heap (bump allocated; no GC yet)
 
 (module
   (import "host" "write" (func $host_write (param i32 i32)))
 
   (memory (export "memory") 4)
 
-  (global $heap    (mut i32) (i32.const 8192))
+  (global $heap    (mut i32) (i32.const 32768))
   (global $nil     (mut i32) (i32.const 0))
   (global $true    (mut i32) (i32.const 0))
   (global $false   (mut i32) (i32.const 0))
@@ -918,7 +918,7 @@
 
   ;; --- init ---
   (func $init
-    (global.set $heap (i32.const 8192))
+    (global.set $heap (i32.const 32768))
     (global.set $nil (call $alloc (i32.const 4)))
     (i32.store (global.get $nil) (i32.const 0))
     (global.set $true (call $alloc (i32.const 4)))

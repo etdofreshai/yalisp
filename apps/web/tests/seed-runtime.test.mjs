@@ -23,6 +23,7 @@ parsed.destroy();
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const inputPointer = 1024;
+const inputEnd = 32768;
 
 async function createSession({ boot = false } = {}) {
   let memory;
@@ -37,7 +38,7 @@ async function createSession({ boot = false } = {}) {
   memory = instance.exports.memory;
   const load = (source) => {
     const bytes = encoder.encode(source);
-    assert.ok(bytes.length <= 8192 - inputPointer, "source exceeds the seed input region");
+    assert.ok(bytes.length <= inputEnd - inputPointer, "source exceeds the seed input region");
     new Uint8Array(memory.buffer).set(bytes, inputPointer);
     return bytes.length;
   };
@@ -183,8 +184,8 @@ test("string slices clamp malformed bounds without reading outside the string", 
 
 test("fixed input and heap limits fail truthfully instead of crossing WebAssembly memory", async () => {
   const session = await createSession();
-  assert.equal(session.evaluate(`;${"x".repeat(8192 - inputPointer - 1)}`), "");
-  assert.throws(() => session.evaluate("x".repeat(8192 - inputPointer + 1)), /input region/);
+  assert.equal(session.evaluate(`;${"x".repeat(inputEnd - inputPointer - 1)}`), "");
+  assert.throws(() => session.evaluate("x".repeat(inputEnd - inputPointer + 1)), /input region/);
 
   const heapSession = await createSession();
   let exhaustion;

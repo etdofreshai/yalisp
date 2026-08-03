@@ -13,6 +13,7 @@ const wabt = await wabtInit();
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const inputPointer = 1024;
+const inputEnd = 32768;
 
 async function createCompilerSession() {
   let memory;
@@ -27,7 +28,7 @@ async function createCompilerSession() {
   memory = instance.exports.memory;
   const load = (source) => {
     const bytes = encoder.encode(source);
-    assert.ok(bytes.length <= 8192 - inputPointer, "compiler test input exceeds the seed input region");
+    assert.ok(bytes.length <= inputEnd - inputPointer, "compiler test input exceeds the seed input region");
     new Uint8Array(memory.buffer).set(bytes, inputPointer);
     return bytes.length;
   };
