@@ -8,6 +8,7 @@ const source = await readFile(new URL("../src/main.ts", import.meta.url), "utf8"
 const landing = await readFile(new URL("../src/site/landing.lisp", import.meta.url), "utf8");
 const docsOverview = await readFile(new URL("../src/site/docs-overview.lisp", import.meta.url), "utf8");
 const foundationSource = await readFile(new URL("../src/site/foundation.lisp", import.meta.url), "utf8");
+const seedPageSource = await readFile(new URL("../src/site/seed-page.lisp", import.meta.url), "utf8");
 const navigation = await readFile(new URL("../src/project-navigation.ts", import.meta.url), "utf8");
 
 test("landing page exposes its essential semantic and social contracts", () => {
@@ -97,7 +98,7 @@ test("landing and inner pages mount the same semantic navigation with different 
 
 test("sidebar nested numbers mirror printed page section numbers without inventing them", async () => {
   const docs = docsOverview;
-  const seed = await readFile(new URL("../docs/seed/index.html", import.meta.url), "utf8");
+  const seed = seedPageSource;
   const bootstrap = await readFile(new URL("../docs/bootstrap/index.html", import.meta.url), "utf8");
   const compiler = await readFile(new URL("../docs/compiler/index.html", import.meta.url), "utf8");
   const system = await readFile(new URL("../docs/system-interface/index.html", import.meta.url), "utf8");
@@ -117,7 +118,7 @@ test("sidebar nested numbers mirror printed page section numbers without inventi
     [dom, "extension-safety", "06 / Extension safety", "05.03.06"],
     [sdl, "profiles", "06 / Profiles and boundaries", "05.04.06"]
   ]) {
-    assert.ok(document.includes(`id="${hash}"`), `${hash} is not a real section target`);
+    assert.ok(document.includes(document === seed ? `(id '${hash})` : `id="${hash}"`), `${hash} is not a real section target`);
     assert.ok(document.includes(printed), `${hash} is missing its printed section number`);
     assert.ok(navigation.includes(`["${hash}",`), `${hash} is absent from the shared tree`);
     assert.ok(navigation.includes(`"${nested}"]`), `${hash} is missing nested number ${nested}`);
@@ -285,9 +286,10 @@ test("documentation and Playground shells provide hosts for the common project t
   const pages = ["", "applications/", "assembly/", "bootstrap/", "compiler/", "dom/", "foundation/", "sdl/", "seed/", "system-interface/"];
   for (const page of pages) {
     const document = await readFile(new URL(`../docs/${page}index.html`, import.meta.url), "utf8");
-    if (page === "" || page === "foundation/") {
+    if (page === "" || page === "foundation/" || page === "seed/") {
       assert.ok(document.includes("data-dom-lisp-root"), "docs/ is missing its DOM Lisp host");
-      assert.ok(document.includes(`src="/src/${page === "" ? "docs-overview" : "foundation"}.ts"`), `${page || "docs/"} is missing its thin DOM Lisp launcher`);
+      const launcher = page === "" ? "docs-overview" : page === "foundation/" ? "foundation" : "seed-page";
+      assert.ok(document.includes(`src="/src/${launcher}.ts"`), `${page || "docs/"} is missing its thin DOM Lisp launcher`);
     } else assert.ok(document.includes('class="docs-nav"'), `${page} is missing the shared navigation host`);
   }
   const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
@@ -408,17 +410,18 @@ test("complete source packages use the shared horizontally safe source viewport"
 });
 
 test("Foundation docs own their actual checked-in sources and retire the standalone Code destination", async () => {
-  const seedPage = await readFile(new URL("../docs/seed/index.html", import.meta.url), "utf8");
+  const seedPage = seedPageSource;
   const bootstrapPage = await readFile(new URL("../docs/bootstrap/index.html", import.meta.url), "utf8");
   const compilerPage = await readFile(new URL("../docs/compiler/index.html", import.meta.url), "utf8");
   const legacyCode = await readFile(new URL("../code/index.html", import.meta.url), "utf8");
-  const behavior = await readFile(new URL("../src/source-docs.ts", import.meta.url), "utf8");
+  const behavior = await readFile(new URL("../src/seed-page.ts", import.meta.url), "utf8");
+  const sourceDocsBehavior = await readFile(new URL("../src/source-docs.ts", import.meta.url), "utf8");
   const styles = await readFile(new URL("../src/docs.css", import.meta.url), "utf8");
   const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url), "utf8");
   const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
   const compiler = await readFile(new URL("../public/yalisp/compiler.lisp", import.meta.url), "utf8");
 
-  assert.ok(seedPage.includes("data-seed-source"));
+  assert.ok(seedPage.includes("documented-source"));
   assert.ok(seedPage.includes("apps/web/src/seed/bootstrap.wat"));
   assert.ok(bootstrapPage.includes("data-bootstrap-source"));
   assert.ok(bootstrapPage.includes("apps/web/public/yalisp/boot.lisp"));
@@ -426,10 +429,11 @@ test("Foundation docs own their actual checked-in sources and retire the standal
   assert.ok(compilerPage.includes("apps/web/public/yalisp/compiler.lisp"));
   assert.ok(compilerPage.includes("scripts/build-aot.mjs"));
   assert.ok(compilerPage.includes("aot-benchmark.wasm"));
-  for (const page of [seedPage, bootstrapPage, compilerPage]) assert.ok(page.includes('src="/src/source-docs.ts"'));
+  assert.ok(seedPage.includes("(defn app.view"));
+  for (const page of [bootstrapPage, compilerPage]) assert.ok(page.includes('src="/src/source-docs.ts"'));
   assert.match(behavior, /bootstrap\.wat\?raw/);
-  assert.match(behavior, /"\/yalisp\/boot\.lisp"/);
-  assert.match(behavior, /"\/yalisp\/compiler\.lisp"/);
+  assert.match(sourceDocsBehavior, /"\/yalisp\/boot\.lisp"/);
+  assert.match(sourceDocsBehavior, /"\/yalisp\/compiler\.lisp"/);
   assert.match(styles, /\.source-view pre[^}]*overflow: auto/);
   assert.match(styles, /\.source-view code[^}]*white-space: pre/);
   assert.ok(wat.includes("(module"));
@@ -565,11 +569,11 @@ test("foundation documentation explains the bootstrapping path", async () => {
 });
 
 test("seed and bootstrap docs link to the first-class executable Playground", async () => {
-  const seed = await readFile(new URL("../docs/seed/index.html", import.meta.url), "utf8");
+  const seed = seedPageSource;
   const bootstrap = await readFile(new URL("../docs/bootstrap/index.html", import.meta.url), "utf8");
   const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
   const overview = docsOverview;
-  for (const marker of ['href="/playground/"', "real WebAssembly interpreter", "no simulated results"]) {
+  for (const marker of ['"/playground/"', "real WebAssembly interpreter", "no simulated results"]) {
     assert.ok(seed.includes(marker), `seed page is missing ${marker}`);
   }
   for (const marker of ['href="/playground/"', "boot.lisp", "Fibonacci", "compiler.lisp", "interpreter, JIT, and AOT paths"]) {
