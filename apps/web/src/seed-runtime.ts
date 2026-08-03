@@ -211,20 +211,40 @@ function mountDemo(root: HTMLElement) {
     manual.style.overflowY = manual.scrollHeight > 200 ? "auto" : "hidden";
   }
 
-  function appendTranscript(kind: "input" | "output" | "notice" | "error", text: string, label?: string) {
-    const entry = document.createElement("li");
-    entry.className = `repl-entry repl-entry-${kind}`;
-    if (label) {
-      const heading = document.createElement("span");
-      heading.className = "repl-entry-label";
-      heading.textContent = label;
-      entry.append(heading);
-    }
-    const content = document.createElement(kind === "input" ? "pre" : "output");
-    content.textContent = text;
-    entry.append(content);
-    transcript.append(entry);
+  function scrollTranscript() {
     transcript.scrollTop = transcript.scrollHeight;
+  }
+
+  function appendMessage(kind: "notice" | "error", text: string) {
+    const entry = document.createElement("li");
+    entry.className = `repl-message repl-message-${kind}`;
+    entry.textContent = text;
+    transcript.append(entry);
+    scrollTranscript();
+  }
+
+  function appendEvaluation(source: string) {
+    const input = document.createElement("li");
+    input.className = "repl-terminal-input";
+
+    const prompt = document.createElement("span");
+    prompt.className = "repl-terminal-prompt";
+    prompt.setAttribute("aria-hidden", "true");
+    prompt.textContent = ">";
+
+    const submitted = document.createElement("pre");
+    submitted.className = "repl-terminal-source";
+    submitted.textContent = source;
+    input.append(prompt, submitted);
+
+    const output = document.createElement("output");
+    const result = document.createElement("li");
+    result.className = "repl-terminal-output";
+    result.append(output);
+
+    transcript.append(input, result);
+    scrollTranscript();
+    return { result, output };
   }
 
   function renderExamples() {
@@ -255,28 +275,27 @@ function mountDemo(root: HTMLElement) {
     resizeComposer();
     status.textContent = "Ready";
     if (clearTranscript) transcript.replaceChildren();
-    if (!transcript.childElementCount) appendTranscript("notice", "Choose an example or enter a form below. Results are evaluated by the real WebAssembly-backed interpreter.");
+    if (!transcript.childElementCount) appendMessage("notice", "Choose an example or enter a form below. Results are evaluated by the real WebAssembly-backed interpreter.");
   }
 
-  async function runSource(label: string, text: string) {
-    const source = text.trim();
-    if (!source) return;
-    appendTranscript("input", source, label);
+  async function runSource(text: string) {
+    if (!text.trim()) return;
+    if (!session) appendMessage("notice", `Starting a fresh ${stage} session.`);
+    const terminal = appendEvaluation(text);
     status.textContent = "Running";
     manualRun.disabled = true;
     root.setAttribute("aria-busy", "true");
     try {
-      if (!session) {
-        appendTranscript("notice", `Started a fresh ${stage} session.`);
-        session = await createSeedSession(stage);
-      }
-      appendTranscript("output", session.evaluate(source) || "nil");
+      session ??= await createSeedSession(stage);
+      terminal.output.textContent = session.evaluate(text) || "nil";
       status.textContent = stage === "seed" ? "Seed result" : "Bootstrapped result";
     } catch (error) {
-      appendTranscript("error", error instanceof Error ? error.message : String(error));
+      terminal.result.classList.add("repl-terminal-error");
+      terminal.output.textContent = error instanceof Error ? error.message : String(error);
       session = undefined;
       status.textContent = "Fresh session required";
     } finally {
+      scrollTranscript();
       manualRun.disabled = false;
       root.removeAttribute("aria-busy");
     }
@@ -287,7 +306,7 @@ function mountDemo(root: HTMLElement) {
     selected = firstExample(stage);
     session = undefined;
     renderStage(true);
-    appendTranscript("notice", `Switched to ${stage}. A new interpreter session will start when you evaluate.`);
+    appendMessage("notice", `Switched to ${stage}. A new interpreter session will start when you evaluate.`);
   }
 
   root.querySelectorAll<HTMLButtonElement>("[data-seed-stage]").forEach((button) => {
@@ -306,7 +325,7 @@ function mountDemo(root: HTMLElement) {
       transcript.replaceChildren();
       selected = example;
       renderStage();
-      appendTranscript("notice", `Loaded a ${stage} example. A new interpreter session will start when you evaluate.`);
+      appendMessage("notice", `Loaded a ${stage} example. A new interpreter session will start when you evaluate.`);
     } else {
       selected = example;
       manual.value = example.source;
@@ -323,7 +342,7 @@ function mountDemo(root: HTMLElement) {
   });
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    void runSource(manual.value === selected.source ? selected.label : "Expression", manual.value);
+    void runSource(manual.value);
   });
 
   renderStage();

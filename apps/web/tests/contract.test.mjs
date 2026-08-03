@@ -654,25 +654,43 @@ test("seed and bootstrap docs link to the first-class executable REPL", async ()
 
 test("REPL is a persistent-session console with selectable examples and a growing composer", async () => {
   const repl = await readFile(new URL("../repl/index.html", import.meta.url), "utf8");
+  const replStyles = await readFile(new URL("../src/docs.css", import.meta.url), "utf8");
   for (const marker of [
     "data-seed-example-select",
     "data-repl-transcript",
     "data-seed-manual-form",
     "Ctrl/Cmd + Enter evaluates",
-    "Started a fresh ${stage} session.",
+    "Starting a fresh ${stage} session.",
     "session = undefined",
     "manual.style.height = `${Math.min(Math.max(manual.scrollHeight, 44), 200)}px`",
     "form.requestSubmit()",
-    'manual.value === selected.source ? selected.label : "Expression"'
+    "void runSource(manual.value)"
   ]) assert.ok(seedRuntime.includes(marker), `REPL is missing ${marker}`);
   for (const marker of ["repl-console", "repl-transcript", "repl-composer", "repl-example-picker"]) {
-    assert.ok((await readFile(new URL("../src/docs.css", import.meta.url), "utf8")).includes(marker), `REPL styling is missing ${marker}`);
+    assert.ok(replStyles.includes(marker), `REPL styling is missing ${marker}`);
   }
   assert.ok(repl.includes("data-bootstrap-demo"));
   assert.ok(seedRuntime.includes("YALISP read evaluate print loop"));
   assert.ok(!repl.includes("<h1"), "the REPL route should be only the console, not a marketing page");
   assert.ok(!seedRuntime.includes("seed-example-grid"), "the REPL should not render a separate example-card gallery");
   assert.ok(!seedRuntime.includes("seed-benchmark"), "the REPL should not render a benchmark panel");
+});
+
+test("REPL transcript is a flat terminal stream that preserves submitted formatting", async () => {
+  const replStyles = await readFile(new URL("../src/docs.css", import.meta.url), "utf8");
+  for (const marker of [
+    'submitted.textContent = source',
+    'transcript.append(input, result)',
+    'terminal.output.textContent = session.evaluate(text) || "nil"',
+    'if (!text.trim()) return',
+    'terminal.result.classList.add("repl-terminal-error")'
+  ]) assert.ok(seedRuntime.includes(marker), `terminal transcript is missing ${marker}`);
+  assert.ok(!seedRuntime.includes("const source = text.trim()"), "submitted whitespace must not be trimmed");
+  assert.ok(!seedRuntime.includes("repl-entry-label"), "terminal turns must not have presentation labels");
+  for (const marker of [".repl-terminal-input", ".repl-terminal-output", "white-space: pre-wrap", "tab-size: 2"]) {
+    assert.ok(replStyles.includes(marker), `terminal styling is missing ${marker}`);
+  }
+  assert.ok(!replStyles.includes(".repl-entry"), "terminal turns must not use boxed entry styling");
 });
 
 test("applications documentation uses the shared documentation shell", async () => {
