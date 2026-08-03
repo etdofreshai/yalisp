@@ -24,7 +24,7 @@ test("landing page exposes its essential semantic and social contracts", () => {
   ]) {
     assert.ok(html.includes(marker), `missing ${marker}`);
   }
-  for (const marker of ['pageLink("/playground/"', 'pageLink("/docs/"', "project-nav-playground", "https://github.com/etdofreshai/yalisp"]) {
+  for (const marker of ['pageLink("/playground/"', 'pageLink("/examples/"', 'pageLink("/docs/"', "project-nav-playground", "https://github.com/etdofreshai/yalisp"]) {
     assert.ok(navigation.includes(marker), `shared navigation is missing ${marker}`);
   }
   assert.ok(!navigation.includes('href="/code/"'), "shared navigation still advertises the retired Code destination");
@@ -245,7 +245,9 @@ test("Vite redirects canonical page routes to their trailing-slash form", async 
     "/docs/seed",
     "/docs/system-interface",
     "/docs/dom",
-    "/playground"
+    "/playground",
+    "/examples",
+    "/examples/hello-world"
   ]) assert.ok(viteConfig.includes(`"${route}"`), `missing canonical redirect route ${route}`);
   assert.ok(viteConfig.includes("configureServer(server)"));
   assert.ok(viteConfig.includes("configurePreviewServer(server)"));
@@ -271,6 +273,26 @@ test("documentation and Playground shells provide hosts for the common project t
   assert.ok(playground.includes("data-docs-shell"));
   assert.ok(playground.includes('class="docs-nav"'));
   assert.ok(playground.includes("data-docs-menu"));
+});
+
+test("Examples start with a truthful executable CLI milestone", async () => {
+  const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
+  const hello = await readFile(new URL("../examples/hello-world/index.html", import.meta.url), "utf8");
+  const exampleSource = await readFile(new URL("../public/examples/hello-world/hello.lisp", import.meta.url), "utf8");
+  const behavior = await readFile(new URL("../src/examples.ts", import.meta.url), "utf8");
+
+  for (const page of [gallery, hello]) {
+    assert.ok(page.includes('class="docs-nav"'));
+    assert.ok(page.includes("data-theme-bootstrap"));
+    assert.ok(page.includes('src="/theme-init.js"'));
+  }
+  assert.ok(gallery.includes('href="/examples/hello-world/"'));
+  assert.ok(hello.includes("Runnable YALISP"));
+  assert.ok(hello.includes("does not yet expose a language-level console"));
+  assert.ok(hello.includes("Actual evaluator output"));
+  assert.equal(exampleSource.trim(), '"Hello, world!"');
+  assert.ok(behavior.includes('createSeedSession("seed")'));
+  assert.ok(behavior.includes("session.evaluate(source)"));
 });
 
 test("Foundation docs own their actual checked-in sources and retire the standalone Code destination", async () => {

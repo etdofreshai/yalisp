@@ -1,4 +1,4 @@
-type SeedStage = "seed" | "bootstrap";
+export type SeedStage = "seed" | "bootstrap";
 
 interface SeedExports extends WebAssembly.Exports {
   memory: WebAssembly.Memory;
@@ -113,7 +113,7 @@ function loadCompilerSource() {
   return compilerSourcePromise;
 }
 
-async function createSession(stage: SeedStage) {
+export async function createSeedSession(stage: SeedStage) {
   let memory: WebAssembly.Memory | undefined;
   let output = "";
   const instance = await WebAssembly.instantiate(await loadModule(), {
@@ -178,7 +178,7 @@ function compiledRunner(instance: WebAssembly.Instance) {
 
 async function prepareJitRunner() {
   const started = performance.now();
-  const session = await createSession("bootstrap");
+  const session = await createSeedSession("bootstrap");
   session.evaluateQuietly(await loadCompilerSource());
   const payload = session.evaluate(compilerRequest);
   if (!payload || payload === "nil") throw new Error("the Lisp compiler rejected the benchmark workload");
@@ -282,7 +282,7 @@ function mountDemo(root: HTMLElement) {
     result.textContent = "Evaluating in WebAssembly…";
     root.setAttribute("aria-busy", "true");
     try {
-      const session = await createSession(stage);
+      const session = await createSeedSession(stage);
       result.textContent = session.evaluate(text) || "nil";
       status.textContent = stage === "seed" ? "Seed result" : "Bootstrapped result";
     } catch (error) {
@@ -348,7 +348,7 @@ function mountDemo(root: HTMLElement) {
       while (completed < iterations) {
         const chunk = Math.min(benchmarkChunkSize, iterations - completed);
         const prepareStarted = performance.now();
-        const session = await createSession("seed");
+        const session = await createSeedSession("seed");
         session.evaluateQuietly("(define benchmark-step (lambda (x) (+ (* x x) 1)))");
         prepareMs += performance.now() - prepareStarted;
         const started = performance.now();

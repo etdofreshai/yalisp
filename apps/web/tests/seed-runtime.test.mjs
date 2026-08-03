@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import wabtInit from "wabt";
 
 const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url), "utf8");
@@ -77,6 +79,15 @@ test("WAT seed evaluates its documented primitive surface", async () => {
   assert.equal(session.evaluate(`(begin
     (define square (lambda (n) (* n n)))
     (square 12))`), "144");
+});
+
+test("CLI Hello World prints the actual seed evaluator value", () => {
+  const command = spawnSync(process.execPath, [fileURLToPath(new URL("../examples/hello-world/cli.mjs", import.meta.url))], {
+    encoding: "utf8"
+  });
+  assert.equal(command.status, 0, command.stderr);
+  assert.equal(command.stderr, "");
+  assert.equal(command.stdout.trim(), "Hello, world!");
 });
 
 test("Lisp bootstrap adds real macros, list functions, and named recursion", async () => {

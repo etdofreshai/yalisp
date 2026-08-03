@@ -2,6 +2,8 @@ import { defineConfig, type Plugin } from "vite";
 
 const canonicalPageRoutes = new Set([
   "/playground",
+  "/examples",
+  "/examples/hello-world",
   "/code",
   "/docs",
   "/docs/foundation",
@@ -52,6 +54,8 @@ export default defineConfig({
       input: {
         main: "index.html",
         playground: "playground/index.html",
+        examples: "examples/index.html",
+        helloWorld: "examples/hello-world/index.html",
         code: "code/index.html",
         docs: "docs/index.html",
         foundation: "docs/foundation/index.html",

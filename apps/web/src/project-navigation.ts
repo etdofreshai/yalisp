@@ -215,6 +215,7 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
             <a class="project-nav-link project-nav-section-link" href="/docs/#game-runtime"><span class="project-nav-index">06</span><span>Game Runtime</span></a>
           </li>
           <li class="project-nav-utility">${pageLink("/playground/", "Playground", " project-nav-playground")}</li>
+          <li>${pageLink("/examples/", "Examples", " project-nav-examples")}</li>
         </ul>
       </nav>
       <a class="project-nav-source" href="https://github.com/etdofreshai/yalisp">View source <span aria-hidden="true">↗</span></a>
