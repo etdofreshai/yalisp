@@ -72,7 +72,8 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 .playground-header { position: sticky; }
 .repl-shell { grid-template-columns: clamp(250px, 22vw, 310px) minmax(0, 1fr); }
 .repl-shell.sidebar-collapsed { grid-template-columns: 62px minmax(0, 1fr); }
-.repl-main { width: 100%; min-width: 0; min-height: calc(100vh - 76px); padding: 0; }
+.repl-main { width: 100%; min-width: 0; height: calc(100vh - 76px); min-height: 0; padding: 0; overflow: hidden; }
+.repl-main > [data-bootstrap-demo] { display: block; height: 100%; min-height: 0; }
 .source-view { min-width: 0; margin-top: 1.5rem; border: 1px solid var(--line); background: color-mix(in srgb, var(--paper) 94%, var(--ink)); }
 .source-view-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 1rem; border-bottom: 1px solid var(--line); color: var(--muted); font: .66rem/1.5 "DM Mono", monospace; }
 .source-view-header span { min-width: 0; overflow-wrap: anywhere; }
@@ -80,15 +81,12 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 .source-view pre { max-width: 100%; max-height: 38rem; padding: 1.1rem; margin: 0; overflow: auto; overscroll-behavior: contain; color: var(--ink); font: .72rem/1.65 "DM Mono", monospace; tab-size: 2; }
 .source-view code { font: inherit; white-space: pre; }
 .seed-demo { margin-top: 2.5rem; }
-.repl-toolbar { display: grid; gap: .8rem; padding: 1rem; border-bottom: 1px solid var(--line); background: var(--paper); }
-.seed-stage-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; padding: 1px; background: var(--line); }
-.seed-stage-switch button, .repl-composer button { min-height: 3.25rem; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; font-family: "DM Mono", monospace; font-size: .72rem; letter-spacing: .03em; }
-.seed-stage-switch button { border: 0; }
-.seed-stage-switch button.active, .seed-stage-switch button:hover, .repl-composer button:hover { background: var(--ink); color: var(--paper); }
-.repl-example-picker { display: grid; gap: .45rem; color: var(--muted); font: .65rem/1.4 "DM Mono", monospace; letter-spacing: .04em; text-transform: uppercase; }
-.repl-example-picker select { width: 100%; min-height: 3rem; padding: .65rem .8rem; border: 1px solid var(--line); border-radius: 0; outline: none; background: var(--paper); color: var(--ink); font: .74rem/1.4 "DM Mono", monospace; }
+.repl-composer button { min-height: 3.25rem; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; font-family: "DM Mono", monospace; font-size: .72rem; letter-spacing: .03em; }
+.repl-composer button:hover { background: var(--ink); color: var(--paper); }
+.repl-example-picker { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; min-width: 0; gap: .55rem; color: var(--muted); font: .65rem/1.4 "DM Mono", monospace; letter-spacing: .04em; text-transform: uppercase; }
+.repl-example-picker select { width: 100%; min-width: 0; min-height: 3rem; padding: .65rem .8rem; border: 1px solid var(--line); border-radius: 0; outline: none; background: var(--paper); color: var(--ink); font: .74rem/1.4 "DM Mono", monospace; }
 .repl-example-picker select:focus, .repl-composer textarea:focus { border-color: #fa5b35; }
-.repl-console { display: grid; min-height: calc(100vh - 76px); grid-template-rows: auto auto minmax(22rem, 1fr) auto; background: color-mix(in srgb, var(--paper) 95%, var(--ink)); }
+.repl-console { display: grid; height: 100%; min-height: 0; grid-template-rows: auto minmax(0, 1fr) auto; background: color-mix(in srgb, var(--paper) 95%, var(--ink)); }
 .repl-console-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 1rem; border-bottom: 1px solid var(--line); color: var(--muted); font: .65rem/1 "DM Mono", monospace; letter-spacing: .04em; }
 .repl-console-heading > span:last-child { color: #c9f85a; }
 .repl-transcript { min-height: 0; padding: 1rem; margin: 0; overflow-y: auto; list-style: none; overscroll-behavior: contain; font: .78rem/1.65 "DM Mono", monospace; }
@@ -102,12 +100,9 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 .repl-composer { padding: 1rem; border-top: 1px solid var(--line); background: var(--paper); }
 .repl-composer label { display: block; margin-bottom: .55rem; color: var(--muted); font: .65rem/1.4 "DM Mono", monospace; letter-spacing: .04em; text-transform: uppercase; }
 .repl-composer textarea { display: block; width: 100%; min-height: 2.75rem; max-height: 12.5rem; padding: .65rem .75rem; border: 1px solid var(--line); border-radius: 0; outline: none; resize: none; background: color-mix(in srgb, var(--paper) 94%, var(--ink)); color: var(--ink); font: .78rem/1.6 "DM Mono", monospace; }
-.repl-composer-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: .7rem; }
-.repl-composer-footer small { color: var(--muted); font: .61rem/1.5 "DM Mono", monospace; }
+.repl-composer-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .7rem; margin-top: .7rem; }
+.repl-composer-hint { display: block; margin-top: .6rem; color: var(--muted); font: .61rem/1.5 "DM Mono", monospace; }
 .repl-composer button { flex: 0 0 auto; padding: .65rem .9rem; }
-@media (min-width: 620px) {
-  .repl-toolbar { grid-template-columns: minmax(14rem, .75fr) minmax(0, 1.25fr); align-items: end; }
-}
 @media (max-width: 760px) {
   .docs-shell { display: block; }
   .docs-nav { position: fixed; z-index: 5; top: 76px; right: 0; left: 0; display: none; height: auto; min-height: calc(100vh - 76px); padding: 1.5rem 1rem 1.5rem 1.25rem; border: 0; background: var(--paper); }
@@ -116,6 +111,6 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
   .sidebar-collapsed .project-navigation { display: flex; }
   .nav-open .docs-nav { display: flex; }
   main { padding: 4rem 5vw; }
-  .repl-main { min-height: calc(100vh - 76px); padding: 0; }
+  .repl-main { height: calc(100vh - 76px); min-height: 0; padding: 0; }
   section { padding-bottom: 4rem; margin-top: 4rem; }
 }

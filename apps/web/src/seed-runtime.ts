@@ -179,21 +179,15 @@ function mountDemo(root: HTMLElement) {
   root.innerHTML = `
     <section class="repl-console" aria-label="YALISP read evaluate print loop">
       <header class="repl-console-heading"><span>YALISP / <span data-seed-stage-name></span></span><span data-seed-status>Ready</span></header>
-      <div class="repl-toolbar">
-      <div class="seed-stage-switch" role="group" aria-label="Interpreter stage">
-        <button type="button" data-seed-stage="seed">Seed</button>
-        <button type="button" data-seed-stage="bootstrap">Bootstrap</button>
-      </div>
-      <label class="repl-example-picker" for="seed-example-${root.dataset.initialStage || "seed"}">
-        <span>Load an example</span>
-        <select id="seed-example-${root.dataset.initialStage || "seed"}" data-seed-example-select></select>
-      </label>
-      </div>
       <ol class="repl-transcript" data-repl-transcript aria-live="polite"></ol>
       <form class="repl-composer" data-seed-manual-form>
         <label for="seed-manual-${root.dataset.initialStage || "seed"}">Expression or small script</label>
         <textarea id="seed-manual-${root.dataset.initialStage || "seed"}" rows="1" spellcheck="false" autocomplete="off" data-seed-manual placeholder="(+ 20 22)"></textarea>
-        <div class="repl-composer-footer"><small>Enter adds a line · Ctrl/Cmd + Enter evaluates · ${inputLimit.toLocaleString()} UTF-8 byte limit</small><button type="submit" data-seed-manual-run>Evaluate</button></div>
+        <div class="repl-composer-footer">
+          <label class="repl-example-picker" for="seed-example-${root.dataset.initialStage || "seed"}"><span>Load an example</span><select id="seed-example-${root.dataset.initialStage || "seed"}" data-seed-example-select></select></label>
+          <button type="submit" data-seed-manual-run>Evaluate</button>
+        </div>
+        <small class="repl-composer-hint">Enter adds a line · Ctrl/Cmd + Enter evaluates · ${inputLimit.toLocaleString()} UTF-8 byte limit</small>
       </form>
     </section>`;
 
@@ -264,18 +258,13 @@ function mountDemo(root: HTMLElement) {
   }
 
   function renderStage(clearTranscript = false) {
-    root.querySelectorAll<HTMLButtonElement>("[data-seed-stage]").forEach((button) => {
-      const active = button.dataset.seedStage === stage;
-      button.classList.toggle("active", active);
-      button.setAttribute("aria-pressed", String(active));
-    });
     stageName.textContent = stage === "seed" ? "Seed" : "Bootstrap";
     renderExamples();
     manual.value = selected.source;
     resizeComposer();
     status.textContent = "Ready";
     if (clearTranscript) transcript.replaceChildren();
-    if (!transcript.childElementCount) appendMessage("notice", "Choose an example or enter a form below. Results are evaluated by the real WebAssembly-backed interpreter.");
+    if (!transcript.childElementCount) appendMessage("notice", "Choose an example or enter a form below. Seed examples use the WAT evaluator; Bootstrap examples load boot.lisp first.");
   }
 
   async function runSource(text: string) {
@@ -300,20 +289,6 @@ function mountDemo(root: HTMLElement) {
       root.removeAttribute("aria-busy");
     }
   }
-
-  function changeStage(nextStage: SeedStage) {
-    stage = nextStage;
-    selected = firstExample(stage);
-    session = undefined;
-    renderStage(true);
-    appendMessage("notice", `Switched to ${stage}. A new interpreter session will start when you evaluate.`);
-  }
-
-  root.querySelectorAll<HTMLButtonElement>("[data-seed-stage]").forEach((button) => {
-    button.addEventListener("click", () => {
-      changeStage(button.dataset.seedStage === "bootstrap" ? "bootstrap" : "seed");
-    });
-  });
 
   exampleSelect.addEventListener("change", () => {
     const [nextStage, id] = exampleSelect.value.split(":", 2) as [SeedStage, string];

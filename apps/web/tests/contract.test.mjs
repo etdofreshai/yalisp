@@ -674,6 +674,20 @@ test("REPL is a persistent-session console with selectable examples and a growin
   assert.ok(!repl.includes("<h1"), "the REPL route should be only the console, not a marketing page");
   assert.ok(!seedRuntime.includes("seed-example-grid"), "the REPL should not render a separate example-card gallery");
   assert.ok(!seedRuntime.includes("seed-benchmark"), "the REPL should not render a benchmark panel");
+  assert.ok(!seedRuntime.includes("seed-stage-switch"), "examples should choose Seed or Bootstrap without a separate stage toggle");
+});
+
+test("REPL keeps its composer fixed while only the terminal transcript scrolls", async () => {
+  const replStyles = await readFile(new URL("../src/docs.css", import.meta.url), "utf8");
+  for (const marker of [
+    "height: calc(100vh - 76px)",
+    "overflow: hidden",
+    ".repl-main > [data-bootstrap-demo] { display: block; height: 100%; min-height: 0; }",
+    "grid-template-rows: auto minmax(0, 1fr) auto",
+    ".repl-transcript { min-height: 0",
+    "overflow-y: auto",
+    "grid-template-columns: minmax(0, 1fr) auto"
+  ]) assert.ok(replStyles.includes(marker), `fixed REPL layout is missing ${marker}`);
 });
 
 test("REPL transcript is a flat terminal stream that preserves submitted formatting", async () => {
