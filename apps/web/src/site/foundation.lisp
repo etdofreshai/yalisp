@@ -40,7 +40,7 @@
             (stage-link "05.02" '/docs/system-interface/ "System interface")
             (stage-link "05.03" '/docs/dom/ "DOM")
             (stage-link "05.04" '/docs/sdl/ "SDL")))
-        (nav-link '/playground/ "Playground")
+        (nav-link '/repl/ "REPL")
         (nav-link '/examples/ "Examples")))))
 
 (defn app.initial-state () '(closed dark))

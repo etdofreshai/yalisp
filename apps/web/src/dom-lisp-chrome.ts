@@ -5,7 +5,7 @@ import { renderTopBar } from "./top-bar";
 /**
  * The DOM Lisp pages declare the shell and menu state. This tiny browser-side
  * adapter supplies the one shared navigation tree to the declared nav mount so
- * landing, docs, Playground, and examples never drift into separate menus.
+ * landing, docs, REPL, and examples never drift into separate menus.
  */
 export function mountDomLispChrome(root: HTMLElement, initialState: "collapsed" | "expanded") {
   renderTopBar(root);

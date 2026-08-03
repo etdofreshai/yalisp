@@ -33,7 +33,7 @@
         (nav-link '/docs/system-interface/ "05.02 System interface" false)
         (nav-link '/docs/dom/ "05.03 DOM" false)
         (nav-link '/docs/sdl/ "05.04 SDL" false)
-        (nav-link '/playground/ "Playground" false)
+        (nav-link '/repl/ "REPL" false)
         (nav-link '/examples/ "Examples" false)))))
 (defn app.initial-state () '(closed dark))
 (defn app.event (state event)

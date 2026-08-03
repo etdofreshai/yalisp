@@ -42,7 +42,7 @@
             (nav-link '/docs/system-interface/ "05.02 System interface")
             (nav-link '/docs/dom/ "05.03 DOM")
             (nav-link '/docs/sdl/ "05.04 SDL")))
-        (nav-link '/playground/ "Playground")
+        (nav-link '/repl/ "REPL")
         (nav-link '/examples/ "Examples")))))
 
 (defn app.initial-state () '(closed dark))
@@ -86,5 +86,5 @@
         (el 'section (list (id 'live-seed) (cls 'interface-section))
           (el 'p (list (cls 'section-number)) "03 / Live seed")
           (el 'h2 nil "Tap a form." (el 'br nil) (el 'em nil "Run the real evaluator."))
-          (el 'p nil "The Playground lets you switch between Seed and Bootstrap so the additional Lisp-written capabilities stay visible without turning this explanation into the application itself.")
-          (el 'p (list (cls 'interface-note)) (link "/playground/" "Open the YALISP Playground") " to run Seed and Bootstrap examples side by side and measure the real interpreter."))))))
+          (el 'p nil "The REPL lets you switch between Seed and Bootstrap while keeping a bounded live session for each stage.")
+          (el 'p (list (cls 'interface-note)) (link "/repl/" "Open the YALISP REPL") " to load Seed and Bootstrap examples, edit them, and run the real interpreter."))))))

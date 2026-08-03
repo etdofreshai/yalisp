@@ -22,7 +22,7 @@
 .project-nav-anchor.active .project-nav-subindex { color: var(--ink); }
 .project-nav-page-list .project-nav-anchor { padding-left: 1.2rem; }
 .project-nav-utility { padding-top: .55rem; margin-top: .45rem; border-top: 1px solid var(--line); }
-.project-nav-playground, .project-nav-examples { color: #c9f85a; font-family: "DM Mono", monospace; }
+.project-nav-repl, .project-nav-examples { color: #c9f85a; font-family: "DM Mono", monospace; }
 .project-nav-source { display: inline-flex; width: fit-content; margin: 1rem 0 0 .2rem; color: var(--muted); font: .64rem/1.4 "DM Mono", monospace; }
 .project-nav-source:hover { color: var(--ink); }
 

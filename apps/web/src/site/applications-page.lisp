@@ -36,7 +36,7 @@
             (stage-link "03" '/docs/compiler/ "Compiler" false)
             (stage-link "04" "/docs/applications/" "Applications" true)))
         (nav-link '/docs/dom/ "05 Interfaces")
-        (nav-link '/playground/ "Playground")
+        (nav-link '/repl/ "REPL")
         (nav-link '/examples/ "Examples")))))
 (defn app.initial-state () '(closed dark))
 (defn app.event (state event)

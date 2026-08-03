@@ -212,7 +212,7 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
                 ${pageLink("/docs/applications/", '<span class="project-nav-index">04</span><span>Applications</span>')}
               </li>`)}
           </li>
-          <li class="project-nav-utility">${pageLink("/playground/", "Playground", " project-nav-playground")}</li>
+          <li class="project-nav-utility">${pageLink("/repl/", "REPL", " project-nav-repl")}</li>
           <li class="project-nav-context project-nav-examples-group">
             ${pageLink("/examples/", "Examples", " project-nav-examples", ` aria-expanded="${examplesExpanded}" aria-controls="project-nav-examples-pages"`)}
             ${pageGroup("examples", examplePages, `

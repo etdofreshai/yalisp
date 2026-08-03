@@ -32,7 +32,7 @@ test("landing page exposes its essential semantic and social contracts", () => {
   for (const marker of ["(defn app.view", "(defn app.event", "data-project-navigation", "'main", "(id 'why)", "(id 'language)", "https://github.com/ETdoFreshAI/yalisp"]) {
     assert.ok(landing.includes(marker), `DOM Lisp landing source is missing ${marker}`);
   }
-  for (const marker of ['pageLink("/playground/"', 'pageLink("/examples/"', 'pageLink("/docs/"', "project-nav-playground", "https://github.com/etdofreshai/yalisp"]) {
+  for (const marker of ['pageLink("/repl/"', 'pageLink("/examples/"', 'pageLink("/docs/"', "project-nav-repl", "https://github.com/etdofreshai/yalisp"]) {
     assert.ok(navigation.includes(marker), `shared navigation is missing ${marker}`);
   }
   assert.ok(!navigation.includes('href="/code/"'), "shared navigation still advertises the retired Code destination");
@@ -72,7 +72,7 @@ test("landing integrates its open desktop rail while retaining a mobile drawer",
 
 test("landing and inner pages mount the same semantic navigation with different defaults", async () => {
   const docsBehavior = await readFile(new URL("../src/docs.ts", import.meta.url), "utf8");
-  const playgroundBehavior = await readFile(new URL("../src/playground.ts", import.meta.url), "utf8");
+  const replBehavior = await readFile(new URL("../src/repl.ts", import.meta.url), "utf8");
   const navStyles = await readFile(new URL("../src/project-navigation.css", import.meta.url), "utf8");
   for (const marker of [
     '<ul class="project-nav-tree">',
@@ -82,7 +82,7 @@ test("landing and inner pages mount the same semantic navigation with different 
     '["why", "Why YALisp"]',
     '["language", "The language"]',
     'pageLink("/docs/foundation/"',
-    'pageLink("/playground/"',
+    'pageLink("/repl/"',
     '<span class="project-nav-index">01</span><span>Seed</span>',
     '<span class="project-nav-index">02</span><span>Bootstrap</span>',
     '<span class="project-nav-index">03</span><span>Compiler</span>',
@@ -99,7 +99,7 @@ test("landing and inner pages mount the same semantic navigation with different 
   assert.ok(docsBehavior.includes('initialState: "expanded"'));
   assert.ok(docsBehavior.includes("mountSidebarState"));
   assert.ok(docsBehavior.includes("defaultDesktopOpen: true"));
-  assert.ok(playgroundBehavior.includes('import "./docs"'));
+  assert.ok(replBehavior.includes('import "./docs"'));
   assert.ok(!navigation.includes('href="/code/"'), "shared navigation still advertises the retired Code destination");
 });
 
@@ -253,7 +253,7 @@ test("Docs and Foundation disclosures use exact normalized route ownership", () 
     });
   }
 
-  for (const route of ["/docs/foundation-extra/", "/docs/domains/", "/docs/system-interface-v2/", "/playground/"]) {
+  for (const route of ["/docs/foundation-extra/", "/docs/domains/", "/docs/system-interface-v2/", "/repl/"]) {
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath: normalizePath(route),
       anchorOwner: null,
@@ -293,7 +293,7 @@ test("Vite redirects canonical page routes to their trailing-slash form", async 
     "/docs/seed",
     "/docs/system-interface",
     "/docs/dom",
-    "/playground",
+    "/repl",
     "/examples",
     "/examples/hello-world",
     "/examples/pong",
@@ -304,6 +304,8 @@ test("Vite redirects canonical page routes to their trailing-slash form", async 
   assert.ok(viteConfig.includes("configurePreviewServer(server)"));
   assert.ok(viteConfig.includes("response.statusCode = 308"));
   assert.ok(viteConfig.includes('response.setHeader("Location", `${url.pathname}/${url.search}`)'));
+  assert.ok(viteConfig.includes('["/playground", "/repl/"]'));
+  assert.ok(viteConfig.includes('["/playground/", "/repl/"]'));
 });
 
 test("shared navigation uses a consistent desktop sidebar and left-aligned content", async () => {
@@ -315,7 +317,7 @@ test("shared navigation uses a consistent desktop sidebar and left-aligned conte
   assert.match(landingStyles, /\.site-nav-drawer[^}]*width: min\(21rem, 88vw\)/);
 });
 
-test("documentation and Playground shells provide hosts for the common project tree", async () => {
+test("documentation and REPL shells provide hosts for the common project tree", async () => {
   const pages = ["", "applications/", "assembly/", "bootstrap/", "compiler/", "dom/", "foundation/", "sdl/", "seed/", "system-interface/"];
   for (const page of pages) {
     const document = await readFile(new URL(`../docs/${page}index.html`, import.meta.url), "utf8");
@@ -327,10 +329,10 @@ test("documentation and Playground shells provide hosts for the common project t
       assert.ok(document.includes('src="/page-shell.js"'), `${page || "docs/"} is missing the shared loading shell`);
     } else assert.ok(document.includes('class="docs-nav"'), `${page} is missing the shared navigation host`);
   }
-  const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
-  assert.ok(playground.includes("data-docs-shell"));
-  assert.ok(playground.includes('class="docs-nav"'));
-  assert.ok(playground.includes("data-docs-menu"));
+  const repl = await readFile(new URL("../repl/index.html", import.meta.url), "utf8");
+  assert.ok(repl.includes("data-docs-shell"));
+  assert.ok(repl.includes('class="docs-nav"'));
+  assert.ok(repl.includes("data-docs-menu"));
 });
 
 test("all top bars use one shared chrome contract and DOM Lisp pages avoid an empty first paint", () => {
@@ -566,7 +568,7 @@ test("assembly documentation uses the bundled inventory", async () => {
 
 test("documentation explains the executable interpreter and Lisp bootstrap", async () => {
   assert.ok(docsOverview.includes("(id 'core-repl)"));
-  assert.match(docsOverview, /WAT interpreter extended by boot\.lisp/i);
+  assert.match(docsOverview, /REPL starts with a WAT interpreter and can extend it with boot\.lisp/i);
   assert.match(docsOverview, /bounded Lisp-written arithmetic compiler/i);
 });
 
@@ -629,27 +631,29 @@ test("foundation documentation explains the bootstrapping path", async () => {
   }
 });
 
-test("seed and bootstrap docs link to the first-class executable Playground", async () => {
+test("seed and bootstrap docs link to the first-class executable REPL", async () => {
   const seed = seedPageSource;
   const bootstrap = bootstrapPageSource;
-  const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
+  const repl = await readFile(new URL("../repl/index.html", import.meta.url), "utf8");
+  const legacyPlayground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
   const overview = docsOverview;
-  for (const marker of ['"/playground/"', "real WebAssembly interpreter", "no simulated results"]) {
+  for (const marker of ['"/repl/"', "real WebAssembly interpreter", "no simulated results"]) {
     assert.ok(seed.includes(marker), `seed page is missing ${marker}`);
   }
-  for (const marker of ['"/playground/"', "boot.lisp", "Fibonacci", "compiler.lisp", "interpreter, JIT, and AOT paths"]) {
+  for (const marker of ['"/repl/"', "boot.lisp", "Fibonacci", "compiler.lisp"]) {
     assert.ok(bootstrap.includes(marker), `bootstrap page is missing ${marker}`);
   }
   assert.ok(!seed.includes("data-bootstrap-demo"));
   assert.ok(!bootstrap.includes("data-bootstrap-demo"));
-  for (const marker of ["data-theme-bootstrap", 'src="/theme-init.js"', "data-bootstrap-demo", "YALISP Playground"]) {
-    assert.ok(playground.includes(marker), `playground is missing ${marker}`);
+  for (const marker of ["data-theme-bootstrap", 'src="/theme-init.js"', "data-bootstrap-demo", "repl-main"]) {
+    assert.ok(repl.includes(marker), `REPL is missing ${marker}`);
   }
-  assert.ok(overview.includes('(link "/playground/" "Open the YALISP Playground")'));
+  assert.ok(legacyPlayground.includes("/repl/"));
+  assert.ok(overview.includes('(link "/repl/" "Open the YALISP REPL")'));
 });
 
-test("Playground is a persistent-session REPL with selectable examples and a growing composer", async () => {
-  const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
+test("REPL is a persistent-session console with selectable examples and a growing composer", async () => {
+  const repl = await readFile(new URL("../repl/index.html", import.meta.url), "utf8");
   for (const marker of [
     "data-seed-example-select",
     "data-repl-transcript",
@@ -660,14 +664,15 @@ test("Playground is a persistent-session REPL with selectable examples and a gro
     "manual.style.height = `${Math.min(Math.max(manual.scrollHeight, 44), 200)}px`",
     "form.requestSubmit()",
     'manual.value === selected.source ? selected.label : "Expression"'
-  ]) assert.ok(seedRuntime.includes(marker), `Playground REPL is missing ${marker}`);
+  ]) assert.ok(seedRuntime.includes(marker), `REPL is missing ${marker}`);
   for (const marker of ["repl-console", "repl-transcript", "repl-composer", "repl-example-picker"]) {
     assert.ok((await readFile(new URL("../src/docs.css", import.meta.url), "utf8")).includes(marker), `REPL styling is missing ${marker}`);
   }
-  for (const marker of ["A real REPL", "Use the transcript like a small console"]) {
-    assert.ok(playground.includes(marker), `Playground copy is missing ${marker}`);
-  }
-  assert.ok(!seedRuntime.includes("seed-example-grid"), "the Playground should no longer render a separate example-card gallery");
+  assert.ok(repl.includes("data-bootstrap-demo"));
+  assert.ok(seedRuntime.includes("YALISP read evaluate print loop"));
+  assert.ok(!repl.includes("<h1"), "the REPL route should be only the console, not a marketing page");
+  assert.ok(!seedRuntime.includes("seed-example-grid"), "the REPL should not render a separate example-card gallery");
+  assert.ok(!seedRuntime.includes("seed-benchmark"), "the REPL should not render a benchmark panel");
 });
 
 test("applications documentation uses the shared documentation shell", async () => {
