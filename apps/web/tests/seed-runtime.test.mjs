@@ -8,6 +8,7 @@ import wabtInit from "wabt";
 const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url), "utf8");
 const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
 const pongApplication = await readFile(new URL("../src/examples/pong/app.lisp", import.meta.url), "utf8");
+const breakoutApplication = await readFile(new URL("../src/examples/breakout/app.lisp", import.meta.url), "utf8");
 const generatedWasm = await readFile(new URL("../public/yalisp/seed.wasm", import.meta.url));
 const uiSource = await readFile(new URL("../src/seed-runtime.ts", import.meta.url), "utf8");
 const wabt = await wabtInit();
@@ -107,6 +108,14 @@ test("Pong state, input, collision, and draw protocol execute in the bootstrap e
   assert.equal(session.evaluate("(app.mount)"), "(mount 640 360 Pong ((up hold move-up (ArrowUp w)) (down hold move-down (ArrowDown s))))");
   assert.equal(session.evaluate("(app.frame '(320 180 230 145 142 142 0 0) '((up 1) (down 0)))"), "((state (336 190 230 145 124 142 0 0)) (draw (clear 0) (line 320 0 320 360 1 1) (rect 28 124 12 76 1) (rect 600 142 12 76 1) (circle 336 190 8 2) (rect 282 22 12 18 1) (rect 342 22 12 18 1)) (status 0 0))");
   assert.equal(session.evaluate("(app.frame '(38 180 -230 145 142 142 0 0) '((up 0) (down 0)))"), "((state (48 190 230 145 142 142 0 0)) (draw (clear 0) (line 320 0 320 360 1 1) (rect 28 142 12 76 1) (rect 600 142 12 76 1) (circle 48 190 8 2) (rect 282 22 12 18 1) (rect 342 22 12 18 1)) (status 0 0))");
+});
+
+test("Breakout brick state, input, scoring, and draw protocol execute in the bootstrap evaluator", async () => {
+  const session = await createSession({ boot: true });
+  session.evaluateQuietly(breakoutApplication);
+  assert.equal(session.evaluate("(app.mount)"), "(mount 640 360 Breakout ((left hold move-left (ArrowLeft a)) (right hold move-right (ArrowRight d))))");
+  assert.match(session.evaluate("(app.frame '(44 45 155 190 272 0 3 (1 1 1 1 1 1 1 1)) '((left 0) (right 0)))"), /^\(\(state \(56 59 155 -190 272 10 3 \(0 1 1 1 1 1 1 1\)\)\)/);
+  assert.match(session.evaluate("(app.frame '(320 278 155 -190 272 0 3 (1 1 1 1 1 1 1 1)) '((left 1) (right 0)))"), /^\(\(state \(332 264 155 -190 252 0 3/);
 });
 
 test("bootstrap or short-circuits without double evaluation or identifier capture", async () => {

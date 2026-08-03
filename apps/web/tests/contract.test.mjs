@@ -329,20 +329,20 @@ test("Pong exposes the complete source package that its runner imports", async (
   assert.equal(runtime.includes("Pong"), false, "generic binding must not contain Pong behavior");
 });
 
-test("Breakout exposes the complete source package that its runner imports", async () => {
+test("Breakout exposes the complete Lisp source package that its launcher imports", async () => {
   const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
   const page = await readFile(new URL("../examples/breakout/index.html", import.meta.url), "utf8");
-  const source = await readFile(new URL("../src/examples/breakout/app.ts", import.meta.url), "utf8");
+  const source = await readFile(new URL("../src/examples/breakout/app.lisp", import.meta.url), "utf8");
   const behavior = await readFile(new URL("../src/examples.ts", import.meta.url), "utf8");
   assert.ok(gallery.includes('href="/examples/breakout/"'));
-  for (const marker of ["data-portable-app=\"breakout\"", "Complete executable package", "data-application-source=\"breakout\"", "does not run in the WAT seed"]) {
+  for (const marker of ["data-lisp-app=\"breakout\"", "Complete executable package", "data-lisp-application-source=\"breakout\"", "execute in YALISP"]) {
     assert.ok(page.includes(marker), `Breakout page is missing ${marker}`);
   }
-  for (const marker of ["export type Brick", "createBreakoutState", "updateBreakout", "drawBreakout", "mountBreakout", "ArrowLeft", "data-app-action"]) {
+  for (const marker of ["(defn app.mount", "(defn app.initial-state", "(defn app.step", "(defn app.draw-bricks", "(defn app.frame", "brick-flags"]) {
     assert.ok(source.includes(marker), `Breakout app source is missing ${marker}`);
   }
-  assert.ok(behavior.includes('import { mountBreakout } from "./examples/breakout/app"'));
-  assert.ok(behavior.includes('import breakoutApplicationSource from "./examples/breakout/app?raw"'));
+  assert.ok(behavior.includes('import breakoutApplicationSource from "./examples/breakout/app.lisp?raw"'));
+  assert.ok(behavior.includes("runApplication(root, breakoutApplicationSource)"));
 });
 
 test("Asteroids exposes the complete source package that its runner imports", async () => {
