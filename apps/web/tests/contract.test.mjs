@@ -7,6 +7,7 @@ const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const source = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
 const landing = await readFile(new URL("../src/site/landing.lisp", import.meta.url), "utf8");
 const docsOverview = await readFile(new URL("../src/site/docs-overview.lisp", import.meta.url), "utf8");
+const foundationSource = await readFile(new URL("../src/site/foundation.lisp", import.meta.url), "utf8");
 const navigation = await readFile(new URL("../src/project-navigation.ts", import.meta.url), "utf8");
 
 test("landing page exposes its essential semantic and social contracts", () => {
@@ -284,9 +285,9 @@ test("documentation and Playground shells provide hosts for the common project t
   const pages = ["", "applications/", "assembly/", "bootstrap/", "compiler/", "dom/", "foundation/", "sdl/", "seed/", "system-interface/"];
   for (const page of pages) {
     const document = await readFile(new URL(`../docs/${page}index.html`, import.meta.url), "utf8");
-    if (page === "") {
+    if (page === "" || page === "foundation/") {
       assert.ok(document.includes("data-dom-lisp-root"), "docs/ is missing its DOM Lisp host");
-      assert.ok(document.includes('src="/src/docs-overview.ts"'), "docs/ is missing its thin DOM Lisp launcher");
+      assert.ok(document.includes(`src="/src/${page === "" ? "docs-overview" : "foundation"}.ts"`), `${page || "docs/"} is missing its thin DOM Lisp launcher`);
     } else assert.ok(document.includes('class="docs-nav"'), `${page} is missing the shared navigation host`);
   }
   const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
@@ -548,7 +549,7 @@ test("DOM documentation defines planned adapters and a provisional application r
 
 test("foundation documentation explains the bootstrapping path", async () => {
   const overview = docsOverview;
-  const foundation = await readFile(new URL("../docs/foundation/index.html", import.meta.url), "utf8");
+  const foundation = foundationSource;
   for (const marker of ["Seed", "Bootstrap", "Compiler", "Applications"]) {
     assert.ok(foundation.includes(marker), `missing ${marker}`);
   }

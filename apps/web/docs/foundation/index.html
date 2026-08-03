@@ -1,13 +1,5 @@
 <!doctype html>
 <html lang="en">
   <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="theme-color" content="#101310" /><meta name="description" content="YALisp foundation and bootstrapping" /><title>Foundation · YALisp Docs</title><style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style><script src="/theme-init.js"></script></head>
-  <body>
-    <a class="skip-link" href="#content">Skip to content</a>
-    <header class="docs-header"><a class="brand" href="/" aria-label="YALisp home">Y<span>A</span>LISP</a><div class="header-actions"><button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle><span aria-hidden="true">☀</span><span>Light</span></button><button class="docs-menu" type="button" aria-label="Toggle documentation navigation" aria-expanded="false" data-docs-menu><span></span><span></span></button></div></header>
-    <div class="docs-shell" data-docs-shell><aside class="docs-nav" aria-label="Project navigation"></aside>
-      <main id="content"><p class="eyebrow">YALisp architecture</p><section id="foundation"><p class="section-number">Foundation</p><h1>Grow the language<br /><em>from a small seed.</em></h1><p class="lede">YALisp begins with the smallest WebAssembly-backed seed that can read and run enough Lisp to construct the next layer. Each stage builds the tools that make the following stage possible.</p>
-        <div class="bootstrap-flow" aria-label="The YALisp bootstrapping sequence"><article><span>01</span><h2>Seed</h2><p>A minimal WebAssembly foundation supplies the primitive values, memory, control flow, and reader support required to begin.</p></article><article><span>02</span><h2>Bootstrap</h2><p>That seed runs a small Lisp environment with enough forms and functions to define the language in the language.</p></article><article><span>03</span><h2>Compiler</h2><p>The bootstrap is used to create the YALisp compiler: it reads YALisp forms, lowers them through the foundation, and produces runnable output.</p></article><article><span>04</span><h2>Applications</h2><p>With the compiler available, YALisp can build applications against Assembly, System Interface, and DOM without requiring a large separate runtime.</p></article></div>
-        <p class="interface-note">The purpose is not to hide the implementation. The seed stays deliberately small and inspectable; the bootstrap and compiler are YALisp code that can grow with the language.</p></section></main>
-    </div><script type="module" src="/src/docs.ts"></script>
-  </body>
+  <body><div data-dom-lisp-root></div><script type="module" src="/src/foundation.ts"></script></body>
 </html>
