@@ -116,12 +116,14 @@ function loadCompilerSource() {
 
 export async function createSeedSession(stage: SeedStage) {
   let memory: WebAssembly.Memory | undefined;
-  let output = "";
+  let outputBytes: Uint8Array[] = [];
   const instance = await WebAssembly.instantiate(await loadModule(), {
     host: {
       write(pointer: number, length: number) {
         if (!memory) throw new Error("seed memory is not initialized");
-        output += decoder.decode(new Uint8Array(memory.buffer, pointer, length));
+        // The DOM serializer may write one UTF-8 byte at a time. Copy before
+        // the seed reuses its scratch buffer, then decode the completed stream.
+        outputBytes.push(new Uint8Array(memory.buffer, pointer, length).slice());
       }
     }
   });
@@ -137,18 +139,29 @@ export async function createSeedSession(stage: SeedStage) {
     return bytes.length;
   };
 
+  const outputText = () => {
+    const total = outputBytes.reduce((size, bytes) => size + bytes.length, 0);
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of outputBytes) {
+      bytes.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return decoder.decode(bytes).replace(/\r\n/g, "\n").trimEnd();
+  };
+
   const run = (operation: () => void) => {
-    output = "";
+    outputBytes = [];
     try {
       operation();
     } catch (error) {
-      const diagnostic = output.replace(/\r\n/g, "\n").trimEnd();
+      const diagnostic = outputText();
       const trap = error instanceof Error ? error.message : String(error);
       throw new Error(diagnostic
         ? `${diagnostic} · WebAssembly trap; this fresh session was discarded.`
         : `WebAssembly trap: ${trap}`);
     }
-    return output.replace(/\r\n/g, "\n").trimEnd();
+    return outputText();
   };
 
   run(() => exports.init());

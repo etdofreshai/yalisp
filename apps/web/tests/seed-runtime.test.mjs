@@ -27,15 +27,25 @@ const inputEnd = 131072;
 
 async function createSession({ boot = false } = {}) {
   let memory;
-  let output = "";
+  let outputBytes = [];
   const { instance } = await WebAssembly.instantiate(buffer, {
     host: {
       write(pointer, length) {
-        output += decoder.decode(new Uint8Array(memory.buffer, pointer, length));
+        outputBytes.push(new Uint8Array(memory.buffer, pointer, length).slice());
       }
     }
   });
   memory = instance.exports.memory;
+  const outputText = () => {
+    const total = outputBytes.reduce((size, bytes) => size + bytes.length, 0);
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of outputBytes) {
+      bytes.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return decoder.decode(bytes).replace(/\r\n/g, "\n").trimEnd();
+  };
   const load = (source) => {
     const bytes = encoder.encode(source);
     assert.ok(bytes.length <= inputEnd - inputPointer, "source exceeds the seed input region");
@@ -46,36 +56,36 @@ async function createSession({ boot = false } = {}) {
   if (boot) instance.exports.eval_all(inputPointer, load(bootstrap));
   return {
     evaluate(source) {
-      output = "";
+      outputBytes = [];
       try {
         instance.exports.eval_print(inputPointer, load(source));
       } catch (error) {
-        error.seedDiagnostic = output.replace(/\r\n/g, "\n").trimEnd();
+        error.seedDiagnostic = outputText();
         throw error;
       }
-      return output.replace(/\r\n/g, "\n").trimEnd();
+      return outputText();
     },
     evaluateDom(source) {
-      output = "";
+      outputBytes = [];
       try {
         instance.exports.eval_dom_print(inputPointer, load(source));
       } catch (error) {
-        error.seedDiagnostic = output.replace(/\r\n/g, "\n").trimEnd();
+        error.seedDiagnostic = outputText();
         throw error;
       }
-      return output.replace(/\r\n/g, "\n").trimEnd();
+      return outputText();
     },
     evaluateTrap(source) {
-      output = "";
+      outputBytes = [];
       try {
         instance.exports.eval_print(inputPointer, load(source));
         assert.fail("expected the seed to trap");
       } catch (error) {
-        return { error, diagnostic: output.replace(/\r\n/g, "\n").trimEnd() };
+        return { error, diagnostic: outputText() };
       }
     },
     evaluateQuietly(source) {
-      output = "";
+      outputBytes = [];
       instance.exports.eval_all(inputPointer, load(source));
     }
   };
@@ -101,6 +111,12 @@ test("DOM evaluation preserves machine-readable strings while normal REPL output
   const session = await createSession();
   assert.equal(session.evaluate('(list "hello world" "say \\"hi\\"" "slash \\\\" "line\nnext" "tab\tend")'), '(hello world say "hi" slash \\ line\nnext tab\tend)');
   assert.equal(session.evaluateDom('(list "hello world" "say \\"hi\\"" "slash \\\\" "line\nnext" "tab\tend")'), '("hello world" "say \\"hi\\"" "slash \\\\" "line\\nnext" "tab\\tend")');
+});
+
+test("DOM evaluation preserves complete UTF-8 characters across byte-sized seed writes", async () => {
+  const session = await createSession();
+  const source = '"sun ☀ moon ◐ lambda λ arrow → emoji 🚀"';
+  assert.equal(session.evaluateDom(source), '"sun ☀ moon ◐ lambda λ arrow → emoji 🚀"');
 });
 
 test("CLI Hello World prints the actual seed evaluator value", () => {
