@@ -19,6 +19,7 @@ const chromeStyles = await readFile(new URL("../src/chrome.css", import.meta.url
 const loadingShell = await readFile(new URL("../public/page-shell.js", import.meta.url), "utf8");
 const topBar = await readFile(new URL("../src/top-bar.ts", import.meta.url), "utf8");
 const docsScript = await readFile(new URL("../src/docs.ts", import.meta.url), "utf8");
+const seedRuntime = await readFile(new URL("../src/seed-runtime.ts", import.meta.url), "utf8");
 
 test("landing page exposes its essential semantic and social contracts", () => {
   for (const marker of [
@@ -645,6 +646,28 @@ test("seed and bootstrap docs link to the first-class executable Playground", as
     assert.ok(playground.includes(marker), `playground is missing ${marker}`);
   }
   assert.ok(overview.includes('(link "/playground/" "Open the YALISP Playground")'));
+});
+
+test("Playground is a persistent-session REPL with selectable examples and a growing composer", async () => {
+  const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
+  for (const marker of [
+    "data-seed-example-select",
+    "data-repl-transcript",
+    "data-seed-manual-form",
+    "Ctrl/Cmd + Enter evaluates",
+    "Started a fresh ${stage} session.",
+    "session = undefined",
+    "manual.style.height = `${Math.min(Math.max(manual.scrollHeight, 44), 200)}px`",
+    "form.requestSubmit()",
+    'manual.value === selected.source ? selected.label : "Expression"'
+  ]) assert.ok(seedRuntime.includes(marker), `Playground REPL is missing ${marker}`);
+  for (const marker of ["repl-console", "repl-transcript", "repl-composer", "repl-example-picker"]) {
+    assert.ok((await readFile(new URL("../src/docs.css", import.meta.url), "utf8")).includes(marker), `REPL styling is missing ${marker}`);
+  }
+  for (const marker of ["A real REPL", "Use the transcript like a small console"]) {
+    assert.ok(playground.includes(marker), `Playground copy is missing ${marker}`);
+  }
+  assert.ok(!seedRuntime.includes("seed-example-grid"), "the Playground should no longer render a separate example-card gallery");
 });
 
 test("applications documentation uses the shared documentation shell", async () => {

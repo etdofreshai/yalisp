@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101310" />
-    <meta name="description" content="Run the real YALISP WebAssembly seed and Lisp bootstrap" />
+    <meta name="description" content="Use the real YALISP WebAssembly interpreter through a browser REPL" />
     <title>Playground · YALISP</title>
     <style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style><script src="/theme-init.js"></script>
   </head>
@@ -23,9 +23,9 @@
       <p class="eyebrow">YALISP Playground</p>
       <section>
         <p class="section-number">Executable Seed + Bootstrap</p>
-        <h1>Tap a form.<br /><em>Run real Lisp.</em></h1>
-        <p class="lede">This Playground assembles no pretend output. Each example runs in WebAssembly generated from the checked-in WAT seed, optionally after that seed evaluates the checked-in Lisp bootstrap.</p>
-        <p class="interface-note">The implementation is derived from the verified M9 seed in <a href="https://github.com/ETdoFreshAI/lispish/tree/c78a2be/boot">Lispish commit c78a2be</a>. Read the <a href="/docs/seed/">Seed</a> and <a href="/docs/bootstrap/">Bootstrap</a> explanations for the exact boundary.</p>
+        <h1>A real REPL.<br /><em>In the browser.</em></h1>
+        <p class="lede">Use the transcript like a small console: load an example, edit it, evaluate it, then keep building on the same live Seed or Bootstrap session. Every result comes from WebAssembly generated from the checked-in WAT seed.</p>
+        <p class="interface-note">A session is deliberately bounded. Switching interpreter stages starts a new session; a guarded kernel error discards only that session, and the next evaluation starts fresh. Read the <a href="/docs/seed/">Seed</a> and <a href="/docs/bootstrap/">Bootstrap</a> explanations for the exact boundary.</p>
         <div data-bootstrap-demo data-initial-stage="seed"></div>
       </section>
       <section class="interface-section">
