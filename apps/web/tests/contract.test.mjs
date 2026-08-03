@@ -316,8 +316,12 @@ test("all top bars use one shared chrome contract and DOM Lisp pages avoid an em
   assert.ok(topBar.includes("export function renderTopBar"));
   assert.ok(topBar.includes('"Toggle project navigation"'));
   assert.ok(topBar.includes('isDark ? "☀" : "◐"'));
+  assert.ok(topBar.includes('className: "brand-accent"'));
   assert.ok(domLispChrome.includes("renderTopBar(root)"));
+  assert.ok(domLispChrome.includes('".site-header, .docs-header"'));
   assert.ok(docsScript.includes("renderTopBar()"));
+  assert.ok(docsScript.includes("header,"));
+  assert.ok(chromeStyles.includes(".menu-open .docs-menu"));
 });
 
 test("Hello World exposes its complete Lisp application and generic launchers", async () => {

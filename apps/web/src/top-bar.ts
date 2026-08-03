@@ -11,7 +11,11 @@ export function renderTopBar(root: ParentNode = document) {
 
   const brand = header.querySelector<HTMLAnchorElement>(".brand");
   if (brand) {
-    brand.replaceChildren("Y", Object.assign(document.createElement("span"), { textContent: "A" }), "LISP");
+    const accent = Object.assign(document.createElement("span"), {
+      className: "brand-accent",
+      textContent: "A"
+    });
+    brand.replaceChildren("Y", accent, "LISP");
     brand.setAttribute("aria-label", "YALisp home");
   }
 

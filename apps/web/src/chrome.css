@@ -30,7 +30,7 @@
   letter-spacing: -0.08em;
 }
 
-.brand-accent, .docs-header .brand span { color: var(--orange, #fa5b35); }
+.brand-accent, .site-header .brand span, .docs-header .brand span { color: var(--orange, #fa5b35); }
 
 .theme-toggle, .menu-button, .docs-menu {
   border: 1px solid var(--line);
@@ -76,8 +76,8 @@
   transition: transform 180ms ease;
 }
 
-.menu-open .menu-button span:first-child { transform: translateY(3px) rotate(45deg); }
-.menu-open .menu-button span:last-child { transform: translateY(-3px) rotate(-45deg); }
+.menu-open .menu-button span:first-child, .menu-open .docs-menu span:first-child { transform: translateY(3px) rotate(45deg); }
+.menu-open .menu-button span:last-child, .menu-open .docs-menu span:last-child { transform: translateY(-3px) rotate(-45deg); }
 
 @media (max-width: 760px) {
   .site-header, .docs-header { padding: 0 5vw; }

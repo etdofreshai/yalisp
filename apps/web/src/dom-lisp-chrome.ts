@@ -24,7 +24,7 @@ export function mountDomLispChrome(root: HTMLElement, initialState: "collapsed" 
     root,
     menuButton,
     defaultDesktopOpen: initialState === "expanded",
-    header: root.querySelector<HTMLElement>(".site-header"),
+    header: root.querySelector<HTMLElement>(".site-header, .docs-header"),
     shell: root.querySelector<HTMLElement>(".docs-shell")
   });
 

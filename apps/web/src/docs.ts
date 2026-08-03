@@ -8,10 +8,11 @@ import { renderTopBar } from "./top-bar";
 const menuButton = document.querySelector<HTMLButtonElement>("[data-docs-menu]");
 const shell = document.querySelector<HTMLElement>("[data-docs-shell]");
 const themeToggle = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+const header = document.querySelector<HTMLElement>(".site-header, .docs-header");
 const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
 const docsNav = document.querySelector<HTMLElement>(".docs-nav");
 
-if (!menuButton || !shell || !themeToggle || !docsNav) {
+if (!menuButton || !shell || !themeToggle || !header || !docsNav) {
   throw new Error("The YALisp docs page is missing a required UI element.");
 }
 
@@ -31,6 +32,7 @@ const disposeSidebarState = mountSidebarState({
   root: document,
   menuButton,
   defaultDesktopOpen: true,
+  header,
   shell
 });
 
