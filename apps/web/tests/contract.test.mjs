@@ -371,6 +371,17 @@ test("documentation links all four examples and preserves their runtime boundary
   assert.ok(applications.includes("not presented as an implemented YALISP DOM, SDL, or Game Runtime binding"));
 });
 
+test("complete source packages use the shared horizontally safe source viewport", async () => {
+  const styles = await readFile(new URL("../src/examples.css", import.meta.url), "utf8");
+  for (const route of ["hello-world", "pong", "breakout", "asteroids"]) {
+    const page = await readFile(new URL(`../examples/${route}/index.html`, import.meta.url), "utf8");
+    assert.ok(page.includes('class="application-package"'), `${route} is missing the shared source package layout`);
+    assert.ok(page.includes('class="application-source"'), `${route} is missing the shared source viewport`);
+  }
+  assert.match(styles, /\.application-package \{[^}]*min-width: 0/);
+  assert.match(styles, /\.application-source pre \{[^}]*max-width: 100%[^}]*overflow: auto/);
+});
+
 test("Foundation docs own their actual checked-in sources and retire the standalone Code destination", async () => {
   const seedPage = await readFile(new URL("../docs/seed/index.html", import.meta.url), "utf8");
   const bootstrapPage = await readFile(new URL("../docs/bootstrap/index.html", import.meta.url), "utf8");

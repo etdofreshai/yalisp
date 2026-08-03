@@ -27,9 +27,11 @@
             <div class="game-touch" aria-label="Breakout touch controls"><button type="button" data-app-action="left">Move left</button><button type="button" data-app-action="right">Move right</button></div>
           </div>
           <p class="game-instructions">Keyboard: A/D or ←/→. Touch: hold either movement button. The app package owns game state and drawing; the shared binding owns DOM events and frame scheduling.</p>
-          <p class="source-package-intro"><strong>Complete executable package.</strong> <code>app.ts</code> is imported by this page. It targets the concrete portable contract in <code>portable-app.ts</code>.</p>
-          <article class="source-package"><div class="example-runner-header"><span>src/examples/breakout/app.ts</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/breakout/app.ts">Source ↗</a></div><pre><code data-application-source="breakout">Loading bundled application source…</code></pre></article>
-          <details class="runtime-source"><summary>Shared runtime adapter · src/examples/runtime/portable-app.ts</summary><pre><code data-portable-runtime-source>Loading bundled runtime source…</code></pre></details>
+          <div class="application-package">
+            <p><strong>Complete executable package.</strong> <code>app.ts</code> is imported by this page. It targets the concrete portable contract in <code>portable-app.ts</code>.</p>
+            <article class="application-source"><header><span>src/examples/breakout/app.ts</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/breakout/app.ts">Source ↗</a></header><pre><code data-application-source="breakout">Loading bundled application source…</code></pre></article>
+            <details class="application-source"><summary>Shared runtime adapter · src/examples/runtime/portable-app.ts</summary><pre><code data-portable-runtime-source>Loading bundled runtime source…</code></pre></details>
+          </div>
           <p class="interface-note">Authenticity boundary: this is an implemented TypeScript portable-application contract with a browser Canvas 2D adapter. Its shape vocabulary deliberately mirrors the planned SDL drawing layer, but it is not the unimplemented YALISP DOM/SDL binding and does not run in the WAT seed.</p>
         </section>
       </main>

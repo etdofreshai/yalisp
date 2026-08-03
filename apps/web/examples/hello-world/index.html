@@ -28,10 +28,12 @@
             <div class="example-output"><span>Actual evaluator output</span><output data-example-output>Not run yet.</output></div>
           </div>
           <pre class="example-command"><code>$ npm run example:hello --workspace @yalisp/web</code></pre>
-          <p class="source-package-intro"><strong>Complete executable package.</strong> The page imports <code>browser-app.ts</code>; the CLI command executes <code>cli.mjs</code>; both load the exact <code>hello.lisp</code> above.</p>
-          <article class="source-package"><div class="example-runner-header"><span>src/examples/hello-world/browser-app.ts</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/hello-world/browser-app.ts">Source ↗</a></div><pre><code data-hello-browser-source>Loading bundled browser host…</code></pre></article>
-          <details class="runtime-source"><summary>CLI host · examples/hello-world/cli.mjs</summary><pre><code data-hello-cli-source>Loading bundled CLI host…</code></pre></details>
-          <details class="runtime-source"><summary>Language form · src/examples/hello-world/hello.lisp</summary><pre><code data-hello-language-source>Loading bundled YALISP source…</code></pre></details>
+          <div class="application-package">
+            <p><strong>Complete executable package.</strong> The page imports <code>browser-app.ts</code>; the CLI command executes <code>cli.mjs</code>; both load the exact <code>hello.lisp</code> above.</p>
+            <article class="application-source"><header><span>src/examples/hello-world/browser-app.ts</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/hello-world/browser-app.ts">Source ↗</a></header><pre><code data-hello-browser-source>Loading bundled browser host…</code></pre></article>
+            <details class="application-source"><summary>CLI host · examples/hello-world/cli.mjs</summary><pre><code data-hello-cli-source>Loading bundled CLI host…</code></pre></details>
+            <details class="application-source"><summary>Language form · src/examples/hello-world/hello.lisp</summary><pre><code data-hello-language-source>Loading bundled YALISP source…</code></pre></details>
+          </div>
           <p class="interface-note">Current boundary: YALISP does not yet expose a language-level console or stream primitive. The browser and CLI hosts own their output surfaces and display the seed evaluator’s printed string value. No output is simulated.</p>
         </section>
       </main>
