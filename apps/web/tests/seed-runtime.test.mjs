@@ -7,6 +7,7 @@ import wabtInit from "wabt";
 
 const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url), "utf8");
 const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
+const pongApplication = await readFile(new URL("../src/examples/pong/app.lisp", import.meta.url), "utf8");
 const generatedWasm = await readFile(new URL("../public/yalisp/seed.wasm", import.meta.url));
 const uiSource = await readFile(new URL("../src/seed-runtime.ts", import.meta.url), "utf8");
 const wabt = await wabtInit();
@@ -98,6 +99,14 @@ test("Lisp bootstrap adds real macros, list functions, and named recursion", asy
   assert.equal(session.evaluate(`(defn fib (n)
     (if (<= n 1) n (+ (fib (- n 1)) (fib (- n 2)))))
   (fib 10)`), "<closure>\n55");
+});
+
+test("Pong state, input, collision, and draw protocol execute in the bootstrap evaluator", async () => {
+  const session = await createSession({ boot: true });
+  session.evaluateQuietly(pongApplication);
+  assert.equal(session.evaluate("(app.mount)"), "(mount 640 360 Pong ((up hold move-up (ArrowUp w)) (down hold move-down (ArrowDown s))))");
+  assert.equal(session.evaluate("(app.frame '(320 180 230 145 142 142 0 0) '((up 1) (down 0)))"), "((state (336 190 230 145 124 142 0 0)) (draw (clear 0) (line 320 0 320 360 1 1) (rect 28 124 12 76 1) (rect 600 142 12 76 1) (circle 336 190 8 2) (rect 282 22 12 18 1) (rect 342 22 12 18 1)) (status 0 0))");
+  assert.equal(session.evaluate("(app.frame '(38 180 -230 145 142 142 0 0) '((up 0) (down 0)))"), "((state (48 190 230 145 142 142 0 0)) (draw (clear 0) (line 320 0 320 360 1 1) (rect 28 142 12 76 1) (rect 600 142 12 76 1) (circle 48 190 8 2) (rect 282 22 12 18 1) (rect 342 22 12 18 1)) (status 0 0))");
 });
 
 test("bootstrap or short-circuits without double evaluation or identifier capture", async () => {

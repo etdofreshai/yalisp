@@ -1,25 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createPongState, updatePong } from "../src/examples/pong/app.ts";
 import { createBreakoutState, updateBreakout } from "../src/examples/breakout/app.ts";
 import { createAsteroidsState, fireBullet, updateAsteroids, wrapCoordinate } from "../src/examples/asteroids/app.ts";
 
 const input = (held = []) => ({ held: (action) => held.includes(action), pressed: () => false });
-
-test("complete Pong application moves, bounces, and scores deterministically", () => {
-  const state = createPongState();
-  const startX = state.ball.x;
-  updatePong(state, 1 / 30, input());
-  assert.ok(state.ball.x > startX && state.ball.x < startX + 10);
-  state.ball.y = 2;
-  state.ball.velocityY = -100;
-  updatePong(state, 1 / 60, input());
-  assert.ok(state.ball.velocityY > 0);
-  state.ball.x = -20;
-  updatePong(state, 1 / 60, input());
-  assert.equal(state.opponentScore, 1);
-  assert.equal(state.ball.x, 320);
-});
 
 test("Asteroids model wraps motion, bounds bullets, and scores real hits", () => {
   assert.equal(wrapCoordinate(-1, 640), 639);

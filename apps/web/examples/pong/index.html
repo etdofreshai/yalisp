@@ -1,7 +1,37 @@
 <!doctype html>
 <html lang="en">
-  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="theme-color" content="#101310" /><meta name="description" content="Play Pong and inspect its complete portable application source" /><title>Pong · YALISP Examples</title><style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style><script src="/theme-init.js"></script></head>
-  <body><a class="skip-link" href="#content">Skip to example</a><header class="docs-header"><a class="brand" href="/" aria-label="YALISP home">Y<span>A</span>LISP</a><div class="header-actions"><button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle><span aria-hidden="true">☀</span><span>Light</span></button><button class="docs-menu" type="button" aria-label="Toggle project navigation" aria-expanded="false" data-docs-menu><span></span><span></span></button></div></header>
-    <div class="docs-shell playground-shell" data-docs-shell><aside class="docs-nav" aria-label="Project navigation"></aside><main id="content" class="examples-main"><p class="eyebrow"><a href="/examples/">Examples</a> / Pong</p><section><p class="section-number">02 / Game</p><h1>One ball.<br /><em>One complete app.</em></h1><p class="lede">The exact TypeScript package shown below defines the ball and paddles, input mapping, update rules, scoring, and every SDL-like drawing command used by this playable page.</p><div class="example-meta"><span class="example-badge">Executed source shown</span><span class="example-badge">Portable app contract</span><span class="example-badge">Canvas DOM binding</span></div><div class="game-frame" data-portable-app="pong"><canvas width="640" height="360" aria-label="Interactive Pong application"></canvas><div class="game-toolbar"><button type="button" data-game-toggle aria-pressed="false">Play Pong</button><output data-game-status>0 : 0 · paused</output></div><div class="game-touch" aria-label="Pong touch controls"><button type="button" data-app-action="up">Move up</button><button type="button" data-app-action="down">Move down</button></div></div><p class="game-instructions">Keyboard: W/S or ↑/↓. Touch: hold either movement button. The app code owns game state and drawing; the shared binding owns DOM events and frame scheduling.</p><div class="application-package"><p><strong>Complete executable package.</strong> <code>app.ts</code> is imported by this page. It targets the concrete portable contract in <code>portable-app.ts</code>.</p><article class="application-source"><header><span>src/examples/pong/app.ts</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/pong/app.ts">Source ↗</a></header><pre><code data-application-source="pong">Loading executed application source…</code></pre></article><details class="application-source"><summary>Shared runtime adapter · src/examples/runtime/portable-app.ts</summary><pre><code data-portable-runtime-source>Loading runtime adapter source…</code></pre></details></div><p class="interface-note">Authenticity boundary: this is an implemented TypeScript portable-application contract with a browser Canvas 2D adapter. Its shape vocabulary deliberately mirrors the planned SDL drawing layer, but it is not the unimplemented YALISP DOM/SDL binding and does not run in the WAT seed.</p></section></main></div><script type="module" src="/src/examples.ts"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101310" />
+    <meta name="description" content="Play YALISP Pong and inspect the executing Lisp application" />
+    <title>Pong · YALISP Examples</title>
+    <style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style>
+    <script src="/theme-init.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to example</a>
+    <header class="docs-header"><a class="brand" href="/" aria-label="YALISP home">Y<span>A</span>LISP</a><div class="header-actions"><button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle><span aria-hidden="true">☀</span><span>Light</span></button><button class="docs-menu" type="button" aria-label="Toggle project navigation" aria-expanded="false" data-docs-menu><span></span><span></span></button></div></header>
+    <div class="docs-shell playground-shell" data-docs-shell>
+      <aside class="docs-nav" aria-label="Project navigation"></aside>
+      <main id="content" class="examples-main">
+        <p class="eyebrow"><a href="/examples/">Examples</a> / Pong</p>
+        <section>
+          <p class="section-number">02 / Game</p>
+          <h1>One ball.<br /><em>One YALISP app.</em></h1>
+          <p class="lede">The exact Lisp source below defines the mount contract, controls, ball and paddle state, update rules, scoring, collisions, and every portable draw command used by this playable page.</p>
+          <div class="example-meta"><span class="example-badge">Executed Lisp source shown</span><span class="example-badge">Bootstrap evaluator</span><span class="example-badge">Canvas host binding</span></div>
+          <div class="game-frame" data-lisp-app="pong">Loading the YALISP application…</div>
+          <p class="game-instructions">Controls are declared by <code>app.mount</code> in the displayed Lisp source. The generic browser binding forwards those declared inputs and renders only the draw protocol returned by Lisp.</p>
+          <div class="application-package">
+            <p><strong>Complete executable package.</strong> <code>app.lisp</code> is loaded and evaluated by a fresh real bootstrap session for each bounded frame. The browser binding does not contain Pong entities, rules, or drawing decisions.</p>
+            <article class="application-source"><header><span>src/examples/pong/app.lisp</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/pong/app.lisp">Source ↗</a></header><pre><code data-lisp-application-source="pong">Loading executed YALISP source…</code></pre></article>
+            <details class="application-source"><summary>Generic browser binding · src/examples/runtime/lisp-application.ts</summary><pre><code data-lisp-runtime-source>Loading generic browser binding…</code></pre></details>
+          </div>
+          <p class="interface-note">Authenticity boundary: Pong’s state transition and portable SDL-like draw protocol execute in the current YALISP bootstrap evaluator. TypeScript is only the generic DOM/Canvas launcher: it mounts the Lisp-declared controls, schedules bounded frames, forwards input, and renders returned commands. This is a browser Canvas binding, not an implemented native SDL or Game Runtime.</p>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/examples.ts"></script>
   </body>
 </html>

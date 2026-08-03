@@ -309,23 +309,24 @@ test("Hello World exposes its complete seed, browser, and CLI package", async ()
 test("Pong exposes the complete source package that its runner imports", async () => {
   const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
   const pong = await readFile(new URL("../examples/pong/index.html", import.meta.url), "utf8");
-  const source = await readFile(new URL("../src/examples/pong/app.ts", import.meta.url), "utf8");
-  const runtime = await readFile(new URL("../src/examples/runtime/portable-app.ts", import.meta.url), "utf8");
+  const source = await readFile(new URL("../src/examples/pong/app.lisp", import.meta.url), "utf8");
+  const runtime = await readFile(new URL("../src/examples/runtime/lisp-application.ts", import.meta.url), "utf8");
   const behavior = await readFile(new URL("../src/examples.ts", import.meta.url), "utf8");
 
   assert.ok(gallery.includes('href="/examples/pong/"'));
-  for (const marker of ["data-portable-app=\"pong\"", "Complete executable package", "data-application-source=\"pong\"", "does not run in the WAT seed"]) {
+  for (const marker of ["data-lisp-app=\"pong\"", "Complete executable package", "data-lisp-application-source=\"pong\"", "execute in the current YALISP bootstrap evaluator"]) {
     assert.ok(pong.includes(marker), `Pong page is missing ${marker}`);
   }
-  for (const marker of ["export type Ball", "export type Paddle", "createPongState", "updatePong", "drawPong", "mountPong", "ArrowUp", "data-app-action"]) {
+  for (const marker of ["(defn app.mount", "(defn app.initial-state", "(defn app.step", "(defn app.draw", "(defn app.frame", "player-score", "opponent-score"]) {
     assert.ok(source.includes(marker), `Pong app source is missing ${marker}`);
   }
-  for (const marker of ["interface PortableCanvasApplication", "class CanvasDrawingSurface", "mountCanvasApplication", "pointerdown", "requestAnimationFrame"]) {
-    assert.ok(runtime.includes(marker), `portable runtime is missing ${marker}`);
+  for (const marker of ["createSeedSession", "requestAnimationFrame", "drawCommands", "parseLispValue", "frameIntervalMs"]) {
+    assert.ok(runtime.includes(marker), `Lisp browser binding is missing ${marker}`);
   }
-  assert.ok(behavior.includes('import { mountPong } from "./examples/pong/app"'));
-  assert.ok(behavior.includes('import pongApplicationSource from "./examples/pong/app?raw"'));
-  assert.ok(behavior.includes("mountPong"));
+  assert.ok(behavior.includes('import { runApplication } from "./examples/runtime/lisp-application"'));
+  assert.ok(behavior.includes('import pongApplicationSource from "./examples/pong/app.lisp?raw"'));
+  assert.ok(behavior.includes("runApplication(root, pongApplicationSource)"));
+  assert.equal(runtime.includes("Pong"), false, "generic binding must not contain Pong behavior");
 });
 
 test("Breakout exposes the complete source package that its runner imports", async () => {
@@ -366,9 +367,9 @@ test("documentation links all four examples and preserves their runtime boundary
   for (const route of ["hello-world", "pong", "breakout", "asteroids"]) {
     assert.ok(docs.includes(`href="/examples/${route}/"`), `Docs are missing ${route}`);
   }
-  assert.ok(docs.includes("do not claim an implemented YALISP graphics runtime"));
+  assert.ok(docs.includes("do not claim an implemented native YALISP graphics runtime"));
   assert.ok(applications.includes('href="/examples/"'));
-  assert.ok(applications.includes("not presented as an implemented YALISP DOM, SDL, or Game Runtime binding"));
+  assert.ok(applications.includes("None of the games claim an implemented native YALISP DOM, SDL, or Game Runtime binding"));
 });
 
 test("complete source packages use the shared horizontally safe source viewport", async () => {
