@@ -5,24 +5,19 @@ import { getNavigationOwnerState, normalizePath } from "../src/project-navigatio
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const source = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+const landing = await readFile(new URL("../src/site/landing.lisp", import.meta.url), "utf8");
 const navigation = await readFile(new URL("../src/project-navigation.ts", import.meta.url), "utf8");
 
 test("landing page exposes its essential semantic and social contracts", () => {
   for (const marker of [
-    'id="main"',
-    'id="why"',
-    'id="language"',
-    'class="rail-status"',
-    'data-project-navigation',
-    'data-navigation-default="collapsed"',
     'data-theme-bootstrap',
     'src="/theme-init.js"',
-    "https://github.com/etdofreshai/yalisp",
-    'data-features',
-    'data-code',
-    'data-principles'
+    'data-dom-lisp-root'
   ]) {
     assert.ok(html.includes(marker), `missing ${marker}`);
+  }
+  for (const marker of ["(defn app.view", "(defn app.event", "(defn site-nav", "'main", "(id 'why)", "(id 'language)", "https://github.com/ETdoFreshAI/yalisp"]) {
+    assert.ok(landing.includes(marker), `DOM Lisp landing source is missing ${marker}`);
   }
   for (const marker of ['pageLink("/playground/"', 'pageLink("/examples/"', 'pageLink("/docs/"', "project-nav-playground", "https://github.com/etdofreshai/yalisp"]) {
     assert.ok(navigation.includes(marker), `shared navigation is missing ${marker}`);
@@ -42,11 +37,12 @@ test("production container builds once and serves with Vite on its declared and 
   assert.doesNotMatch(dockerfile, /EXPOSE 80/);
 });
 
-test("interactive controls have TypeScript behavior", () => {
-  assert.ok(source.includes('navigator.clipboard.writeText'));
-  assert.ok(source.includes('IntersectionObserver'));
-  assert.ok(source.includes('aria-expanded'));
-  assert.ok(source.includes('document.documentElement.dataset.theme'));
+test("landing behavior is a thin TypeScript DOM bridge over executable Lisp", () => {
+  assert.ok(source.includes("runDomApplication"));
+  assert.ok(!source.includes("navigator.clipboard.writeText"));
+  assert.ok(landing.includes("'toggle-menu"));
+  assert.ok(landing.includes("'toggle-theme"));
+  assert.ok(landing.includes("'document-theme"));
 });
 
 test("landing shell starts with a compact rail and exposes its shared tree through the menu", async () => {
@@ -90,7 +86,7 @@ test("landing and inner pages mount the same semantic navigation with different 
   assert.match(navStyles, /\.project-nav-link[^}]*justify-content: flex-start/);
   assert.match(navStyles, /\.project-nav-link[^}]*text-align: left/);
   assert.match(navStyles, /\.project-nav-link[^}]*min-height: 2\.25rem/);
-  assert.ok(source.includes('initialState: "collapsed"'));
+  assert.ok(landing.includes("(defn site-nav"));
   assert.ok(docsBehavior.includes('initialState: "expanded"'));
   assert.ok(docsBehavior.includes("setSidebarCollapsed(false)"));
   assert.ok(playgroundBehavior.includes('import "./docs"'));
@@ -348,17 +344,21 @@ test("Breakout exposes the complete Lisp source package that its launcher import
 test("Asteroids exposes the complete source package that its runner imports", async () => {
   const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
   const page = await readFile(new URL("../examples/asteroids/index.html", import.meta.url), "utf8");
-  const source = await readFile(new URL("../src/examples/asteroids/app.ts", import.meta.url), "utf8");
+  const source = await readFile(new URL("../src/examples/asteroids/app.lisp", import.meta.url), "utf8");
+  const runtime = await readFile(new URL("../src/examples/runtime/lisp-application.ts", import.meta.url), "utf8");
   const behavior = await readFile(new URL("../src/examples.ts", import.meta.url), "utf8");
   assert.ok(gallery.includes('href="/examples/asteroids/"'));
-  for (const marker of ["data-portable-app=\"asteroids\"", "Complete executable package", "data-application-source=\"asteroids\"", "does not run in the WAT seed"]) {
+  for (const marker of ["data-lisp-app=\"asteroids\"", "Complete executable package", "data-lisp-application-source=\"asteroids\"", "execute in YALISP"]) {
     assert.ok(page.includes(marker), `Asteroids page is missing ${marker}`);
   }
-  for (const marker of ["export type Asteroid", "export type Bullet", "createAsteroidsState", "updateAsteroids", "drawAsteroids", "fireBullet", "mountAsteroids", "data-app-action"]) {
+  for (const marker of ["(defn app.mount", "(defn app.initial-state", "(defn app.step", "(defn app.resolve", "(defn app.ship", "(defn app.frame", "four cardinal ship headings"]) {
     assert.ok(source.includes(marker), `Asteroids app source is missing ${marker}`);
   }
-  assert.ok(behavior.includes('import { mountAsteroids } from "./examples/asteroids/app"'));
-  assert.ok(behavior.includes('import asteroidsApplicationSource from "./examples/asteroids/app?raw"'));
+  assert.ok(behavior.includes('import asteroidsApplicationSource from "./examples/asteroids/app.lisp?raw"'));
+  assert.ok(behavior.includes("runApplication(root, asteroidsApplicationSource)"));
+  for (const name of ["Pong", "Breakout", "Asteroids"]) {
+    assert.equal(runtime.includes(name), false, `generic binding must not contain ${name} behavior`);
+  }
 });
 
 test("documentation links all four examples and preserves their runtime boundary", async () => {
@@ -486,7 +486,7 @@ test("documentation explains the executable interpreter and Lisp bootstrap", asy
 
 test("language guide distinguishes evidenced syntax from planned features", async () => {
   const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
-  const siteBehavior = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+  const siteBehavior = await readFile(new URL("../src/site/landing.lisp", import.meta.url), "utf8");
 
   for (const marker of ["(define factorial", "(lambda (n)", "(factorial 6)"]) {
     assert.ok(siteBehavior.includes(marker), `site source is missing ${marker}`);

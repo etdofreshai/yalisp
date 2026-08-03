@@ -9,6 +9,8 @@ const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url)
 const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
 const pongApplication = await readFile(new URL("../src/examples/pong/app.lisp", import.meta.url), "utf8");
 const breakoutApplication = await readFile(new URL("../src/examples/breakout/app.lisp", import.meta.url), "utf8");
+const landingApplication = await readFile(new URL("../src/site/landing.lisp", import.meta.url), "utf8");
+const asteroidsApplication = await readFile(new URL("../src/examples/asteroids/app.lisp", import.meta.url), "utf8");
 const generatedWasm = await readFile(new URL("../public/yalisp/seed.wasm", import.meta.url));
 const uiSource = await readFile(new URL("../src/seed-runtime.ts", import.meta.url), "utf8");
 const wabt = await wabtInit();
@@ -116,6 +118,23 @@ test("Breakout brick state, input, scoring, and draw protocol execute in the boo
   assert.equal(session.evaluate("(app.mount)"), "(mount 640 360 Breakout ((left hold move-left (ArrowLeft a)) (right hold move-right (ArrowRight d))))");
   assert.match(session.evaluate("(app.frame '(44 45 155 190 272 0 3 (1 1 1 1 1 1 1 1)) '((left 0) (right 0)))"), /^\(\(state \(56 59 155 -190 272 10 3 \(0 1 1 1 1 1 1 1\)\)\)/);
   assert.match(session.evaluate("(app.frame '(320 278 155 -190 272 0 3 (1 1 1 1 1 1 1 1)) '((left 1) (right 0)))"), /^\(\(state \(332 264 155 -190 252 0 3/);
+});
+
+test("the landing document structure and menu state execute in the bootstrap evaluator", async () => {
+  const session = await createSession({ boot: true });
+  session.evaluateQuietly(landingApplication);
+  assert.equal(session.evaluate("(app.initial-state)"), "(closed dark)");
+  assert.match(session.evaluate("(app.view '(closed dark))"), /^\(fragment \(\(document-theme dark\)\) \(header/);
+  assert.equal(session.evaluate("(app.event '(closed dark) 'toggle-menu)"), "(open dark)");
+  assert.equal(session.evaluate("(app.event '(open dark) 'toggle-theme)"), "(open light)");
+});
+
+test("Asteroids entities, declared input, hit rules, and draw protocol execute in the bootstrap evaluator", async () => {
+  const session = await createSession({ boot: true });
+  session.evaluateQuietly(asteroidsApplication);
+  assert.equal(session.evaluate("(app.mount)"), "(mount 640 360 Asteroids ((left hold rotate-left (ArrowLeft a)) (right hold rotate-right (ArrowRight d)) (thrust hold thrust (ArrowUp w)) (fire press fire (Space))))");
+  assert.match(session.evaluate("(app.frame '(320 180 0 0 nil ((360 180 0 0 20))) '((left 0) (right 0) (thrust 0) (fire 1)))"), /^\(\(state \(320 180 0 100 nil nil\)\)/);
+  assert.match(session.evaluate("(app.frame '(320 180 0 0 nil nil) '((left 1) (right 0) (thrust 0) (fire 0)))"), /^\(\(state \(320 180 3 0 nil nil\)\)/);
 });
 
 test("bootstrap or short-circuits without double evaluation or identifier capture", async () => {
