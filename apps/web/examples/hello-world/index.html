@@ -18,23 +18,19 @@
         <p class="eyebrow"><a href="/examples/">Examples</a> / Hello World</p>
         <section>
           <p class="section-number">01 / CLI</p>
-          <h1>Hello from the<br /><em>complete package.</em></h1>
-          <p class="lede">The language form, browser application host, and command-line host are all checked in and shown below. Both hosts run the same source through the real WAT seed.</p>
-          <div class="example-meta"><span class="example-badge">Runnable YALISP</span><span class="example-badge">WAT seed</span><span class="example-badge">Browser + CLI hosts</span></div>
-          <div class="example-runner" data-seed-app="hello-world">
-            <div class="example-runner-header"><span>src/examples/hello-world/hello.lisp</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/hello-world/hello.lisp">Source ↗</a></div>
-            <pre><code data-example-source>Loading bundled YALISP source…</code></pre>
-            <button type="button" data-example-run disabled>Run in the real seed</button>
-            <div class="example-output"><span>Actual evaluator output</span><output data-example-output>Not run yet.</output></div>
-          </div>
+          <h1>Hello from the<br /><em>complete application.</em></h1>
+          <p class="lede">The displayed YALISP application owns its declared Run input and the <code>Hello, world!</code> evaluator value. The generic browser binding and CLI only load and execute it through the real seed.</p>
+          <div class="example-meta"><span class="example-badge">Executed Lisp source shown</span><span class="example-badge">Bootstrap evaluator</span><span class="example-badge">Browser + CLI launchers</span></div>
+          <div class="game-frame" data-lisp-app="hello-world">Loading the YALISP application…</div>
+          <p class="game-instructions">Press Run or Enter. The output field receives the actual printed value of <code>(app.result)</code>; it is not a browser-simulated message.</p>
           <pre class="example-command"><code>$ npm run example:hello --workspace @yalisp/web</code></pre>
           <div class="application-package">
-            <p><strong>Complete executable package.</strong> The page imports <code>browser-app.ts</code>; the CLI command executes <code>cli.mjs</code>; both load the exact <code>hello.lisp</code> above.</p>
-            <article class="application-source"><header><span>src/examples/hello-world/browser-app.ts</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/hello-world/browser-app.ts">Source ↗</a></header><pre><code data-hello-browser-source>Loading bundled browser host…</code></pre></article>
+            <p><strong>Complete executable package.</strong> <code>app.lisp</code> is run by the bootstrap evaluator. The generic browser launcher mounts its declared contract; <code>cli.mjs</code> loads bootstrap plus the same app and evaluates <code>(app.result)</code>.</p>
+            <article class="application-source"><header><span>src/examples/hello-world/app.lisp</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/hello-world/app.lisp">Source ↗</a></header><pre><code data-lisp-application-source="hello-world">Loading executed YALISP source…</code></pre></article>
+            <details class="application-source"><summary>Generic browser binding · src/examples/runtime/lisp-application.ts</summary><pre><code data-lisp-runtime-source>Loading generic browser binding…</code></pre></details>
             <details class="application-source"><summary>CLI host · examples/hello-world/cli.mjs</summary><pre><code data-hello-cli-source>Loading bundled CLI host…</code></pre></details>
-            <details class="application-source"><summary>Language form · src/examples/hello-world/hello.lisp</summary><pre><code data-hello-language-source>Loading bundled YALISP source…</code></pre></details>
           </div>
-          <p class="interface-note">Current boundary: YALISP does not yet expose a language-level console or stream primitive. The browser and CLI hosts own their output surfaces and display the seed evaluator’s printed string value. No output is simulated.</p>
+          <p class="interface-note">Current boundary: YALISP does not yet expose a language-level console or stream primitive. The browser and CLI own only their output surfaces; the application’s string value is evaluated by the seed. No output is simulated.</p>
         </section>
       </main>
     </div>

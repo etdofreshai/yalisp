@@ -274,11 +274,11 @@ test("documentation and Playground shells provide hosts for the common project t
   assert.ok(playground.includes("data-docs-menu"));
 });
 
-test("Hello World exposes its complete seed, browser, and CLI package", async () => {
+test("Hello World exposes its complete Lisp application and generic launchers", async () => {
   const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
   const hello = await readFile(new URL("../examples/hello-world/index.html", import.meta.url), "utf8");
-  const exampleSource = await readFile(new URL("../src/examples/hello-world/hello.lisp", import.meta.url), "utf8");
-  const browserSource = await readFile(new URL("../src/examples/hello-world/browser-app.ts", import.meta.url), "utf8");
+  const exampleSource = await readFile(new URL("../src/examples/hello-world/app.lisp", import.meta.url), "utf8");
+  const runtime = await readFile(new URL("../src/examples/runtime/lisp-application.ts", import.meta.url), "utf8");
   const cliSource = await readFile(new URL("../examples/hello-world/cli.mjs", import.meta.url), "utf8");
   const behavior = await readFile(new URL("../src/examples.ts", import.meta.url), "utf8");
 
@@ -288,18 +288,20 @@ test("Hello World exposes its complete seed, browser, and CLI package", async ()
     assert.ok(page.includes('src="/theme-init.js"'));
   }
   assert.ok(gallery.includes('href="/examples/hello-world/"'));
-  assert.ok(hello.includes("Runnable YALISP"));
+  assert.ok(hello.includes("Executed Lisp source shown"));
   assert.ok(hello.includes("does not yet expose a language-level console"));
-  assert.ok(hello.includes("Actual evaluator output"));
-  for (const marker of ["data-seed-app=\"hello-world\"", "Complete executable package", "data-hello-browser-source", "data-hello-cli-source", "data-hello-language-source"]) {
+  assert.ok(hello.includes("actual printed value"));
+  for (const marker of ["data-lisp-app=\"hello-world\"", "Complete executable package", "data-lisp-application-source=\"hello-world\"", "data-hello-cli-source"]) {
     assert.ok(hello.includes(marker), `Hello World page is missing ${marker}`);
   }
-  assert.equal(exampleSource.trim(), '"Hello, world!"');
-  assert.ok(browserSource.includes('createSeedSession("seed")'));
-  assert.ok(browserSource.includes("session.evaluate(source)"));
-  assert.ok(cliSource.includes("src/examples/hello-world/hello.lisp"));
-  assert.ok(behavior.includes('import { mountHelloWorld } from "./examples/hello-world/browser-app"'));
-  assert.ok(behavior.includes("helloBrowserSource"));
+  for (const marker of ["(defn app.mount", "(defn app.initial-state", "(defn app.result", '"Hello, world!"', "(defn app.frame"]) {
+    assert.ok(exampleSource.includes(marker), `Hello World app source is missing ${marker}`);
+  }
+  assert.ok(runtime.includes('evaluateOutput("(app.result)")'));
+  assert.ok(cliSource.includes("src/examples/hello-world/app.lisp"));
+  assert.ok(cliSource.includes('run("(app.result)", true)'));
+  assert.ok(behavior.includes('import helloWorldApplicationSource from "./examples/hello-world/app.lisp?raw"'));
+  assert.ok(behavior.includes("runApplication(root, helloWorldApplicationSource)"));
 });
 
 test("Pong exposes the complete source package that its runner imports", async () => {

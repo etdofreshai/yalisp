@@ -7,6 +7,7 @@ import wabtInit from "wabt";
 
 const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url), "utf8");
 const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
+const helloWorldApplication = await readFile(new URL("../src/examples/hello-world/app.lisp", import.meta.url), "utf8");
 const pongApplication = await readFile(new URL("../src/examples/pong/app.lisp", import.meta.url), "utf8");
 const breakoutApplication = await readFile(new URL("../src/examples/breakout/app.lisp", import.meta.url), "utf8");
 const landingApplication = await readFile(new URL("../src/site/landing.lisp", import.meta.url), "utf8");
@@ -92,6 +93,14 @@ test("CLI Hello World prints the actual seed evaluator value", () => {
   assert.equal(command.status, 0, command.stderr);
   assert.equal(command.stderr, "");
   assert.equal(command.stdout.trim(), "Hello, world!");
+});
+
+test("Hello World mount, input, and result are evaluated from its Lisp application", async () => {
+  const session = await createSession({ boot: true });
+  session.evaluateQuietly(helloWorldApplication);
+  assert.equal(session.evaluate("(app.mount)"), "(mount 640 160 Hello-world ((run press run (Enter))))");
+  assert.equal(session.evaluate("(app.result)"), "Hello, world!");
+  assert.match(session.evaluate("(app.frame 0 '((run 1)))"), /^\(\(state 1\).*\(result\)\)$/);
 });
 
 test("Lisp bootstrap adds real macros, list functions, and named recursion", async () => {

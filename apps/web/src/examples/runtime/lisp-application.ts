@@ -164,11 +164,12 @@ function inputForm(held: ReadonlySet<string>, pressed: ReadonlySet<string>, cont
 }
 
 export async function runApplication(root: HTMLElement, source: string) {
-  const evaluate = async (form: string) => {
+  const evaluateOutput = async (form: string) => {
     const session = await createSeedSession("bootstrap");
     session.evaluateQuietly(source);
-    return parseLispValue(session.evaluate(form));
+    return session.evaluate(form);
   };
+  const evaluate = async (form: string) => parseLispValue(await evaluateOutput(form));
   const spec = mountSpec(await evaluate("(app.mount)"));
   root.replaceChildren();
   root.setAttribute("aria-label", `${spec.title} YALISP application`);
@@ -203,7 +204,10 @@ export async function runApplication(root: HTMLElement, source: string) {
     button.type = "button";
     button.textContent = control.label;
     controls.append(button);
-    if (control.mode === "press") button.addEventListener("click", () => pressed.add(control.action));
+    if (control.mode === "press") button.addEventListener("click", () => {
+      pressed.add(control.action);
+      if (!running) toggle.click();
+    });
     else {
       const begin = () => { held.add(control.action); button.classList.add("active"); };
       const end = () => { held.delete(control.action); button.classList.remove("active"); };
@@ -217,7 +221,12 @@ export async function runApplication(root: HTMLElement, source: string) {
     const control = byKey.get(event.key.toLowerCase());
     if (!control) return;
     event.preventDefault();
-    if (control.mode === "press") { if (!event.repeat) pressed.add(control.action); }
+    if (control.mode === "press") {
+      if (!event.repeat) {
+        pressed.add(control.action);
+        if (!running) toggle.click();
+      }
+    }
     else held.add(control.action);
   });
   window.addEventListener("keyup", (event) => {
@@ -229,12 +238,13 @@ export async function runApplication(root: HTMLElement, source: string) {
   let running = false;
   let busy = false;
   let lastStep = 0;
-  const render = (value: LispValue, active: boolean) => {
+  let displayedResult: string | undefined;
+  const render = (value: LispValue, active: boolean, resultText?: string) => {
     const values = directives(value);
     const draw = directive(values, "draw");
     if (draw) drawCommands(context, draw.slice(1));
     const summary = directive(values, "status");
-    status.textContent = summary ? `${summary.slice(1).map(atomText).join(" · ")} · ${active ? "playing" : "paused"}` : active ? "playing" : "paused";
+    status.textContent = resultText ?? (summary ? `${summary.slice(1).map(atomText).join(" · ")} · ${active ? "playing" : "paused"}` : active ? "playing" : "paused");
   };
   render(await evaluate(`(app.view '${printLispValue(state)})`), false);
   toggle.addEventListener("click", () => {
@@ -252,7 +262,9 @@ export async function runApplication(root: HTMLElement, source: string) {
         const next = directive(values, "state");
         if (!next?.[1]) throw new Error("The Lisp application did not return its next state.");
         state = next[1];
-        render(result, true);
+        const resultDirective = directive(values, "result");
+        if (resultDirective) displayedResult = await evaluateOutput("(app.result)");
+        render(result, true, displayedResult);
       } catch (error) {
         running = false;
         toggle.textContent = `Play ${spec.title}`;
