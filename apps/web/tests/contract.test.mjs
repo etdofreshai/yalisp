@@ -675,6 +675,9 @@ test("REPL is a persistent-session console with selectable examples and a growin
   assert.ok(!seedRuntime.includes("seed-example-grid"), "the REPL should not render a separate example-card gallery");
   assert.ok(!seedRuntime.includes("seed-benchmark"), "the REPL should not render a benchmark panel");
   assert.ok(!seedRuntime.includes("seed-stage-switch"), "examples should choose Seed or Bootstrap without a separate stage toggle");
+  for (const marker of ["data-repl-clear", "data-repl-restart", "Terminal cleared", "Environment reset", "session = undefined"]) {
+    assert.ok(seedRuntime.includes(marker), `REPL reset controls are missing ${marker}`);
+  }
 });
 
 test("REPL keeps its composer fixed while only the terminal transcript scrolls", async () => {

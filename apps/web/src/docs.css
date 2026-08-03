@@ -88,7 +88,11 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
 .repl-example-picker select:focus, .repl-composer textarea:focus { border-color: #fa5b35; }
 .repl-console { display: grid; height: 100%; min-height: 0; grid-template-rows: auto minmax(0, 1fr) auto; background: color-mix(in srgb, var(--paper) 95%, var(--ink)); }
 .repl-console-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 1rem; border-bottom: 1px solid var(--line); color: var(--muted); font: .65rem/1 "DM Mono", monospace; letter-spacing: .04em; }
-.repl-console-heading > span:last-child { color: #c9f85a; }
+.repl-console-actions { display: flex; align-items: center; gap: .65rem; }
+.repl-console-status { color: #c9f85a; }
+.repl-console-actions button { padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; font: inherit; letter-spacing: inherit; }
+.repl-console-actions button:hover, .repl-console-actions button:focus-visible { color: #fa5b35; outline: none; }
+.repl-console-actions button:disabled { cursor: wait; opacity: .5; }
 .repl-transcript { min-height: 0; padding: 1rem; margin: 0; overflow-y: auto; list-style: none; overscroll-behavior: contain; font: .78rem/1.65 "DM Mono", monospace; }
 .repl-transcript > li { min-width: 0; }
 .repl-terminal-input { display: grid; grid-template-columns: 1rem minmax(0, 1fr); }
@@ -112,5 +116,8 @@ section p:not(.section-number) { max-width: 550px; color: var(--muted); font-siz
   .nav-open .docs-nav { display: flex; }
   main { padding: 4rem 5vw; }
   .repl-main { height: calc(100vh - 76px); min-height: 0; padding: 0; }
+  .repl-console-heading { gap: .6rem; }
+  .repl-console-actions { gap: .45rem; }
+  .repl-console-status { display: none; }
   section { padding-bottom: 4rem; margin-top: 4rem; }
 }

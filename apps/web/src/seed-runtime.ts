@@ -178,7 +178,10 @@ function mountDemo(root: HTMLElement) {
 
   root.innerHTML = `
     <section class="repl-console" aria-label="YALISP read evaluate print loop">
-      <header class="repl-console-heading"><span>YALISP / <span data-seed-stage-name></span></span><span data-seed-status>Ready</span></header>
+      <header class="repl-console-heading">
+        <span>YALISP / <span data-seed-stage-name></span></span>
+        <div class="repl-console-actions"><span class="repl-console-status" data-seed-status>Ready</span><button type="button" data-repl-clear>Clear</button><button type="button" data-repl-restart>Restart</button></div>
+      </header>
       <ol class="repl-transcript" data-repl-transcript aria-live="polite"></ol>
       <form class="repl-composer" data-seed-manual-form>
         <label for="seed-manual-${root.dataset.initialStage || "seed"}">Expression or small script</label>
@@ -198,6 +201,8 @@ function mountDemo(root: HTMLElement) {
   const form = root.querySelector<HTMLFormElement>("[data-seed-manual-form]")!;
   const manual = root.querySelector<HTMLTextAreaElement>("[data-seed-manual]")!;
   const manualRun = root.querySelector<HTMLButtonElement>("[data-seed-manual-run]")!;
+  const clearTerminal = root.querySelector<HTMLButtonElement>("[data-repl-clear]")!;
+  const restartEnvironment = root.querySelector<HTMLButtonElement>("[data-repl-restart]")!;
 
   function resizeComposer() {
     manual.style.height = "auto";
@@ -273,6 +278,8 @@ function mountDemo(root: HTMLElement) {
     const terminal = appendEvaluation(text);
     status.textContent = "Running";
     manualRun.disabled = true;
+    clearTerminal.disabled = true;
+    restartEnvironment.disabled = true;
     root.setAttribute("aria-busy", "true");
     try {
       session ??= await createSeedSession(stage);
@@ -286,6 +293,8 @@ function mountDemo(root: HTMLElement) {
     } finally {
       scrollTranscript();
       manualRun.disabled = false;
+      clearTerminal.disabled = false;
+      restartEnvironment.disabled = false;
       root.removeAttribute("aria-busy");
     }
   }
@@ -306,6 +315,19 @@ function mountDemo(root: HTMLElement) {
       manual.value = example.source;
       resizeComposer();
     }
+    manual.focus();
+  });
+
+  clearTerminal.addEventListener("click", () => {
+    transcript.replaceChildren();
+    status.textContent = "Terminal cleared";
+    manual.focus();
+  });
+
+  restartEnvironment.addEventListener("click", () => {
+    transcript.replaceChildren();
+    session = undefined;
+    status.textContent = "Environment reset";
     manual.focus();
   });
 
