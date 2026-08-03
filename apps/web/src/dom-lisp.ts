@@ -13,7 +13,7 @@ function isList(value: LispValue): value is LispList {
 
 function text(value: LispValue | undefined): string {
   if (typeof value === "number") return String(value);
-  if (typeof value === "string") return value.replaceAll("~", " ");
+  if (typeof value === "string") return value;
   throw new Error("A DOM Lisp atom must be text or a number.");
 }
 
