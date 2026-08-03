@@ -33,6 +33,16 @@ function appendNode(
     return;
   }
 
+  // A Lisp `map` naturally returns a list of sibling nodes. Treat that list as
+  // a fragment at the adapter boundary, so dynamic content remains a Lisp
+  // concern rather than requiring a TypeScript loop or synthetic wrapper.
+  if (value[0] !== undefined && isList(value[0])) {
+    for (const child of value) {
+      if (child !== undefined) appendNode(parent, child, dispatch, options);
+    }
+    return;
+  }
+
   const [tag, rawAttributes, ...children] = value;
   const attributes: LispValue = rawAttributes === "nil" ? [] : (rawAttributes ?? []);
   if (text(tag ?? "") === "fragment") {

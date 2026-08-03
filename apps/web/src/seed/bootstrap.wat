@@ -32,7 +32,9 @@
 (module
   (import "host" "write" (func $host_write (param i32 i32)))
 
-  (memory (export "memory") 8)
+  ;; Sixteen pages leave the fixed input region intact and provide enough
+  ;; bounded bump-heap space for the complete Assembly reference DOM tree.
+  (memory (export "memory") 16)
 
   (global $heap    (mut i32) (i32.const 131072))
   (global $nil     (mut i32) (i32.const 0))

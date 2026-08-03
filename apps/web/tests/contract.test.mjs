@@ -290,9 +290,9 @@ test("documentation and Playground shells provide hosts for the common project t
   const pages = ["", "applications/", "assembly/", "bootstrap/", "compiler/", "dom/", "foundation/", "sdl/", "seed/", "system-interface/"];
   for (const page of pages) {
     const document = await readFile(new URL(`../docs/${page}index.html`, import.meta.url), "utf8");
-    if (page === "" || page === "applications/" || page === "foundation/" || page === "seed/" || page === "bootstrap/" || page === "compiler/") {
+    if (page === "" || page === "applications/" || page === "assembly/" || page === "foundation/" || page === "seed/" || page === "bootstrap/" || page === "compiler/") {
       assert.ok(document.includes("data-dom-lisp-root"), "docs/ is missing its DOM Lisp host");
-      const launcher = page === "" ? "docs-overview" : page === "applications/" ? "applications-page" : page === "foundation/" ? "foundation" : page === "seed/" ? "seed-page" : page === "bootstrap/" ? "bootstrap-page" : "compiler-page";
+      const launcher = page === "" ? "docs-overview" : page === "applications/" ? "applications-page" : page === "assembly/" ? "assembly-page" : page === "foundation/" ? "foundation" : page === "seed/" ? "seed-page" : page === "bootstrap/" ? "bootstrap-page" : "compiler-page";
       assert.ok(document.includes(`src="/src/${launcher}.ts"`), `${page || "docs/"} is missing its thin DOM Lisp launcher`);
     } else assert.ok(document.includes('class="docs-nav"'), `${page} is missing the shared navigation host`);
   }
@@ -502,11 +502,14 @@ test("assembly documentation exposes its primary instruction groups", async () =
 
 test("assembly documentation uses the bundled inventory", async () => {
   const page = await readFile(new URL("../docs/assembly/index.html", import.meta.url), "utf8");
-  const behavior = await readFile(new URL("../src/docs.ts", import.meta.url), "utf8");
+  const behavior = await readFile(new URL("../src/assembly-page.ts", import.meta.url), "utf8");
+  const pageSource = await readFile(new URL("../src/site/assembly-page.lisp", import.meta.url), "utf8");
   const inventory = await readFile(new URL("../src/assembly-inventory.ts", import.meta.url), "utf8");
 
-  assert.ok(page.includes("data-assembly-inventory"));
+  assert.ok(page.includes("data-dom-lisp-root"));
   assert.ok(behavior.includes('from "./assembly-inventory"'));
+  assert.ok(behavior.includes("define assembly-inventory"));
+  assert.ok(pageSource.includes("(map inventory-group assembly-inventory)"));
   assert.ok(inventory.includes("assembly.i32.add"));
   assert.ok(!page.includes("raw.githubusercontent.com"));
 });
@@ -532,7 +535,9 @@ test("language guide distinguishes evidenced syntax from planned features", asyn
 
 test("each interface has a dedicated page", async () => {
   for (const page of ["assembly", "system-interface", "dom", "sdl"]) {
-    const document = await readFile(new URL(`../docs/${page}/index.html`, import.meta.url), "utf8");
+    const document = page === "assembly"
+      ? await readFile(new URL("../src/site/assembly-page.lisp", import.meta.url), "utf8")
+      : await readFile(new URL(`../docs/${page}/index.html`, import.meta.url), "utf8");
     assert.match(document, /normative YALisp/i);
   }
 });
