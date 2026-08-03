@@ -15,6 +15,9 @@
   (lambda (n)
     (if (<= n 1) 1 (* n (factorial (- n 1))))))
 
+;; The landing example is executable documentation, not a display-only claim.
+(define landing-factorial-example (factorial 6))
+
 (defn menu-state (state) (car state))
 (defn theme-state (state) (car (cdr state)))
 (defn menu-class (state) (if (eq? (menu-state state) 'open) 'site-header~menu-open 'site-header))
