@@ -6,6 +6,7 @@ import { getNavigationOwnerState, normalizePath } from "../src/project-navigatio
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const source = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
 const landing = await readFile(new URL("../src/site/landing.lisp", import.meta.url), "utf8");
+const docsOverview = await readFile(new URL("../src/site/docs-overview.lisp", import.meta.url), "utf8");
 const navigation = await readFile(new URL("../src/project-navigation.ts", import.meta.url), "utf8");
 
 test("landing page exposes its essential semantic and social contracts", () => {
@@ -94,7 +95,7 @@ test("landing and inner pages mount the same semantic navigation with different 
 });
 
 test("sidebar nested numbers mirror printed page section numbers without inventing them", async () => {
-  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const docs = docsOverview;
   const seed = await readFile(new URL("../docs/seed/index.html", import.meta.url), "utf8");
   const bootstrap = await readFile(new URL("../docs/bootstrap/index.html", import.meta.url), "utf8");
   const compiler = await readFile(new URL("../docs/compiler/index.html", import.meta.url), "utf8");
@@ -131,8 +132,8 @@ test("sidebar nested numbers mirror printed page section numbers without inventi
     ["game-runtime", "07", "Game runtime"],
     ["examples", "08", "Examples"]
   ]) {
-    assert.ok(docs.includes(`id="${hash}"`));
-    assert.ok(docs.includes(`<p class="section-number">${printed}</p>`));
+    assert.ok(docs.includes(`(id '${hash})`));
+    assert.ok(docs.includes(`(cls 'section-number)) "${printed}"`));
     assert.ok(navigation.includes(`["${hash}", "${label}", "${printed}"]`));
   }
 
@@ -266,7 +267,10 @@ test("documentation and Playground shells provide hosts for the common project t
   const pages = ["", "applications/", "assembly/", "bootstrap/", "compiler/", "dom/", "foundation/", "sdl/", "seed/", "system-interface/"];
   for (const page of pages) {
     const document = await readFile(new URL(`../docs/${page}index.html`, import.meta.url), "utf8");
-    assert.ok(document.includes('class="docs-nav"'), `${page || "docs/"} is missing the shared navigation host`);
+    if (page === "") {
+      assert.ok(document.includes("data-dom-lisp-root"), "docs/ is missing its DOM Lisp host");
+      assert.ok(document.includes('src="/src/docs-overview.ts"'), "docs/ is missing its thin DOM Lisp launcher");
+    } else assert.ok(document.includes('class="docs-nav"'), `${page} is missing the shared navigation host`);
   }
   const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
   assert.ok(playground.includes("data-docs-shell"));
@@ -364,10 +368,10 @@ test("Asteroids exposes the complete source package that its runner imports", as
 });
 
 test("documentation links all four examples and preserves their runtime boundary", async () => {
-  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const docs = docsOverview;
   const applications = await readFile(new URL("../docs/applications/index.html", import.meta.url), "utf8");
   for (const route of ["hello-world", "pong", "breakout", "asteroids"]) {
-    assert.ok(docs.includes(`href="/examples/${route}/"`), `Docs are missing ${route}`);
+    assert.ok(docs.includes(`"/examples/${route}/"`), `Docs are missing ${route}`);
   }
   assert.ok(docs.includes("do not claim an implemented native YALISP graphics runtime"));
   assert.ok(applications.includes('href="/examples/"'));
@@ -440,31 +444,31 @@ test("documentation resolves its theme before first paint", async () => {
 });
 
 test("documentation presents the four interfaces and planned game runtime", async () => {
-  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const docs = docsOverview;
   for (const marker of [
-    'id="reference-interfaces"',
-    'id="assembly"',
-    'id="system-interface"',
-    'id="dom"',
-    'id="sdl"',
-    'id="game-runtime"',
+    "(id 'reference-interfaces)",
+    '"/docs/assembly/"',
+    '"/docs/system-interface/"',
+    '"/docs/dom/"',
+    '"/docs/sdl/"',
+    "(id 'game-runtime)",
     "simulation update",
     "render update",
-    "competing third update loop"
+    "Future networking exchanges simulation inputs"
   ]) {
     assert.ok(docs.includes(marker), `missing ${marker}`);
   }
 });
 
 test("assembly documentation exposes its primary instruction groups", async () => {
-  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const inventory = await readFile(new URL("../src/assembly-inventory.ts", import.meta.url), "utf8");
   for (const marker of [
     "assembly.i32.add",
     "assembly.memory.grow",
     "assembly.v128.load",
     "assembly.func"
   ]) {
-    assert.ok(docs.includes(marker), `missing ${marker}`);
+    assert.ok(inventory.includes(marker), `missing ${marker}`);
   }
 });
 
@@ -480,14 +484,13 @@ test("assembly documentation uses the bundled inventory", async () => {
 });
 
 test("documentation explains the executable interpreter and Lisp bootstrap", async () => {
-  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
-  assert.ok(docs.includes('id="core-repl"'));
-  assert.match(docs, /WAT interpreter extended by <code>boot\.lisp<\/code>/i);
-  assert.match(docs, /first bounded compiler now lowers a proven arithmetic subset/i);
+  assert.ok(docsOverview.includes("(id 'core-repl)"));
+  assert.match(docsOverview, /WAT interpreter extended by boot\.lisp/i);
+  assert.match(docsOverview, /bounded Lisp-written arithmetic compiler/i);
 });
 
 test("language guide distinguishes evidenced syntax from planned features", async () => {
-  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const docs = docsOverview;
   const siteBehavior = await readFile(new URL("../src/site/landing.lisp", import.meta.url), "utf8");
 
   for (const marker of ["(define factorial", "(lambda (n)", "(factorial 6)"]) {
@@ -495,8 +498,8 @@ test("language guide distinguishes evidenced syntax from planned features", asyn
     assert.ok(docs.includes(marker), `language guide is missing ${marker}`);
   }
   assert.match(docs, /Module syntax is not implemented/);
-  assert.match(docs, /This exact <code>cc\.compile<\/code> form is executed/);
-  assert.match(docs, /no general <code>apply<\/code> or <code>eval<\/code> function is exposed/);
+  assert.match(docs, /This cc\.compile form is executed/);
+  assert.match(docs, /one-parameter integer expressions/);
 });
 
 test("each interface has a dedicated page", async () => {
@@ -527,17 +530,17 @@ test("DOM documentation defines planned adapters and a provisional application r
 });
 
 test("foundation documentation explains the bootstrapping path", async () => {
-  const overview = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const overview = docsOverview;
   const foundation = await readFile(new URL("../docs/foundation/index.html", import.meta.url), "utf8");
   for (const marker of ["Seed", "Bootstrap", "Compiler", "Applications"]) {
     assert.ok(foundation.includes(marker), `missing ${marker}`);
   }
   for (const marker of [
-    'aria-label="Foundation overview"',
-    '<span>01</span><strong>Seed</strong>',
-    '<span>02</span><strong>Bootstrap</strong>',
-    '<span>03</span><strong>Compiler</strong>',
-    '<span>04</span><strong>Applications</strong>'
+    '"YALisp foundation documentation"',
+    '(map-link "01" "/docs/seed/" "Seed"',
+    '(map-link "02" "/docs/bootstrap/" "Bootstrap"',
+    '(map-link "03" "/docs/compiler/" "Compiler"',
+    '(map-link "04" "/docs/applications/" "Applications"'
   ]) {
     assert.ok(overview.includes(marker), `missing ${marker}`);
   }
@@ -547,7 +550,7 @@ test("seed and bootstrap docs link to the first-class executable Playground", as
   const seed = await readFile(new URL("../docs/seed/index.html", import.meta.url), "utf8");
   const bootstrap = await readFile(new URL("../docs/bootstrap/index.html", import.meta.url), "utf8");
   const playground = await readFile(new URL("../playground/index.html", import.meta.url), "utf8");
-  const overview = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const overview = docsOverview;
   for (const marker of ['href="/playground/"', "real WebAssembly interpreter", "no simulated results"]) {
     assert.ok(seed.includes(marker), `seed page is missing ${marker}`);
   }
@@ -559,7 +562,7 @@ test("seed and bootstrap docs link to the first-class executable Playground", as
   for (const marker of ["data-theme-bootstrap", 'src="/theme-init.js"', "data-bootstrap-demo", "YALISP Playground"]) {
     assert.ok(playground.includes(marker), `playground is missing ${marker}`);
   }
-  assert.ok(overview.includes('<a href="/playground/">Open the YALISP Playground</a>'));
+  assert.ok(overview.includes('(link "/playground/" "Open the YALISP Playground")'));
 });
 
 test("applications documentation uses the shared documentation shell", async () => {

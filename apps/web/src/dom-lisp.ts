@@ -67,9 +67,11 @@ function appendNode(
  * event bridge: element structure, attributes, text, and event state all come
  * from the checked-in Lisp program.
  */
-export async function runDomApplication(root: HTMLElement, source: string) {
+export async function runDomApplication(root: HTMLElement, source: string | readonly string[]) {
   const session = await createSeedSession("bootstrap");
-  session.evaluateQuietly(source);
+  for (const module of typeof source === "string" ? [source] : source) {
+    session.evaluateQuietly(module);
+  }
   let state = parseLispValue(session.evaluateDom("(app.initial-state)"));
   let rendering = false;
 
