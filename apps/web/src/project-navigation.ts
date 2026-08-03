@@ -68,6 +68,14 @@ const foundationPages = new Set([
   "/docs/applications/"
 ]);
 
+const examplePages = new Set([
+  "/examples/",
+  "/examples/hello-world/",
+  "/examples/pong/",
+  "/examples/breakout/",
+  "/examples/asteroids/"
+]);
+
 export const normalizePath = (path: string) => {
   const pathOnly = path.split(/[?#]/, 1)[0] ?? "/";
   const cleanPath = pathOnly.replace(/\/{2,}/g, "/").replace(/index\.html$/, "").replace(/\/+$/, "");
@@ -79,7 +87,8 @@ export function getNavigationOwnerState(path: string) {
   return {
     currentPath,
     anchorOwner: Object.hasOwn(pageAnchors, currentPath) ? currentPath : null,
-    foundationExpanded: foundationPages.has(currentPath)
+    foundationExpanded: foundationPages.has(currentPath),
+    examplesExpanded: examplePages.has(currentPath)
   };
 }
 
@@ -148,7 +157,7 @@ function trackActiveSection(navigation: HTMLElement, path: string) {
 
 export function mountProjectNavigation(host: HTMLElement, options: NavigationOptions) {
   const ownerState = getNavigationOwnerState(options.currentPath ?? window.location.pathname);
-  const { currentPath, foundationExpanded } = ownerState;
+  const { currentPath, foundationExpanded, examplesExpanded } = ownerState;
   const currentHash = window.location.hash;
   const pageLink = (path: string, label: string, extraClass = "", extraAttributes = "") => {
     const active = currentPath === path;
@@ -204,7 +213,22 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
               </li>`)}
           </li>
           <li class="project-nav-utility">${pageLink("/playground/", "Playground", " project-nav-playground")}</li>
-          <li>${pageLink("/examples/", "Examples", " project-nav-examples")}</li>
+          <li class="project-nav-context project-nav-examples-group">
+            ${pageLink("/examples/", "Examples", " project-nav-examples", ` aria-expanded="${examplesExpanded}" aria-controls="project-nav-examples-pages"`)}
+            ${pageGroup("examples", examplePages, `
+              <li class="project-nav-stage">
+                ${pageLink("/examples/hello-world/", '<span class="project-nav-index">01</span><span>Hello World</span>')}
+              </li>
+              <li class="project-nav-stage">
+                ${pageLink("/examples/pong/", '<span class="project-nav-index">02</span><span>Pong</span>')}
+              </li>
+              <li class="project-nav-stage">
+                ${pageLink("/examples/breakout/", '<span class="project-nav-index">03</span><span>Breakout</span>')}
+              </li>
+              <li class="project-nav-stage">
+                ${pageLink("/examples/asteroids/", '<span class="project-nav-index">04</span><span>Asteroids</span>')}
+              </li>`)}
+          </li>
         </ul>
       </nav>
       <a class="project-nav-source" href="https://github.com/etdofreshai/yalisp">View source <span aria-hidden="true">↗</span></a>

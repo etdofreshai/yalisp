@@ -205,7 +205,8 @@ test("Docs and Foundation disclosures use exact normalized route ownership", () 
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath: "/docs/",
       anchorOwner: "/docs/",
-      foundationExpanded: false
+      foundationExpanded: false,
+      examplesExpanded: false
     });
   }
 
@@ -213,7 +214,8 @@ test("Docs and Foundation disclosures use exact normalized route ownership", () 
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath: "/docs/foundation/",
       anchorOwner: null,
-      foundationExpanded: true
+      foundationExpanded: true,
+      examplesExpanded: false
     });
   }
 
@@ -225,7 +227,18 @@ test("Docs and Foundation disclosures use exact normalized route ownership", () 
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath: owner,
       anchorOwner: owner,
-      foundationExpanded: true
+      foundationExpanded: true,
+      examplesExpanded: false
+    });
+  }
+
+  for (const route of ["/examples/", "/examples/pong", "/examples/asteroids/index.html"]) {
+    const currentPath = normalizePath(route);
+    assert.deepEqual(getNavigationOwnerState(route), {
+      currentPath,
+      anchorOwner: null,
+      foundationExpanded: false,
+      examplesExpanded: true
     });
   }
 
@@ -234,7 +247,8 @@ test("Docs and Foundation disclosures use exact normalized route ownership", () 
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath,
       anchorOwner: currentPath,
-      foundationExpanded: false
+      foundationExpanded: false,
+      examplesExpanded: false
     });
   }
 
@@ -242,7 +256,8 @@ test("Docs and Foundation disclosures use exact normalized route ownership", () 
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath: normalizePath(route),
       anchorOwner: null,
-      foundationExpanded: false
+      foundationExpanded: false,
+      examplesExpanded: false
     });
   }
 
@@ -250,8 +265,20 @@ test("Docs and Foundation disclosures use exact normalized route ownership", () 
     'data-page-group="${name}"',
     'pageGroup("foundation", foundationPages',
     'foundationPages.has(currentPath)',
-    'aria-controls="project-nav-foundation-pages"'
+    'aria-controls="project-nav-foundation-pages"',
+    'pageGroup("examples", examplePages',
+    'examplesExpanded: examplePages.has(currentPath)',
+    'aria-controls="project-nav-examples-pages"'
   ]) assert.ok(navigation.includes(marker), `missing exact disclosure contract: ${marker}`);
+  for (const [path, number, label] of [
+    ["/examples/hello-world/", "01", "Hello World"],
+    ["/examples/pong/", "02", "Pong"],
+    ["/examples/breakout/", "03", "Breakout"],
+    ["/examples/asteroids/", "04", "Asteroids"]
+  ]) {
+    assert.ok(navigation.includes(`pageLink("${path}"`), `missing example navigation entry: ${path}`);
+    assert.ok(navigation.includes(`project-nav-index">${number}</span><span>${label}`), `missing example number: ${label}`);
+  }
   assert.ok(!navigation.includes('project-nav-interfaces-pages'), "duplicate Interfaces navigation should not be rendered outside Docs overview");
   assert.ok(!navigation.includes('>06</span><span>Game Runtime</span>'), "duplicate Game Runtime navigation should not be rendered outside Docs overview");
   assert.ok(!navigation.includes("startsWith("), "route-prefix matching could leak a neighboring group");
