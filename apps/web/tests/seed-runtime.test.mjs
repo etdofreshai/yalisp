@@ -55,6 +55,16 @@ async function createSession({ boot = false } = {}) {
       }
       return output.replace(/\r\n/g, "\n").trimEnd();
     },
+    evaluateDom(source) {
+      output = "";
+      try {
+        instance.exports.eval_dom_print(inputPointer, load(source));
+      } catch (error) {
+        error.seedDiagnostic = output.replace(/\r\n/g, "\n").trimEnd();
+        throw error;
+      }
+      return output.replace(/\r\n/g, "\n").trimEnd();
+    },
     evaluateTrap(source) {
       output = "";
       try {
@@ -85,6 +95,12 @@ test("WAT seed evaluates its documented primitive surface", async () => {
   assert.equal(session.evaluate(`(begin
     (define square (lambda (n) (* n n)))
     (square 12))`), "144");
+});
+
+test("DOM evaluation preserves machine-readable strings while normal REPL output stays readable", async () => {
+  const session = await createSession();
+  assert.equal(session.evaluate('(list "hello world" "say \\"hi\\"" "slash \\\\" "line\nnext" "tab\tend")'), '(hello world say "hi" slash \\ line\nnext tab\tend)');
+  assert.equal(session.evaluateDom('(list "hello world" "say \\"hi\\"" "slash \\\\" "line\nnext" "tab\tend")'), '("hello world" "say \\"hi\\"" "slash \\\\" "line\\nnext" "tab\\tend")');
 });
 
 test("CLI Hello World prints the actual seed evaluator value", () => {

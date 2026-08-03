@@ -70,17 +70,17 @@ function appendNode(
 export async function runDomApplication(root: HTMLElement, source: string) {
   const session = await createSeedSession("bootstrap");
   session.evaluateQuietly(source);
-  let state = parseLispValue(session.evaluate("(app.initial-state)"));
+  let state = parseLispValue(session.evaluateDom("(app.initial-state)"));
   let rendering = false;
 
   const render = () => {
-    const tree = parseLispValue(session.evaluate(`(app.view '${printLispValue(state)})`));
+    const tree = parseLispValue(session.evaluateDom(`(app.view '${printLispValue(state)})`));
     root.replaceChildren();
     appendNode(root, tree, (event) => {
       if (rendering) return;
       rendering = true;
       try {
-        state = parseLispValue(session.evaluate(`(app.event '${printLispValue(state)} '${event})`));
+        state = parseLispValue(session.evaluateDom(`(app.event '${printLispValue(state)} '${event})`));
         render();
       } finally {
         rendering = false;
