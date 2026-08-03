@@ -278,10 +278,12 @@ test("documentation and Playground shells provide hosts for the common project t
   assert.ok(playground.includes("data-docs-menu"));
 });
 
-test("Examples start with a truthful executable CLI milestone", async () => {
+test("Hello World exposes its complete seed, browser, and CLI package", async () => {
   const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
   const hello = await readFile(new URL("../examples/hello-world/index.html", import.meta.url), "utf8");
-  const exampleSource = await readFile(new URL("../public/examples/hello-world/hello.lisp", import.meta.url), "utf8");
+  const exampleSource = await readFile(new URL("../src/examples/hello-world/hello.lisp", import.meta.url), "utf8");
+  const browserSource = await readFile(new URL("../src/examples/hello-world/browser-app.ts", import.meta.url), "utf8");
+  const cliSource = await readFile(new URL("../examples/hello-world/cli.mjs", import.meta.url), "utf8");
   const behavior = await readFile(new URL("../src/examples.ts", import.meta.url), "utf8");
 
   for (const page of [gallery, hello]) {
@@ -293,9 +295,15 @@ test("Examples start with a truthful executable CLI milestone", async () => {
   assert.ok(hello.includes("Runnable YALISP"));
   assert.ok(hello.includes("does not yet expose a language-level console"));
   assert.ok(hello.includes("Actual evaluator output"));
+  for (const marker of ["data-seed-app=\"hello-world\"", "Complete executable package", "data-hello-browser-source", "data-hello-cli-source", "data-hello-language-source"]) {
+    assert.ok(hello.includes(marker), `Hello World page is missing ${marker}`);
+  }
   assert.equal(exampleSource.trim(), '"Hello, world!"');
-  assert.ok(behavior.includes('createSeedSession("seed")'));
-  assert.ok(behavior.includes("session.evaluate(source)"));
+  assert.ok(browserSource.includes('createSeedSession("seed")'));
+  assert.ok(browserSource.includes("session.evaluate(source)"));
+  assert.ok(cliSource.includes("src/examples/hello-world/hello.lisp"));
+  assert.ok(behavior.includes('import { mountHelloWorld } from "./examples/hello-world/browser-app"'));
+  assert.ok(behavior.includes("helloBrowserSource"));
 });
 
 test("Pong exposes the complete source package that its runner imports", async () => {
@@ -360,7 +368,7 @@ test("documentation links all four examples and preserves their runtime boundary
   }
   assert.ok(docs.includes("do not claim an implemented YALISP graphics runtime"));
   assert.ok(applications.includes('href="/examples/"'));
-  assert.ok(applications.includes("not presented as an implemented DOM, SDL, or Game Runtime binding"));
+  assert.ok(applications.includes("not presented as an implemented YALISP DOM, SDL, or Game Runtime binding"));
 });
 
 test("Foundation docs own their actual checked-in sources and retire the standalone Code destination", async () => {

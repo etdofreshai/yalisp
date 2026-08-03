@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 const wasmUrl = new URL("../../public/yalisp/seed.wasm", import.meta.url);
-const sourceUrl = new URL("../../public/examples/hello-world/hello.lisp", import.meta.url);
+const sourceUrl = new URL("../../src/examples/hello-world/hello.lisp", import.meta.url);
 const [wasm, source] = await Promise.all([readFile(wasmUrl), readFile(sourceUrl, "utf8")]);
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
