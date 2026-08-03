@@ -721,6 +721,64 @@ footer p:last-child {
   footer p:last-child { justify-self: start; }
 }
 
+/* The landing rail participates in the desktop grid. Only compact screens use
+   the drawer treatment, where preserving the reading width matters more than
+   reserving a permanent navigation column. */
+@media (min-width: 761px) {
+  [data-dom-lisp-root]:has(.site-nav-drawer) {
+    display: grid;
+    min-height: 100vh;
+    grid-template-columns: 0 minmax(0, 1fr);
+    transition: grid-template-columns 180ms ease;
+  }
+
+  [data-dom-lisp-root]:has(.site-header.menu-open) {
+    grid-template-columns: var(--rail-width) minmax(0, 1fr);
+  }
+
+  [data-dom-lisp-root]:has(.site-nav-drawer) > .site-header {
+    grid-row: 1;
+    grid-column: 1 / -1;
+  }
+
+  [data-dom-lisp-root]:has(.site-nav-drawer) > .site-nav-drawer {
+    position: sticky;
+    z-index: 1;
+    top: 76px;
+    grid-row: 2;
+    grid-column: 1;
+    align-self: start;
+    width: 100%;
+    height: calc(100vh - 76px);
+    padding: 1.5rem .65rem 1.5rem .9rem;
+    overflow: hidden;
+    box-shadow: none;
+    opacity: 0;
+    pointer-events: none;
+    transform: none;
+    visibility: hidden;
+    transition: opacity 120ms ease, visibility 120ms ease;
+  }
+
+  [data-dom-lisp-root]:has(.site-header.menu-open) > .site-nav-drawer {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    visibility: visible;
+  }
+
+  [data-dom-lisp-root]:has(.site-nav-drawer) > main {
+    grid-row: 2;
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  [data-dom-lisp-root]:has(.site-nav-drawer) > footer {
+    grid-row: 3;
+    grid-column: 1 / -1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {

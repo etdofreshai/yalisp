@@ -53,11 +53,14 @@ test("landing behavior is a thin TypeScript DOM bridge over executable Lisp", ()
   assert.ok(landing.includes("'document-theme"));
 });
 
-test("landing uses the same top bar and collapsed navigation drawer as the rest of the site", async () => {
+test("landing integrates its open desktop rail while retaining a mobile drawer", async () => {
   const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
   assert.match(styles, /\.site-header\s*\{[\s\S]*grid-template-columns: 2\.5rem minmax\(0, 1fr\) auto/);
   assert.match(styles, /\.site-nav-drawer\s*\{[\s\S]*transform: translateX\(-102%\)/);
   assert.match(styles, /\.site-header\.menu-open \+ \.site-nav-drawer \{ transform: translateX\(0\)/);
+  assert.match(styles, /@media \(min-width: 761px\)[\s\S]*grid-template-columns: 0 minmax\(0, 1fr\)/);
+  assert.match(styles, /\[data-dom-lisp-root\]:has\(\.site-header\.menu-open\)\s*\{[\s\S]*grid-template-columns: var\(--rail-width\) minmax\(0, 1fr\)/);
+  assert.match(styles, /\[data-dom-lisp-root\]:has\(\.site-nav-drawer\) > main\s*\{[\s\S]*grid-column: 2/);
   assert.match(styles, /\.site-header > \.brand\s*\{[\s\S]*grid-column: 2/);
   assert.match(styles, /\.site-header \.theme-toggle \{ grid-row: 1; grid-column: 3/);
 });
