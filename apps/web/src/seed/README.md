@@ -10,7 +10,7 @@ small, real interpreter rather than a simulated example.
 
 The checked-in `bootstrap.wat` imports only `host.write(ptr, len)`. The build
 assembles it into the generated, ignored `public/yalisp/seed.wasm`, which
-exports a four-page WebAssembly memory plus `init`, `eval_all`, and
+exports an eight-page WebAssembly memory plus `init`, `eval_all`, and
 `eval_print`. Source is copied into the fixed input range `[1024, 8192)` before
 evaluation.
 

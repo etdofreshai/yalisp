@@ -75,7 +75,7 @@ const examples: Record<SeedStage, readonly SeedExample[]> = {
 };
 
 const inputPointer = 1024;
-const inputLimit = 32768 - inputPointer;
+const inputLimit = 131072 - inputPointer;
 const benchmarkIterations = 20000;
 const benchmarkChunkSize = 1000;
 const benchmarkInput = 21;

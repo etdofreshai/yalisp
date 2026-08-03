@@ -26,15 +26,15 @@
 ;; Memory map:
 ;;   [0,    64)  scratch (integer formatting)
 ;;   [64, 1024)  constant strings
-;;   [1024, 32768) input buffer (host writes source here)
-;;   [32768, .  )  heap (bump allocated; no GC yet)
+;;   [1024, 131072) input buffer (host writes source here)
+;;   [131072, .  )  heap (bump allocated; no GC yet)
 
 (module
   (import "host" "write" (func $host_write (param i32 i32)))
 
-  (memory (export "memory") 4)
+  (memory (export "memory") 8)
 
-  (global $heap    (mut i32) (i32.const 32768))
+  (global $heap    (mut i32) (i32.const 131072))
   (global $nil     (mut i32) (i32.const 0))
   (global $true    (mut i32) (i32.const 0))
   (global $false   (mut i32) (i32.const 0))
@@ -126,7 +126,7 @@
   (data (i32.const 496) "unterminated list") ;; 496 len 17
   (data (i32.const 513) "number expected")   ;; 513 len 15
 
-  ;; Fail before a write crosses the fixed four-page memory boundary. Use the
+  ;; Fail before a write crosses the fixed eight-page memory boundary. Use the
   ;; host import directly because $write may itself be buffering into the full
   ;; heap for to-string.
   (func $ensure_space (param $end i32)
@@ -999,7 +999,7 @@
 
   ;; --- init ---
   (func $init
-    (global.set $heap (i32.const 32768))
+    (global.set $heap (i32.const 131072))
     (global.set $nil (call $alloc (i32.const 4)))
     (i32.store (global.get $nil) (i32.const 0))
     (global.set $true (call $alloc (i32.const 4)))

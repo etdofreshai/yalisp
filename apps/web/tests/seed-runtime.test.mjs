@@ -23,7 +23,7 @@ parsed.destroy();
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const inputPointer = 1024;
-const inputEnd = 32768;
+const inputEnd = 131072;
 
 async function createSession({ boot = false } = {}) {
   let memory;

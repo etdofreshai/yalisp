@@ -13,7 +13,7 @@ const wabt = await wabtInit();
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const inputPointer = 1024;
-const inputEnd = 32768;
+const inputEnd = 131072;
 
 async function createCompilerSession() {
   let memory;
