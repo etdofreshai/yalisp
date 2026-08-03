@@ -7,45 +7,7 @@
     <style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style><script src="/theme-init.js"></script>
   </head>
   <body>
-    <a class="skip-link" href="#content">Skip to content</a>
-    <header class="docs-header"><a class="brand" href="/">Y<span>A</span>LISP</a><div class="header-actions"><button class="theme-toggle" type="button" data-theme-toggle><span>☀</span><span>Light</span></button><button class="docs-menu" type="button" data-docs-menu><span></span><span></span></button></div></header>
-    <div class="docs-shell" data-docs-shell>
-      <aside class="docs-nav"></aside>
-      <main id="content">
-        <p class="eyebrow">Foundation / Compiler</p>
-        <section>
-          <p class="section-number">Compiler</p>
-          <h1>One expression.<br /><em>Three real paths.</em></h1>
-          <p class="lede">YALISP now has a deliberately bounded Lisp-written compiler milestone. The interpreter evaluates <code>compiler.lisp</code>, which lowers a verified arithmetic subset to WebAssembly text; the Playground can assemble that output just in time or load the artifact produced ahead of time during the site build.</p>
-          <div class="bootstrap-flow">
-            <article><span>01</span><h2>Interpreted · seed</h2><p>The WAT seed parses, evaluates, and prints every call to the benchmark function.</p></article>
-            <article><span>02</span><h2>JIT · browser</h2><p>The checked-in Lisp compiler emits a function payload, then the browser assembles, compiles, instantiates, and runs a fresh WebAssembly module.</p></article>
-            <article><span>03</span><h2>AOT · build</h2><p>The production build runs that same compiler on the same workload and checks in the resulting <code>aot-benchmark.wasm</code> artifact for later browser instantiation.</p></article>
-          </div>
-          <p class="interface-note"><a href="/playground/">Run the measured comparison in the Playground.</a> It reports interpreter preparation/run time, JIT compilation preparation separately from run time, and AOT browser preparation separately from run time. Every displayed number is measured after the visitor taps Run.</p>
-        </section>
-        <section id="supported-subset" class="interface-section">
-          <p class="section-number">01 / Supported subset</p>
-          <h2>Small enough<br /><em>to prove.</em></h2>
-          <div class="reference-grid">
-            <article><code>shape</code><h3>One parameter, one expression</h3><p>The compiler accepts exactly one distinct parameter and one body form.</p></article>
-            <article><code>expressions</code><h3>Integer arithmetic</h3><p>Integer literals, the parameter, and nested binary <code>+</code>, <code>-</code>, and <code>*</code> forms are supported.</p></article>
-            <article><code>boundary</code><h3>Reject, never pretend</h3><p>Calls, conditionals, division, extra parameters, multiple forms, and unknown names return <code>nil</code> and remain interpreter-only.</p></article>
-          </div>
-          <p class="interface-note">Equivalence is guaranteed only while inputs and intermediate results stay in the seed's signed 30-bit fixnum range. This milestone is not a general YALISP compiler, module system, or self-hosting compiler.</p>
-        </section>
-        <section id="source" class="interface-section">
-          <p class="section-number">02 / Source</p>
-          <h2>Inspect the<br /><em>actual compiler.</em></h2>
-          <p>The compiler is adapted from Lispish's integer lowering design at commit <code>b7214f1</code>, while retaining YALISP's smaller current runtime boundary.</p>
-          <div class="source-view">
-            <div class="source-view-header"><span>apps/web/public/yalisp/compiler.lisp</span><a href="https://github.com/etdofreshai/yalisp/blob/main/apps/web/public/yalisp/compiler.lisp">GitHub ↗</a></div>
-            <pre tabindex="0"><code data-compiler-source>Loading checked-in compiler source…</code></pre>
-          </div>
-          <p class="interface-note">AOT provenance: <code>scripts/build-aot.mjs</code> boots the checked-in seed, evaluates <code>boot.lisp</code> and this <code>compiler.lisp</code>, compiles the exact benchmark form, and writes the checked-in <a href="https://github.com/etdofreshai/yalisp/blob/main/apps/web/public/yalisp/aot-benchmark.wasm"><code>aot-benchmark.wasm</code> artifact</a>. The browser still measures fetch, WebAssembly compilation, and instantiation; this is not a general compiler or proof that unsupported forms compile.</p>
-        </section>
-      </main>
-    </div>
-    <script type="module" src="/src/source-docs.ts"></script>
+    <div data-dom-lisp-root></div>
+    <script type="module" src="/src/compiler-page.ts"></script>
   </body>
 </html>
