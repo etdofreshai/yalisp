@@ -67,27 +67,21 @@ test("landing and inner pages mount the same semantic navigation with different 
   for (const marker of [
     '<ul class="project-nav-tree">',
     "project-nav-children",
-    "project-nav-page-child",
     "project-nav-anchor",
     'pageLink("/", "Project overview")',
     '["why", "Why YALisp"]',
     '["language", "The language"]',
     'pageLink("/docs/foundation/"',
     'pageLink("/playground/"',
-    'pageLink("/docs/sdl/"',
     '<span class="project-nav-index">01</span><span>Seed</span>',
     '<span class="project-nav-index">02</span><span>Bootstrap</span>',
     '<span class="project-nav-index">03</span><span>Compiler</span>',
-    '<span class="project-nav-index">04</span><span>Applications</span>',
-    '<span class="project-nav-index">05</span><span>Interfaces</span>',
-    '<span class="project-nav-index">06</span><span>Game Runtime</span>'
+    '<span class="project-nav-index">04</span><span>Applications</span>'
   ]) {
     assert.ok(navigation.includes(marker), `missing ${marker}`);
   }
   assert.match(navStyles, /\.project-nav ul[^}]*list-style: none/);
   assert.match(navStyles, /\.project-nav-anchor[^}]*color: var\(--muted\)/);
-  assert.match(navStyles, /\.project-nav-section-link[^}]*color: var\(--muted\)/);
-  assert.match(navStyles, /\.project-nav-page-child[^}]*font: 500/);
   assert.match(navStyles, /\.project-nav-link[^}]*justify-content: flex-start/);
   assert.match(navStyles, /\.project-nav-link[^}]*text-align: left/);
   assert.match(navStyles, /\.project-nav-link[^}]*min-height: 2\.25rem/);
@@ -142,13 +136,6 @@ test("sidebar nested numbers mirror printed page section numbers without inventi
     assert.ok(navigation.includes(`["${hash}", "${label}", "${printed}"]`));
   }
 
-  for (const marker of [
-    '<span class="project-nav-subindex">05.01</span><span>Assembly</span>',
-    '<span class="project-nav-subindex">05.02</span><span>System interface</span>',
-    '<span class="project-nav-subindex">05.03</span><span>DOM</span>',
-    '<span class="project-nav-subindex">05.04</span><span>SDL</span>'
-  ]) assert.ok(navigation.includes(marker), `missing numbered interface child ${marker}`);
-
   assert.ok(navigation.includes('["why", "Why YALisp"]'));
   assert.ok(navigation.includes('["assembly", "Assembly overview"]'));
   assert.ok(navigation.includes('number ? "" : \' aria-hidden="true"\''), "numbered subsection labels should remain in accessible link names");
@@ -193,13 +180,12 @@ test("DOM Lisp forwards hash and scroll section changes into the documentation s
   ]) assert.ok(docsOverview.includes(marker), `missing Lisp-owned active-section behavior: ${marker}`);
 });
 
-test("Docs, Foundation, and Interfaces disclosures use exact normalized route ownership", () => {
+test("Docs and Foundation disclosures use exact normalized route ownership", () => {
   for (const route of ["/docs", "/docs/", "/docs//", "/docs/index.html", "/docs/#reference-interfaces", "/docs/?from=nav#foundation"]) {
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath: "/docs/",
       anchorOwner: "/docs/",
-      foundationExpanded: false,
-      interfacesExpanded: false
+      foundationExpanded: false
     });
   }
 
@@ -207,8 +193,7 @@ test("Docs, Foundation, and Interfaces disclosures use exact normalized route ow
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath: "/docs/foundation/",
       anchorOwner: null,
-      foundationExpanded: true,
-      interfacesExpanded: false
+      foundationExpanded: true
     });
   }
 
@@ -220,8 +205,7 @@ test("Docs, Foundation, and Interfaces disclosures use exact normalized route ow
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath: owner,
       anchorOwner: owner,
-      foundationExpanded: true,
-      interfacesExpanded: false
+      foundationExpanded: true
     });
   }
 
@@ -230,8 +214,7 @@ test("Docs, Foundation, and Interfaces disclosures use exact normalized route ow
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath,
       anchorOwner: currentPath,
-      foundationExpanded: false,
-      interfacesExpanded: true
+      foundationExpanded: false
     });
   }
 
@@ -239,20 +222,18 @@ test("Docs, Foundation, and Interfaces disclosures use exact normalized route ow
     assert.deepEqual(getNavigationOwnerState(route), {
       currentPath: normalizePath(route),
       anchorOwner: null,
-      foundationExpanded: false,
-      interfacesExpanded: false
+      foundationExpanded: false
     });
   }
 
   for (const marker of [
     'data-page-group="${name}"',
     'pageGroup("foundation", foundationPages',
-    'pageGroup("interfaces", interfacePages',
     'foundationPages.has(currentPath)',
-    'interfacePages.has(currentPath)',
-    'aria-controls="project-nav-foundation-pages"',
-    'aria-controls="project-nav-interfaces-pages"'
+    'aria-controls="project-nav-foundation-pages"'
   ]) assert.ok(navigation.includes(marker), `missing exact disclosure contract: ${marker}`);
+  assert.ok(!navigation.includes('project-nav-interfaces-pages'), "duplicate Interfaces navigation should not be rendered outside Docs overview");
+  assert.ok(!navigation.includes('>06</span><span>Game Runtime</span>'), "duplicate Game Runtime navigation should not be rendered outside Docs overview");
   assert.ok(!navigation.includes("startsWith("), "route-prefix matching could leak a neighboring group");
 });
 
