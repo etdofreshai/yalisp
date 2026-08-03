@@ -27,5 +27,6 @@
 .game-toolbar button:hover, .game-touch button:hover, .game-touch button.active { background: var(--ink); color: var(--paper); }
 .game-toolbar output { color: #c9f85a; font: .67rem/1.4 "DM Mono", monospace; text-align: right; }
 .game-touch { display: grid; grid-template-columns: repeat(2, 1fr); gap: .65rem; padding: .75rem; border-top: 1px solid var(--line); background: var(--paper); }
+.game-touch-asteroids { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .game-instructions { margin: .8rem 0 0; color: var(--muted); font: .68rem/1.6 "DM Mono", monospace; }
 @media (min-width: 700px) { .example-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

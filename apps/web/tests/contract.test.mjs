@@ -249,7 +249,8 @@ test("Vite redirects canonical page routes to their trailing-slash form", async 
     "/examples",
     "/examples/hello-world",
     "/examples/pong",
-    "/examples/breakout"
+    "/examples/breakout",
+    "/examples/asteroids"
   ]) assert.ok(viteConfig.includes(`"${route}"`), `missing canonical redirect route ${route}`);
   assert.ok(viteConfig.includes("configureServer(server)"));
   assert.ok(viteConfig.includes("configurePreviewServer(server)"));
@@ -324,6 +325,29 @@ test("Breakout separates the executable browser host from its real YALISP probe"
   }
   assert.ok(source.includes("breakout.bounce-y"));
   assert.ok(source.includes("breakout.hit-score"));
+});
+
+test("Asteroids separates the executable browser host from its real YALISP probe", async () => {
+  const gallery = await readFile(new URL("../examples/index.html", import.meta.url), "utf8");
+  const page = await readFile(new URL("../examples/asteroids/index.html", import.meta.url), "utf8");
+  const source = await readFile(new URL("../public/examples/asteroids/logic.lisp", import.meta.url), "utf8");
+  assert.ok(gallery.includes('href="/examples/asteroids/"'));
+  for (const marker of ["data-game-demo=\"asteroids\"", "Interactive Asteroids reference", "Run YALISP state probe", "not a complete YALISP game runtime"]) {
+    assert.ok(page.includes(marker), `Asteroids page is missing ${marker}`);
+  }
+  assert.ok(source.includes("asteroids.wrap"));
+  assert.ok(source.includes("asteroids.hit-score"));
+});
+
+test("documentation links all four examples and preserves their runtime boundary", async () => {
+  const docs = await readFile(new URL("../docs/index.html", import.meta.url), "utf8");
+  const applications = await readFile(new URL("../docs/applications/index.html", import.meta.url), "utf8");
+  for (const route of ["hello-world", "pong", "breakout", "asteroids"]) {
+    assert.ok(docs.includes(`href="/examples/${route}/"`), `Docs are missing ${route}`);
+  }
+  assert.ok(docs.includes("do not claim an implemented YALISP graphics runtime"));
+  assert.ok(applications.includes('href="/examples/"'));
+  assert.ok(applications.includes("not presented as an implemented DOM, SDL, or Game Runtime binding"));
 });
 
 test("Foundation docs own their actual checked-in sources and retire the standalone Code destination", async () => {

@@ -11,6 +11,7 @@ const generatedWasm = await readFile(new URL("../public/yalisp/seed.wasm", impor
 const uiSource = await readFile(new URL("../src/seed-runtime.ts", import.meta.url), "utf8");
 const pongSource = await readFile(new URL("../public/examples/pong/logic.lisp", import.meta.url), "utf8");
 const breakoutSource = await readFile(new URL("../public/examples/breakout/logic.lisp", import.meta.url), "utf8");
+const asteroidsSource = await readFile(new URL("../public/examples/asteroids/logic.lisp", import.meta.url), "utf8");
 const wabt = await wabtInit();
 const parsed = wabt.parseWat("bootstrap.wat", wat, {});
 parsed.validate();
@@ -100,6 +101,11 @@ test("Pong state probe executes in the actual seed", async () => {
 test("Breakout state probe executes in the actual seed", async () => {
   const session = await createSession();
   assert.equal(session.evaluate(breakoutSource), "(154 -5 30)");
+});
+
+test("Asteroids state probe executes in the actual seed", async () => {
+  const session = await createSession();
+  assert.equal(session.evaluate(asteroidsSource), "(640 0 6 300)");
 });
 
 test("Lisp bootstrap adds real macros, list functions, and named recursion", async () => {
