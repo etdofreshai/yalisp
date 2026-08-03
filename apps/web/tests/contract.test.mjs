@@ -11,6 +11,7 @@ const foundationSource = await readFile(new URL("../src/site/foundation.lisp", i
 const seedPageSource = await readFile(new URL("../src/site/seed-page.lisp", import.meta.url), "utf8");
 const bootstrapPageSource = await readFile(new URL("../src/site/bootstrap-page.lisp", import.meta.url), "utf8");
 const compilerPageSource = await readFile(new URL("../src/site/compiler-page.lisp", import.meta.url), "utf8");
+const applicationsPageSource = await readFile(new URL("../src/site/applications-page.lisp", import.meta.url), "utf8");
 const navigation = await readFile(new URL("../src/project-navigation.ts", import.meta.url), "utf8");
 
 test("landing page exposes its essential semantic and social contracts", () => {
@@ -289,9 +290,9 @@ test("documentation and Playground shells provide hosts for the common project t
   const pages = ["", "applications/", "assembly/", "bootstrap/", "compiler/", "dom/", "foundation/", "sdl/", "seed/", "system-interface/"];
   for (const page of pages) {
     const document = await readFile(new URL(`../docs/${page}index.html`, import.meta.url), "utf8");
-    if (page === "" || page === "foundation/" || page === "seed/" || page === "bootstrap/" || page === "compiler/") {
+    if (page === "" || page === "applications/" || page === "foundation/" || page === "seed/" || page === "bootstrap/" || page === "compiler/") {
       assert.ok(document.includes("data-dom-lisp-root"), "docs/ is missing its DOM Lisp host");
-      const launcher = page === "" ? "docs-overview" : page === "foundation/" ? "foundation" : page === "seed/" ? "seed-page" : page === "bootstrap/" ? "bootstrap-page" : "compiler-page";
+      const launcher = page === "" ? "docs-overview" : page === "applications/" ? "applications-page" : page === "foundation/" ? "foundation" : page === "seed/" ? "seed-page" : page === "bootstrap/" ? "bootstrap-page" : "compiler-page";
       assert.ok(document.includes(`src="/src/${launcher}.ts"`), `${page || "docs/"} is missing its thin DOM Lisp launcher`);
     } else assert.ok(document.includes('class="docs-nav"'), `${page} is missing the shared navigation host`);
   }
@@ -392,12 +393,12 @@ test("Asteroids exposes the complete source package that its runner imports", as
 
 test("documentation links all four examples and preserves their runtime boundary", async () => {
   const docs = docsOverview;
-  const applications = await readFile(new URL("../docs/applications/index.html", import.meta.url), "utf8");
+  const applications = applicationsPageSource;
   for (const route of ["hello-world", "pong", "breakout", "asteroids"]) {
     assert.ok(docs.includes(`"/examples/${route}/"`), `Docs are missing ${route}`);
   }
   assert.ok(docs.includes("do not claim an implemented native YALISP graphics runtime"));
-  assert.ok(applications.includes('href="/examples/"'));
+  assert.ok(applications.includes('"/examples/"'));
   assert.ok(applications.includes("None of the games claim an implemented native YALISP DOM, SDL, or Game Runtime binding"));
 });
 
@@ -593,12 +594,12 @@ test("seed and bootstrap docs link to the first-class executable Playground", as
 });
 
 test("applications documentation uses the shared documentation shell", async () => {
-  const applications = await readFile(new URL("../docs/applications/index.html", import.meta.url), "utf8");
+  const applications = applicationsPageSource;
   for (const marker of [
-    'class="docs-header"',
-    "data-docs-shell",
-    'class="docs-nav"',
-    'src="/src/docs.ts"'
+    "(cls 'docs-header)",
+    "(defn app.view",
+    "(cls 'docs-nav)",
+    "app.initial-state"
   ]) {
     assert.ok(applications.includes(marker), `missing ${marker}`);
   }
