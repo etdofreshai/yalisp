@@ -114,12 +114,14 @@ test("loaded-map scans own source kill, treasure, and secret totals", async (t) 
   session.evaluateQuietly("(wl.new-game 1 1)");
   session.evaluateQuietly("(wl.select-map 1)");
   session.evaluateQuietly("(set! wl.killcount 99)");
+  session.evaluateQuietly("(set! wl.treasurecount 99)");
   session.evaluateQuietly("(define test.e2m2-planes (ca.cache-map app.tinf app.maps 11))");
   session.evaluateQuietly("(wl.setup-game-level (car test.e2m2-planes) (car (cdr test.e2m2-planes)))");
   assert.equal(number(session, "wl.difficulty"), 1);
   assert.equal(number(session, "wl.episode"), 1);
   assert.equal(number(session, "wl.map"), 1);
   assert.equal(number(session, "wl.killcount"), 0, "fresh level setup resets the dynamic count");
+  assert.equal(number(session, "wl.treasurecount"), 0, "fresh level setup resets treasurecount");
   assert.deepEqual(
     ["wl.killtotal", "wl.treasuretotal", "wl.secrettotal"].map((form) => number(session, form)),
     [18, 33, 4],
@@ -227,6 +229,65 @@ test("a shootable live guard death increments killcount exactly once", async (t)
   assert.equal(number(session, "wl.killcount"), 1, "non-shootable deaths are not KillActor events");
 });
 
+test("general statics apply each source treasure bonus once", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  assert.deepEqual([49, 52, 53, 54, 55, 56].map((tile) => number(session, `(wl.static-item-for-tile ${tile})`)),
+    [13, 9, 10, 11, 12, 18]);
+
+  session.evaluateQuietly("(set! wl.score 0)");
+  session.evaluateQuietly("(set! wl.nextextra 40000)");
+  session.evaluateQuietly("(set! wl.lives 3)");
+  session.evaluateQuietly("(set! wl.treasurecount 0)");
+  session.evaluateQuietly("(wl.player! wl.PLAYER-X (- (wl.player@ wl.PLAYER-X) 16000))");
+  const cross = number(session, `(wl.spawn-static-item (wl.player@ wl.PLAYER-TILEX) (wl.player@ wl.PLAYER-TILEY) wl.BO-CROSS)`);
+  assert.equal(session.evaluate("(wl.update-static-bonuses)"), "true", "TransformTile-range collection owns pickup");
+  assert.deepEqual([number(session, "wl.score"), number(session, "wl.treasurecount"), number(session, `(u8@ wl.staticitem ${cross})`)], [100, 1, 0]);
+  assert.equal(session.evaluate(`(wl.get-static ${cross})`), "false", "removed cross cannot score twice");
+
+  for (const [item, points] of [["wl.BO-CHALICE", 500], ["wl.BO-CROWN", 5000]]) {
+    session.evaluateQuietly("(set! wl.score 0)");
+    session.evaluateQuietly("(set! wl.treasurecount 0)");
+    const index = number(session, `(wl.spawn-static-item 1 1 ${item})`);
+    assert.equal(session.evaluate(`(wl.get-static ${index})`), "true");
+    assert.deepEqual([number(session, "wl.score"), number(session, "wl.treasurecount"), number(session, `(u8@ wl.staticitem ${index})`)], [points, 1, 0]);
+    assert.equal(session.evaluate(`(wl.get-static ${index})`), "false");
+  }
+
+  session.evaluateQuietly("(set! wl.score 39500)");
+  session.evaluateQuietly("(set! wl.nextextra 40000)");
+  session.evaluateQuietly("(set! wl.lives 3)");
+  session.evaluateQuietly("(set! wl.treasurecount 0)");
+  const bible = number(session, "(wl.spawn-static-item 1 1 wl.BO-BIBLE)");
+  assert.equal(session.evaluate(`(wl.get-static ${bible})`), "true");
+  assert.deepEqual([number(session, "wl.score"), number(session, "wl.nextextra"), number(session, "wl.lives"), number(session, "wl.treasurecount")], [40500, 80000, 4, 1]);
+  assert.equal(number(session, `(u8@ wl.staticitem ${bible})`), 0);
+  assert.equal(session.evaluate(`(wl.get-static ${bible})`), "false");
+
+  session.evaluateQuietly("(set! wl.health 1)");
+  session.evaluateQuietly("(set! wl.ammo 0)");
+  session.evaluateQuietly("(set! wl.weapon 0)");
+  session.evaluateQuietly("(set! wl.chosenweapon 1)");
+  session.evaluateQuietly("(set! wl.attackframe 0)");
+  session.evaluateQuietly("(set! wl.lives 8)");
+  session.evaluateQuietly("(set! wl.treasurecount 0)");
+  const fullheal = number(session, "(wl.spawn-static-item 1 1 wl.BO-FULLHEAL)");
+  assert.equal(session.evaluate(`(wl.get-static ${fullheal})`), "true");
+  assert.deepEqual([number(session, "wl.health"), number(session, "wl.ammo"), number(session, "wl.weapon"), number(session, "wl.lives"), number(session, "wl.treasurecount"), number(session, `(u8@ wl.staticitem ${fullheal})`)], [100, 25, 1, 9, 1, 0]);
+  assert.equal(session.evaluate(`(wl.get-static ${fullheal})`), "false");
+  assert.equal(number(session, "wl.treasurecount"), 1);
+  const cappedFullheal = number(session, "(wl.spawn-static-item 1 1 wl.BO-FULLHEAL)");
+  assert.equal(session.evaluate(`(wl.get-static ${cappedFullheal})`), "true");
+  assert.deepEqual([number(session, "wl.health"), number(session, "wl.ammo"), number(session, "wl.lives"), number(session, "wl.treasurecount")], [100, 50, 9, 2]);
+  assert.equal(number(session, `(u8@ wl.staticitem ${cappedFullheal})`), 0);
+
+  session.evaluateQuietly("(set! wl.health 0)");
+  const healed = number(session, "(wl.spawn-static-item 1 1 wl.BO-FULLHEAL)");
+  assert.equal(session.evaluate(`(wl.get-static ${healed})`), "true");
+  assert.equal(number(session, "wl.health"), 99,
+    "bo_fullheal asks HealSelf for 99 points and clamps; it does not assign 100");
+});
+
 test("T_Chase consumes source draws, moves west, and selects the guard shoot state", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
@@ -290,23 +351,24 @@ test("guard shoot cadence resolves record 348 and the cursor remains exact throu
   assert.equal(number(session, "wl.rndindex"), 211);
   assert.equal(number(session, "wl.health"), 81);
   assert.equal(number(session, "wl.killcount"), 0, "no retained R1 enemy reaches the real KillActor path");
+  assert.equal(number(session, "wl.treasurecount"), 0, "retained R1 collects no treasure statics");
 });
 
 test("the retained bo_clip is picked up once at the source TransformTile boundary", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
-  assert.equal(number(session, "wl.r1-clip-active"), 1);
-  assert.equal(number(session, "wl.r1-clip-x"), 40);
-  assert.equal(number(session, "wl.r1-clip-y"), 61);
+  const clip = number(session, "(wl.static-at 40 61 0)");
+  assert.ok(clip >= 0);
+  assert.equal(number(session, `(u8@ wl.staticitem ${clip})`), number(session, "wl.BO-CLIP"));
 
   for (const record of route.records.slice(0, 365)) advance(session, record);
   assert.equal(number(session, "wl.ammo"), 7, "record 365 remains after the pistol shot");
-  assert.equal(number(session, "wl.r1-clip-active"), 1);
+  assert.equal(number(session, `(u8@ wl.staticitem ${clip})`), number(session, "wl.BO-CLIP"));
 
   advance(session, route.records[365]);
   assert.equal(number(session, "wl.ammo"), 15, "record 366 applies bo_clip GiveAmmo(8)");
-  assert.equal(number(session, "wl.r1-clip-active"), 0, "GetBonus removes the static");
-  assert.equal(session.evaluate("(wl.update-r1-clip-bonus)"), "false");
+  assert.equal(number(session, `(u8@ wl.staticitem ${clip})`), 0, "GetBonus removes the static");
+  assert.equal(session.evaluate("(wl.update-static-bonuses)"), "false");
   assert.equal(number(session, "wl.ammo"), 15, "a removed clip cannot be collected twice");
 
   for (const record of route.records.slice(366)) advance(session, record);
@@ -314,17 +376,259 @@ test("the retained bo_clip is picked up once at the source TransformTile boundar
   assert.equal(number(session, "wl.rndindex"), 211);
 });
 
+// PushWall is the only place in the whole source that moves gamestate.secretcount;
+// SetupGameLevel is the only other writer and it resets the counter. Canonical R1
+// never pushes a wall, so ownership has to be shown at the source boundary
+// itself, on the real E1M1 object plane rather than on a fabricated map.
+test("PushWall owns secretcount and increments once per successful activation", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  const objectAt = (x, y) => number(session, `(u16@ app.object-plane ${2 * (y * 64 + x)})`);
+
+  // Object-plane PUSHABLETILE at (18,49); plane 0 gives it wall texture 1,
+  // SetupGameLevel copies that into tilemap and into actorat's wall half.
+  assert.equal(objectAt(18, 49), number(session, "wl.PUSHABLETILE"));
+  assert.equal(number(session, "(wl.tilemap@ 18 49)"), 1);
+  assert.equal(number(session, "(wl.actorat-wall@ 18 49)"), 1);
+  assert.equal(number(session, "wl.secretcount"), 0);
+  assert.equal(number(session, "wl.pwallstate"), 0);
+
+  // East of it is plane-0 tile 2, a solid wall: `if (actorat[checkx+1][checky])`
+  // refuses with NOWAYSND and never reaches the counter.
+  assert.equal(number(session, "(wl.actorat-wall@ 19 49)"), 2);
+  assert.equal(session.evaluate("(wl.push-wall 18 49 wl.EAST)"), "false");
+  assert.deepEqual(["wl.secretcount", "wl.pwallstate"].map((form) => number(session, form)), [0, 0]);
+  assert.equal(number(session, "(wl.tilemap@ 18 49)"), 1, "a refused push writes no tile");
+  assert.equal(objectAt(18, 49), number(session, "wl.PUSHABLETILE"), "and leaves the P tile in place");
+
+  // The other pushwall at (30,22) is blocked by a live actor instead: (31,22)
+  // was an ambush marker, so its wall half is cleared and a guard stands there.
+  assert.equal(objectAt(30, 22), number(session, "wl.PUSHABLETILE"));
+  assert.equal(number(session, "(wl.actorat-wall@ 31 22)"), 0, "the ambush marker cleared actorat");
+  assert.ok(number(session, "(wl.actorat@ 31 22)") > 0, "a spawned guard holds the tile");
+  assert.equal(session.evaluate("(wl.push-wall 30 22 wl.EAST)"), "false");
+  assert.equal(number(session, "wl.secretcount"), 0);
+  assert.equal(objectAt(30, 22), number(session, "wl.PUSHABLETILE"));
+
+  // `oldtile = tilemap[checkx][checky]; if (!oldtile) return;`
+  assert.equal(number(session, "(wl.tilemap@ 18 48)"), 0);
+  assert.equal(session.evaluate("(wl.push-wall 18 48 wl.NORTH)"), "false");
+  assert.equal(number(session, "wl.secretcount"), 0);
+
+  // North is clear, so the switch copies the tile one cell along dir into both
+  // actorat and tilemap, and only then does secretcount move.
+  assert.equal(session.evaluate("(wl.push-wall 18 49 wl.NORTH)"), "true");
+  assert.equal(number(session, "wl.secretcount"), 1);
+  assert.deepEqual(
+    ["wl.pwallx", "wl.pwally", "wl.pwalldir", "wl.pwallstate", "wl.pwallpos"]
+      .map((form) => number(session, form)),
+    [18, 49, number(session, "wl.NORTH"), 1, 0]
+  );
+  assert.equal(number(session, "(wl.tilemap@ 18 48)"), 1, "tilemap[checkx][checky-1] = oldtile");
+  assert.equal(number(session, "(wl.actorat-wall@ 18 48)"), 1, "actorat[checkx][checky-1] = oldtile");
+  assert.equal(number(session, "(wl.tilemap@ 18 49)"), 1 | 0xc0, "tilemap[pwallx][pwally] |= 0xc0");
+  assert.equal(number(session, "(wl.actorat-wall@ 18 49)"), 1, "actorat keeps the wall until MovePWalls");
+  assert.equal(objectAt(18, 49), 0, "remove P tile info");
+
+  // `if (pwallstate) return;` is the whole reentrancy guard: a second push of
+  // the same wall, and of a different untouched one, both stop before the count.
+  assert.equal(session.evaluate("(wl.push-wall 18 49 wl.NORTH)"), "false");
+  assert.equal(session.evaluate("(wl.push-wall 13 53 wl.NORTH)"), "false");
+  assert.equal(number(session, "wl.secretcount"), 1);
+  assert.equal(objectAt(13, 53), number(session, "wl.PUSHABLETILE"), "the untouched wall keeps its P tile");
+  assert.equal(number(session, "(wl.tilemap@ 13 52)"), 0, "and wrote no tile");
+
+  // SetupGameLevel's `if (!loadedgame)` block resets secretcount with the other
+  // counters, and deliberately does not touch any pushwall variable.
+  session.evaluateQuietly("(wl.setup-game-level app.wall-plane app.object-plane)");
+  assert.equal(number(session, "wl.secretcount"), 0);
+  assert.equal(number(session, "wl.pwallstate"), 1, "the source resets no pushwall variable per level");
+});
+
+// MovePWalls is driven straight here so that `tics` is the only variable: the
+// PlayLoop integration is covered by the replay-boundary tests instead.
+function pwallTicker(session) {
+  session.evaluateQuietly(
+    "(defn test.pwall-tics (n) (if (= n 0) nil (begin (wl.move-pwalls) (test.pwall-tics (- n 1)))))");
+  return (count) => session.evaluateQuietly(`(test.pwall-tics ${count})`);
+}
+
+const pwallVariables = ["wl.pwallstate", "wl.pwallpos", "wl.pwallx", "wl.pwally", "wl.pwalldir"];
+
+test("MovePWalls hands each vacated tile to the player's area and stops after two", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  const tick = pwallTicker(session);
+  const pwall = () => pwallVariables.map((form) => number(session, form));
+  const plane0 = (x, y) => number(session, `(u16@ app.wall-plane ${2 * (y * 64 + x)})`);
+
+  // The player is still at the canonical E1M1 spawn (29,57), which is area 2,
+  // while the corridor the wall is cut out of is area 33. That difference is
+  // the point: `*(mapsegs[0]+...) = player->areanumber+AREATILE` joins the
+  // vacated tile to wherever the player stands, not to its own surroundings.
+  assert.deepEqual([number(session, "(wl.player@ wl.PLAYER-TILEX)"), number(session, "(wl.player@ wl.PLAYER-TILEY)")],
+    [29, 57]);
+  assert.equal(number(session, "(wl.player-area)"), 2);
+  assert.deepEqual([plane0(18, 48), plane0(18, 49)], [140, 1], "area 33 corridor, wall texture 1");
+
+  session.evaluateQuietly("(set! wl.tics 6)");
+  assert.equal(session.evaluate("(wl.push-wall 18 49 wl.NORTH)"), "true");
+  assert.equal(number(session, "wl.plane0-dirty"), 0, "activation does not touch plane 0");
+
+  // `oldblock = pwallstate/128` only differs from the new one once pwallstate
+  // reaches 128; from 1 with tics 6 that is the step that lands on 133.
+  tick(21);
+  assert.deepEqual(pwall(), [127, 63, 18, 49, 0]);
+  assert.equal(number(session, "(wl.tilemap@ 18 49)"), 1 | 0xc0, "still tagged where it started");
+
+  tick(1);
+  assert.deepEqual(pwall(), [133, 2, 18, 48, 0], "pwally-- happened before the beyond-cell test");
+  assert.deepEqual([number(session, "(wl.tilemap@ 18 49)"), number(session, "(wl.actorat-wall@ 18 49)")], [0, 0],
+    "the tile can now be walked into");
+  assert.equal(plane0(18, 49), 2 + 107, "the vacated tile joined the player's area, not area 33");
+  assert.equal(number(session, "wl.plane0-dirty"), 1);
+  assert.equal(number(session, "(wl.tilemap@ 18 48)"), 1 | 0xc0, "tilemap[pwallx][pwally] = oldtile | 0xc0");
+  assert.deepEqual([number(session, "(wl.tilemap@ 18 47)"), number(session, "(wl.actorat-wall@ 18 47)")], [1, 1],
+    "and the cell beyond took oldtile in both tables");
+
+  // 259 is the first value past 256, so the twenty-first step after the first
+  // crossing is the one that stops it.
+  tick(20);
+  assert.deepEqual(pwall(), [253, 62, 18, 48, 0]);
+  tick(1);
+  assert.deepEqual(pwall(), [0, 62, 18, 48, 0],
+    "the >256 return is taken before `pwallpos = (pwallstate/2)&63`");
+  assert.deepEqual([number(session, "(wl.tilemap@ 18 48)"), plane0(18, 48)], [0, 2 + 107]);
+  assert.equal(number(session, "(wl.tilemap@ 18 47)"), 1, "the block rests untagged two tiles along");
+  assert.equal(number(session, "wl.secretcount"), 1);
+
+  // pwallstate back at zero is exactly what PushWall's guard tests, so a second
+  // secret on the same level is reachable once the first one finishes moving.
+  tick(3);
+  assert.deepEqual(pwall(), [0, 62, 18, 48, 0], "a cleared pwallstate is the whole early return");
+  assert.equal(session.evaluate("(wl.push-wall 13 53 wl.NORTH)"), "true");
+  assert.equal(number(session, "wl.secretcount"), 2);
+  assert.deepEqual(pwall().slice(0, 4), [1, 0, 13, 53]);
+});
+
+test("an exact 256 crossing pushes the block a third tile", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  const tick = pwallTicker(session);
+  const pwall = () => pwallVariables.map((form) => number(session, form));
+
+  // `if (pwallstate>256)` is strict, and pwallstate walks 1,2,...  with tics 1,
+  // so it lands on 256 exactly, fails that test, and takes the push arm again.
+  // Reproducing the original defect is the requirement, not avoiding it.
+  session.evaluateQuietly("(set! wl.tics 1)");
+  assert.equal(session.evaluate("(wl.push-wall 18 49 wl.NORTH)"), "true");
+
+  tick(127);
+  assert.deepEqual(pwall(), [128, 0, 18, 48, 0], "first crossing at 128");
+  tick(128);
+  assert.deepEqual(pwall(), [256, 0, 18, 47, 0], "256/128 is a new block and 256 is not > 256");
+  assert.deepEqual([number(session, "(wl.tilemap@ 18 47)"), number(session, "(wl.tilemap@ 18 46)")], [1 | 0xc0, 1],
+    "a third tile was written");
+  tick(128);
+  assert.deepEqual(pwall(), [0, 63, 18, 47, 0], "384 finally stops it");
+  assert.deepEqual([number(session, "(wl.tilemap@ 18 47)"), number(session, "(wl.tilemap@ 18 46)")], [0, 1],
+    "the block travelled three tiles, not two");
+  assert.equal(number(session, "(wl.tilemap@ 18 45)"), 1, "the solid wall it would have hit next");
+});
+
+test("MovePWalls refuses an occupied cell mid-motion and leaves the block where it stands", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  const tick = pwallTicker(session);
+  const pwall = () => pwallVariables.map((form) => number(session, form));
+
+  // No E1M1 pushwall is blocked two tiles along its own pushable direction, so
+  // the blocker is a guard put on the real floor tile at (18,47) through the
+  // game's own SpawnStand path. `if (actorat[pwallx][pwally-1])` is the test.
+  assert.equal(number(session, `(u16@ app.wall-plane ${2 * (47 * 64 + 18)})`), 140, "a real area-33 floor tile");
+  assert.equal(number(session, "(wl.actorat@ 18 47)"), 0);
+  session.evaluateQuietly(`(wl.spawn-standing app.wall-plane ${47 * 64 + 18} 18 47 wl.NORTH 3)`);
+  assert.ok(number(session, "(wl.actorat@ 18 47)") > 0);
+  assert.equal(session.evaluate("(wl.actorat-occupied? 18 47)"), "true");
+
+  session.evaluateQuietly("(set! wl.tics 6)");
+  assert.equal(session.evaluate("(wl.push-wall 18 49 wl.NORTH)"), "true", "the first cell is still clear");
+  tick(21);
+  assert.deepEqual(pwall(), [127, 63, 18, 49, 0]);
+
+  tick(1);
+  assert.deepEqual(pwall(), [0, 63, 18, 48, 0],
+    "pwally-- runs first, then the refusal zeroes pwallstate and returns before pwallpos");
+  assert.equal(number(session, "(wl.tilemap@ 18 49)"), 0, "the tile it left is still vacated");
+  assert.equal(number(session, `(u16@ app.wall-plane ${2 * (49 * 64 + 18)})`), 2 + 107);
+  assert.equal(number(session, "(wl.tilemap@ 18 48)"), 1,
+    "the block keeps PushWall's untagged copy where it stopped");
+  assert.deepEqual([number(session, "(wl.tilemap@ 18 47)"), number(session, "(wl.actorat-wall@ 18 47)")], [0, 0],
+    "and never wrote past the guard");
+
+  tick(5);
+  assert.deepEqual(pwall(), [0, 63, 18, 48, 0], "a zero pwallstate stays zero");
+  assert.equal(number(session, "wl.secretcount"), 1);
+});
+
+test("Cmd_Use reaches PushWall on every held use tic, before the door gate", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  const objectAt = (x, y) => number(session, `(u16@ app.object-plane ${2 * (y * 64 + x)})`);
+
+  // (18,50) is the floor tile south of the pushwall; north is the only cardinal
+  // Cmd_Use can pick that reaches it, and SpawnPlayer's north is 90 degrees.
+  session.evaluateQuietly("(wl.spawn-player 18 50 wl.NORTH)");
+  assert.equal(number(session, "(wl.player@ wl.PLAYER-ANGLE)"), 90);
+  assert.equal(number(session, "wl.secretcount"), 0);
+
+  advance(session, { tics: 1, controlx: 0, controly: 0, buttons: 0 });
+  assert.equal(number(session, "wl.secretcount"), 0, "no use button, no activation");
+  assert.equal(number(session, "wl.buttonheld-use"), 0);
+
+  advance(session, { tics: 1, controlx: 0, controly: 0, buttons: 8 });
+  assert.equal(number(session, "wl.secretcount"), 1, "the first use tic activates");
+  assert.equal(number(session, "wl.buttonheld-use"), 0, "buttonheld is last frame's button");
+  assert.equal(objectAt(18, 49), 0);
+
+  // Holding use keeps calling Cmd_Use, and the pushable test runs ahead of the
+  // buttonheld gate, so PushWall is reached again and refuses on pwallstate.
+  advance(session, { tics: 1, controlx: 0, controly: 0, buttons: 8 });
+  assert.equal(number(session, "wl.buttonheld-use"), 1);
+  assert.equal(number(session, "wl.secretcount"), 1);
+
+  // Facing a wall with no P tile is the do-nothing arm: no counter, no door.
+  session.evaluateQuietly("(wl.spawn-player 18 50 wl.SOUTH)");
+  advance(session, { tics: 1, controlx: 0, controly: 0, buttons: 8 });
+  assert.equal(number(session, "wl.secretcount"), 1);
+
+  // After activation the tile carries the source's own 0xc0 tag, and both this
+  // port's tilemap readers decode 0x80 as a door: Cmd_Use's door arm reaches
+  // door 65, past MAXDOORS, which is a genuine original out-of-range read of
+  // doorobjlist, and TryMove's solidity test reaches the same index, which is
+  // *not* original - TryMove reads actorat, where the tag never appears. Both
+  // are represented structurally here and neither is executed; the port traps
+  // on the read instead of walking adjacent memory. MovePWalls clears the tag
+  // on its first block crossing, which bounds the window to roughly 128 tics.
+  assert.equal(session.evaluate("(wl.door-tile? 193)"), "true");
+  assert.equal(number(session, "(wl.door-number 193)"), 65);
+  assert.ok(65 >= number(session, "wl.MAXDOORS"));
+  assert.equal(number(session, "(wl.actorat-wall@ 18 49)"), 1,
+    "the source's own TryMove input keeps the untagged tile, so the original never decodes it");
+});
+
 test("bo_clip GiveAmmo clamps at 99 and leaves a full-ammo pickup present", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
+  const clip = number(session, "(wl.static-at 40 61 0)");
   session.evaluateQuietly("(set! wl.ammo 95)");
-  assert.equal(session.evaluate("(wl.get-r1-clip)"), "true");
+  assert.equal(session.evaluate(`(wl.get-static ${clip})`), "true");
   assert.equal(number(session, "wl.ammo"), 99);
-  assert.equal(number(session, "wl.r1-clip-active"), 0);
+  assert.equal(number(session, `(u8@ wl.staticitem ${clip})`), 0);
 
-  session.evaluateQuietly("(set! wl.r1-clip-active 1)");
-  assert.equal(session.evaluate("(wl.get-r1-clip)"), "false");
+  session.evaluateQuietly(`(u8! wl.staticitem ${clip} wl.BO-CLIP)`);
+  assert.equal(session.evaluate(`(wl.get-static ${clip})`), "false");
   assert.equal(number(session, "wl.ammo"), 99);
-  assert.equal(number(session, "wl.r1-clip-active"), 1,
+  assert.equal(number(session, `(u8@ wl.staticitem ${clip})`), number(session, "wl.BO-CLIP"),
     "source GetBonus returns before deleting a clip at maximum ammo");
 });

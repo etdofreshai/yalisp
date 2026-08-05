@@ -1,6 +1,7 @@
 (heap.reserve 62000000)
 
 (define wl.EXITTILE 99)
+(define wl.PUSHABLETILE 98)
 (define wl.AREATILE 107)
 (define wl.NUMAREAS 37)
 (define wl.ELEVATORTILE 21)
@@ -40,6 +41,9 @@
 (define wl.ANG270 2700)
 (define wl.ANG360 3600)
 
+;; controldir_t. SpawnPlayer reads it out of the object plane, and it is also
+;; what Cmd_Use hands to PushWall, so the two uses share one enum as in the
+;; original; it is not the eight-way dirtype the actors walk with.
 (define wl.NORTH 0)
 (define wl.EAST 1)
 (define wl.SOUTH 2)

@@ -16,23 +16,32 @@ const routeFixture = JSON.parse(await readFile(new URL("./fixtures/wolf3d-r1-rou
 const promotedFields = [
   "difficulty", "health", "ammo", "keys", "faceframe", "attackframe", "attackcount", "weaponframe",
   "score", "lives", "map", "episode", "bestweapon", "weapon", "chosenweapon", "state", "flags",
-  "secrettotal", "treasuretotal", "killtotal", "killcount"
+  "secrettotal", "treasuretotal", "killtotal", "killcount", "treasurecount", "secretcount",
+  "pwallstate", "pwallpos", "pwallx", "pwally", "pwalldir"
 ];
 const newlyPromotedFields = [
   "score", "lives", "map", "episode", "bestweapon", "weapon", "chosenweapon", "state", "flags"
 ];
 const totalPromotedFields = ["secrettotal", "treasuretotal", "killtotal"];
 const killcountPromotedFields = ["killcount"];
+const treasurecountPromotedFields = ["treasurecount"];
+const secretcountPromotedFields = ["secretcount"];
+const pwallPromotedFields = ["pwallstate", "pwallpos", "pwallx", "pwally", "pwalldir"];
+// TRACE-SCHEMA.md orders the level-progress block secretcount, treasurecount,
+// killcount, then the three totals, so secretcount takes the slot between
+// weaponframe and treasurecount. Offsets 74-82 then give the five pushwall
+// variables the contiguous block between killtotal and doorchecksum; they are
+// promoted now that PushWall's activation and MovePWalls' motion are both
+// owned, which is every writer of them in the source outside save/load.
 const canonicalProjectionFields = [
   "tick", "tics", "score", "health", "ammo", "keys", "lives", "x", "y", "angle", "tilex", "tiley",
   "state", "flags", "controlx", "controly", "buttons", "difficulty", "map", "episode", "bestweapon",
   "weapon", "chosenweapon", "faceframe", "attackframe", "attackcount", "weaponframe",
-  "killcount", "secrettotal", "treasuretotal", "killtotal", "doorchecksum", "plane0hash", "plane1hash"
+  "secretcount", "treasurecount", "killcount", "secrettotal", "treasuretotal", "killtotal",
+  "pwallstate", "pwallpos", "pwallx", "pwally", "pwalldir",
+  "doorchecksum", "plane0hash", "plane1hash"
 ];
-const canonicalOmittedFields = [
-  "secretcount", "treasurecount",
-  "pwallstate", "pwallpos", "pwallx", "pwally", "pwalldir", "rndindex", "actorhash", "worldhash"
-];
+const canonicalOmittedFields = ["rndindex", "actorhash", "worldhash"];
 
 async function application() {
   const session = await createSeedSession();
@@ -96,8 +105,16 @@ test("the Lisp-owned projection declares its exact v3 subset and exclusions", as
   assert.deepEqual(fixture.fields, canonicalProjectionFields);
   assert.deepEqual(routeFixture.fullRouteFields, canonicalProjectionFields);
   assert.deepEqual(contract.find((row) => Array.isArray(row) && row[0] === "fields").slice(1), fixture.fields);
-  assert.equal(fixture.fields.length, 34);
+  assert.equal(fixture.fields.length, 41);
   for (const field of promotedFields) assert.ok(fixture.fields.includes(field), `${field} must be projected`);
+  assert.equal(fixture.fields.indexOf("secretcount"), fixture.fields.indexOf("weaponframe") + 1,
+    "secretcount takes the canonical slot immediately after weaponframe");
+  assert.equal(fixture.fields.indexOf("treasurecount"), fixture.fields.indexOf("secretcount") + 1);
+  assert.equal(fixture.fields.indexOf("killcount"), fixture.fields.indexOf("treasurecount") + 1);
+  assert.deepEqual(
+    fixture.fields.slice(fixture.fields.indexOf("killtotal") + 1, fixture.fields.indexOf("doorchecksum")),
+    pwallPromotedFields,
+    "the five pushwall variables are the contiguous canonical block before doorchecksum");
   assert.deepEqual(contract.find((row) => Array.isArray(row) && row[0] === "encoding").slice(1),
     ["plane0hash", "u32-decimal", "plane1hash", "u32-decimal"]);
   const omitted = contract.find((row) => Array.isArray(row) && row[0] === "omitted").slice(1);
@@ -119,6 +136,85 @@ test("the promoted totals report alternate-level scan ownership through the trac
   assert.deepEqual(Object.keys(alternate), canonicalProjectionFields);
   assert.deepEqual(totalPromotedFields.map((field) => alternate[field]), [4, 33, 18]);
   assert.deepEqual([alternate.difficulty, alternate.episode, alternate.map], [1, 1, 1]);
+});
+
+test("the promoted treasurecount reports the live runtime counter, not a constant", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  assert.equal(projectedRecord(session.evaluate("(app.trace-record)")).treasurecount, 0);
+
+  const crown = Number(session.evaluate("(wl.spawn-static-item 1 1 wl.BO-CROWN)"));
+  assert.equal(session.evaluate(`(wl.get-static ${crown})`), "true");
+  const collected = projectedRecord(session.evaluate("(app.trace-record)"));
+  assert.deepEqual(Object.keys(collected), canonicalProjectionFields);
+  assert.equal(collected.treasurecount, 1, "the boundary reads wl.treasurecount");
+  assert.equal(collected.score, 5000, "the same GetBonus is what moved it");
+
+  session.evaluateQuietly("(wl.setup-game-level app.wall-plane app.object-plane)");
+  assert.equal(projectedRecord(session.evaluate("(app.trace-record)")).treasurecount, 0,
+    "fresh level setup resets what the projection reports");
+});
+
+test("the promoted secretcount reports the live PushWall counter, not a constant", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  assert.equal(projectedRecord(session.evaluate("(app.trace-record)")).secretcount, 0);
+  const cachedPlane1 = projectedRecord(session.evaluate("(app.trace-record)")).plane1hash;
+
+  // E1M1 object-plane tile 98 at (18,49); the player stands south of it facing
+  // north, which is the only cardinal Cmd_Use can reach it from.
+  session.evaluateQuietly("(wl.spawn-player 18 50 wl.NORTH)");
+  const pushed = projectedRecord(session.evaluate("(app.replay-advance 1 0 0 8)"));
+  assert.deepEqual(Object.keys(pushed), canonicalProjectionFields);
+  assert.equal(pushed.secretcount, 1, "the boundary reads wl.secretcount");
+  assert.notEqual(pushed.plane1hash, cachedPlane1, "removing the P tile re-fingerprints the object plane");
+
+  const held = projectedRecord(session.evaluate("(app.replay-advance 1 0 0 8)"));
+  assert.equal(held.secretcount, 1, "a held use tic still reaches PushWall and pwallstate refuses it");
+  assert.equal(held.plane1hash, pushed.plane1hash);
+
+  session.evaluateQuietly("(wl.setup-game-level app.wall-plane app.object-plane)");
+  assert.equal(projectedRecord(session.evaluate("(app.trace-record)")).secretcount, 0,
+    "fresh level setup resets what the projection reports");
+});
+
+// PushWall and MovePWalls are the only writers of these five anywhere in the
+// source outside SaveTheGame/LoadTheGame, and canonical R1 pushes no wall, so
+// ownership is shown by driving a real E1M1 pushwall through the same replay
+// boundary the canonical comparison uses.
+test("the promoted pushwall fields report live PushWall and MovePWalls state", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  const pwall = (record) => pwallPromotedFields.map((field) => record[field]);
+  const resting = projectedRecord(session.evaluate("(app.trace-record)"));
+  assert.deepEqual(pwall(resting), [0, 0, 0, 0, 0]);
+  const startingPlane0 = resting.plane0hash;
+
+  // (18,50) is the floor south of the object-plane PUSHABLETILE at (18,49).
+  session.evaluateQuietly("(wl.spawn-player 18 50 wl.NORTH)");
+  const activated = projectedRecord(session.evaluate("(app.replay-advance 1 0 0 8)"));
+  assert.deepEqual(Object.keys(activated), canonicalProjectionFields);
+  assert.deepEqual(pwall(activated), [1, 0, 18, 49, 0], "PushWall's own five assignments");
+  assert.equal(activated.plane0hash, startingPlane0, "activation writes only the object plane");
+
+  // `pwallstate += tics` with tics 6 from 1: the first block crossing is the
+  // step that reaches 133, and 259 is the first value past 256.
+  const records = [];
+  for (let step = 0; step < 43; step += 1) {
+    records.push(projectedRecord(session.evaluate("(app.replay-advance 6 0 0 0)")));
+  }
+  assert.deepEqual(pwall(records[0]), [7, 3, 18, 49, 0], "pwallpos is (pwallstate/2)&63");
+  assert.deepEqual(pwall(records[20]), [127, 63, 18, 49, 0], "the last record before the crossing");
+  assert.deepEqual(pwall(records[21]), [133, 2, 18, 48, 0], "the block crossed and moved one tile");
+  assert.notEqual(records[21].plane0hash, startingPlane0, "the vacated tile rewrote plane 0");
+  assert.deepEqual(pwall(records[41]), [253, 62, 18, 48, 0]);
+  assert.deepEqual(pwall(records[42]), [0, 62, 18, 48, 0],
+    "pwallstate>256 returns before the pwallpos assignment, so 62 is retained");
+  // The player stands at (18,50) in area 33, and (18,48) was already area 33,
+  // so the second `player->areanumber+AREATILE` write stores the value that
+  // cell already held and the fingerprint is unchanged rather than stale.
+  assert.equal(records[42].plane0hash, records[21].plane0hash);
+  assert.equal(records[42].secretcount, 1, "one activation, one secret");
 });
 
 test("the promoted initialization fields report nonzero NewGame ownership in canonical order", async () => {
@@ -192,7 +288,8 @@ test("full-route negative controls identify the intended first divergent field",
   changedPlaneHash[299].plane0hash += 1;
   const canonical = (await replay(routeFixture.records)).projected;
 
-  for (const field of [...newlyPromotedFields, ...totalPromotedFields, ...killcountPromotedFields]) {
+  for (const field of [...newlyPromotedFields, ...totalPromotedFields, ...killcountPromotedFields,
+    ...treasurecountPromotedFields, ...secretcountPromotedFields, ...pwallPromotedFields]) {
     const changed = structuredClone(routeFixture.records);
     changed[99][field] += 1;
     assert.deepEqual(firstDifference(changed, canonical, routeFixture.fullRouteFields), {

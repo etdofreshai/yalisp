@@ -145,26 +145,33 @@
           (* (- (app.input? input 'backward) (app.input? input 'forward))
              (* wl.BASEMOVE wl.tics)))
     (set! app.trace-buttons (if (> (app.input? input 'use) 0) 8 0))
-    ;; PlayLoop moves doors before T_Player handles use and movement. Thus a
-    ;; use tick changes action only; position first changes on the next tick.
+    ;; PlayLoop moves doors and pushwalls before T_Player handles use and
+    ;; movement. Thus a use tick changes action only; position first changes on
+    ;; the next tick, and an activated pushwall first advances one tick later.
     (set! wl.madenoise 0)
     (wl.move-doors)
+    (wl.move-pwalls)
     (app.player-tick (app.input? input 'use) 0
                      app.trace-controlx app.trace-controly)
     (wl.move-actors)
-    (wl.update-r1-clip-bonus)
+    (wl.update-static-bonuses)
     (app.prepare-attack-visibility)
+    (app.refresh-plane-hashes)
     (heap.release mark)))
 
 (defn app.player-tick (use attack controlx controly)
   (begin
     (wl.update-face)
+    ;; PollControls hands T_Player last frame's buttons as buttonheld, and
+    ;; T_Player then calls Cmd_Use on every tic the use button is down.
+    (set! wl.buttonheld-use app.use-held)
+    (set! app.use-held (if (> use 0) 1 0))
     (if (= wl.attack-active 1)
         (begin
           (wl.control-movement controlx controly)
           (wl.update-attack))
         (begin
-          (app.poll-use use)
+          (if (> use 0) (wl.cmd-use) nil)
           (if (and (> attack 0) (= app.attack-held 0)) (wl.start-attack) nil)
           (wl.control-movement controlx controly)))
     (set! app.attack-held (if (> attack 0) 1 0))))
@@ -175,24 +182,42 @@
       (wl.refresh-actor-visibility)
       nil))
 
-(defn app.poll-use (pressed)
-  (if (= pressed 0)
-      (set! app.use-held 0)
-      (if (= app.use-held 0)
-          (begin (set! app.use-held 1) (wl.cmd-use))
-          nil)))
+;; PushWall and MovePWalls are the only writers of either map plane during play,
+;; so each cached fingerprint is recomputed only on the tic that actually
+;; removed a P tile or handed a vacated wall tile back to the player's area.
+(defn app.refresh-plane-hashes ()
+  (begin (app.refresh-plane0-hash) (app.refresh-plane1-hash)))
+
+(defn app.refresh-plane0-hash ()
+  (if (= wl.plane0-dirty 1) (app.recache-plane0-hash) nil))
+
+(defn app.recache-plane0-hash ()
+  (let ((words (wl.plane-hash-words app.wall-plane)))
+    (begin
+      (set! app.plane0hash-high (car words))
+      (set! app.plane0hash-low (car (cdr words)))
+      (set! wl.plane0-dirty 0))))
+
+(defn app.refresh-plane1-hash ()
+  (if (= wl.plane1-dirty 1) (app.recache-plane1-hash) nil))
+
+(defn app.recache-plane1-hash ()
+  (let ((words (wl.plane-hash-words app.object-plane)))
+    (begin
+      (set! app.plane1hash-high (car words))
+      (set! app.plane1hash-low (car (cdr words)))
+      (set! wl.plane1-dirty 0))))
 
 (defn app.trace-projection-contract ()
   '(projection wolf3d-trace-bin-v3
     (fields tick tics score health ammo keys lives x y angle tilex tiley
             state flags controlx controly buttons difficulty map episode
             bestweapon weapon chosenweapon faceframe attackframe attackcount
-            weaponframe killcount secrettotal treasuretotal killtotal
+            weaponframe secretcount treasurecount killcount secrettotal
+            treasuretotal killtotal pwallstate pwallpos pwallx pwally pwalldir
             doorchecksum plane0hash plane1hash)
     (encoding plane0hash u32-decimal plane1hash u32-decimal)
-    (omitted secretcount treasurecount
-             pwallstate pwallpos pwallx pwally pwalldir
-             rndindex actorhash worldhash)))
+    (omitted rndindex actorhash worldhash)))
 
 (defn app.trace-record ()
   (list (list 'tick app.time-count)
@@ -222,10 +247,17 @@
         (list 'attackframe wl.attackframe)
         (list 'attackcount wl.attackcount)
         (list 'weaponframe wl.weaponframe)
+        (list 'secretcount wl.secretcount)
+        (list 'treasurecount wl.treasurecount)
         (list 'killcount wl.killcount)
         (list 'secrettotal wl.secrettotal)
         (list 'treasuretotal wl.treasuretotal)
         (list 'killtotal wl.killtotal)
+        (list 'pwallstate wl.pwallstate)
+        (list 'pwallpos wl.pwallpos)
+        (list 'pwallx wl.pwallx)
+        (list 'pwally wl.pwally)
+        (list 'pwalldir wl.pwalldir)
         (list 'doorchecksum (wl.door-checksum))
         (list 'plane0hash (wl.u32-decimal app.plane0hash-high app.plane0hash-low))
         (list 'plane1hash (wl.u32-decimal app.plane1hash-high app.plane1hash-low))))
@@ -245,12 +277,14 @@
     (set! app.trace-buttons buttons)
     (set! wl.madenoise 0)
     (wl.move-doors)
+    (wl.move-pwalls)
     (app.player-tick (if (> (bit.and buttons 8) 0) 1 0)
                      (if (> (bit.and buttons 1) 0) 1 0)
                      controlx controly)
     (wl.move-actors)
-    (wl.update-r1-clip-bonus)
+    (wl.update-static-bonuses)
     (app.prepare-attack-visibility)
+    (app.refresh-plane-hashes)
     (heap.release mark)
     (app.trace-record)))
 

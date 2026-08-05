@@ -266,14 +266,36 @@
     (* (- right left) (* wl.BASEMOVE wl.tics))
     (* (- backward forward) (* wl.BASEMOVE wl.tics))))
 
-(defn wl.cmd-use ()
-  (wl.cmd-use-tile (wl.player@ wl.PLAYER-ANGLE)
-                   (wl.player@ wl.PLAYER-TILEX)
-                   (wl.player@ wl.PLAYER-TILEY)))
+;; PollControls copies the previous frame's buttonstate into buttonheld before
+;; T_Player runs, so buttonheld[bt_use] is "use was down last tic".
+(define wl.buttonheld-use 0)
 
-(defn wl.cmd-use-tile (angle tilex tiley)
-  (let ((tile (cond ((or (< angle 45) (> angle 315)) (wl.tilemap@ (+ tilex 1) tiley))
-                    ((< angle 135) (wl.tilemap@ tilex (- tiley 1)))
-                    ((< angle 225) (wl.tilemap@ (- tilex 1) tiley))
-                    (true (wl.tilemap@ tilex (+ tiley 1))))))
-    (if (wl.door-tile? tile) (wl.operate-door (wl.door-number tile)) false)))
+(defn wl.cmd-use ()
+  (wl.cmd-use-facing (wl.player@ wl.PLAYER-ANGLE)
+                     (wl.player@ wl.PLAYER-TILEX)
+                     (wl.player@ wl.PLAYER-TILEY)))
+
+(defn wl.cmd-use-facing (angle tilex tiley)
+  (cond ((or (< angle 45) (> angle 315)) (wl.cmd-use-tile (+ tilex 1) tiley wl.EAST))
+        ((< angle 135) (wl.cmd-use-tile tilex (- tiley 1) wl.NORTH))
+        ((< angle 225) (wl.cmd-use-tile (- tilex 1) tiley wl.WEST))
+        (true (wl.cmd-use-tile tilex (+ tiley 1) wl.SOUTH))))
+
+;; The pushable-wall test comes before the buttonheld gate, so a held use tic
+;; keeps reaching PushWall and it is PushWall's own pwallstate guard, not the
+;; button edge, that refuses the second one.
+(defn wl.cmd-use-tile (checkx checky dir)
+  (let ((doornum (wl.tilemap@ checkx checky)))
+    (if (= (u16@ wl.level-objects (* (+ (* checky wl.MAPSIZE) checkx) 2)) wl.PUSHABLETILE)
+        (wl.push-wall checkx checky dir)
+        (wl.cmd-use-door doornum))))
+
+;; The elevator arm between these two owns playstate and the secret exit and is
+;; not part of this slice, so ELEVATORTILE falls through to the do-nothing arm
+;; the same way every other non-door tile does.
+(defn wl.cmd-use-door (doornum)
+  (if (and (= wl.buttonheld-use 0) (wl.door-tile? doornum))
+      (begin
+        (set! wl.buttonheld-use 1)
+        (wl.operate-door (wl.door-number doornum)))
+      false))
