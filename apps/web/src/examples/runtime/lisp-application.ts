@@ -1,109 +1,48 @@
 import { createSeedSession } from "../../seed-runtime";
+import { expandIndexedSurface } from "./indexed-surface";
+import { createApplicationDriver } from "./application-driver";
+import { mountDeclaredAssets } from "./asset-mount";
+import { atomText, directive, directives, displayText, isList, listAt, numberAt, parseLispValue, printLispValue, textAt, type LispList, type LispValue } from "./lisp-value";
 
-type LispValue = number | string | LispValue[];
-type LispList = LispValue[];
+// The DOM Lisp host reads and prints values through this same binding.
+export { parseLispValue, printLispValue };
 
 type MountSpec = {
   width: number;
   height: number;
   title: string;
   controls: Array<{ action: string; mode: "hold" | "press"; label: string; keys: string[] }>;
+  indexedSurface?: { palette: string[] };
 };
 
-const frameIntervalMs = 100;
+type TimingSpec = { tickRateHz: number; ticksPerAdvance: number };
+
+// Applications that predate the timing declaration keep the host's original
+// ten-tick cadence. New applications declare their own logical tick rate with
+// app.timing, so the host schedules ticks without owning simulation rules.
+const legacyTickRateHz = 10;
+// The tick clock is logical, not wall-clock: at most this many ticks are
+// replayed to catch up after a slow frame, and the remaining arrears are
+// dropped rather than queued.
+const maxCatchUpTicks = 4;
 const palette = ["#080a08", "#f2f0e8", "#c9f85a", "#fa5b35", "#aaa9a1"];
 
-function isList(value: LispValue): value is LispList {
-  return Array.isArray(value);
-}
-
-function atomText(value: LispValue) {
-  return typeof value === "number" ? String(value) : value;
-}
-
-function displayText(value: string) {
-  return value.replaceAll("-", " ").replace(/(^|\s)\S/g, (character) => character.toUpperCase());
-}
-
-function tokenize(source: string) {
-  const tokens: string[] = [];
-  let index = 0;
-  while (index < source.length) {
-    const character = source[index]!;
-    if (/\s/.test(character)) { index += 1; continue; }
-    if (character === "(" || character === ")") { tokens.push(character); index += 1; continue; }
-    if (character === '"') {
-      let value = '"';
-      index += 1;
-      while (index < source.length) {
-        const next = source[index]!;
-        value += next;
-        index += 1;
-        if (next === "\\") {
-          if (index < source.length) { value += source[index]!; index += 1; }
-        } else if (next === '"') break;
-      }
-      tokens.push(value);
-      continue;
-    }
-    let value = "";
-    while (index < source.length && !/[\s()]/.test(source[index]!)) { value += source[index]!; index += 1; }
-    tokens.push(value);
-  }
-  return tokens;
-}
-
-export function parseLispValue(source: string): LispValue {
-  const tokens = tokenize(source);
-  let index = 0;
-  const read = (): LispValue => {
-    const token = tokens[index++];
-    if (token === undefined) throw new Error("The Lisp application returned an incomplete command list.");
-    if (token === "(") {
-      const values: LispValue[] = [];
-      while (tokens[index] !== ")") {
-        if (tokens[index] === undefined) throw new Error("The Lisp application returned an unterminated command list.");
-        values.push(read());
-      }
-      index += 1;
-      return values;
-    }
-    if (token === ")") throw new Error("The Lisp application returned an unexpected closing parenthesis.");
-    if (token.startsWith('"')) return JSON.parse(token);
-    const number = Number(token);
-    return Number.isFinite(number) && token !== "" ? number : token;
-  };
-  const result = read();
-  if (index !== tokens.length) throw new Error("The Lisp application returned more than one value.");
-  return result;
-}
-
-export function printLispValue(value: LispValue): string {
-  if (Array.isArray(value)) return `(${value.map(printLispValue).join(" ")})`;
-  if (typeof value === "number") return String(value);
-  return /^[^\s()";]+$/.test(value) ? value : JSON.stringify(value);
-}
-
-function listAt(list: LispList, index: number) {
-  return list[index];
-}
-
-function numberAt(list: LispList, index: number, label: string) {
-  const value = listAt(list, index);
-  if (typeof value !== "number") throw new Error(`The Lisp application's ${label} must be a number.`);
-  return value;
-}
-
-function textAt(list: LispList, index: number, label: string) {
-  const value = listAt(list, index);
-  if (typeof value !== "string") throw new Error(`The Lisp application's ${label} must be a symbol or string.`);
-  return value;
-}
-
-function mountSpec(value: LispValue): MountSpec {
+export function parseMountSpec(value: LispValue): MountSpec {
   if (!isList(value) || textAt(value, 0, "mount tag") !== "mount") throw new Error("The Lisp application must return a (mount ...) form.");
   const controlsValue = listAt(value, 4);
   if (!controlsValue || !isList(controlsValue)) throw new Error("The Lisp application's controls must be a list.");
+  const surfaceValue = listAt(value, 5);
+  let indexedSurface: MountSpec["indexedSurface"];
+  if (surfaceValue) {
+    if (!isList(surfaceValue) || textAt(surfaceValue, 0, "surface tag") !== "surface" || textAt(surfaceValue, 1, "surface format") !== "indexed8") {
+      throw new Error("A Lisp application surface must be a (surface indexed8 (...palette colors...)) form.");
+    }
+    const paletteValue = listAt(surfaceValue, 2);
+    if (!paletteValue || !isList(paletteValue)) throw new Error("An indexed surface must declare a palette list.");
+    const colors = paletteValue.map((entry) => textAt([entry], 0, "palette color"));
+    if (!colors.length || colors.length > 256) throw new Error("An indexed surface palette must contain one to 256 colors.");
+    indexedSurface = { palette: colors };
+  }
   return {
     width: numberAt(value, 1, "canvas width"),
     height: numberAt(value, 2, "canvas height"),
@@ -115,11 +54,29 @@ function mountSpec(value: LispValue): MountSpec {
       const mode = textAt(value, 1, "control mode");
       if (mode !== "hold" && mode !== "press") throw new Error("A Lisp application control mode must be hold or press.");
       return { action: textAt(value, 0, "control action"), mode, label: displayText(textAt(value, 2, "control label")), keys: keys.map((key) => textAt([key], 0, "control key")) };
-    })
+    }),
+    indexedSurface
   };
 }
 
+export function parseTimingSpec(value?: LispValue): TimingSpec {
+  if (value === undefined) return { tickRateHz: legacyTickRateHz, ticksPerAdvance: 1 };
+  if (!isList(value) || textAt(value, 0, "timing tag") !== "timing") {
+    throw new Error("A Lisp application timing declaration must be a (timing tick-rate-hz [ticks-per-advance]) form.");
+  }
+  const tickRateHz = numberAt(value, 1, "tick rate");
+  if (!Number.isFinite(tickRateHz) || tickRateHz <= 0 || tickRateHz > 1000) {
+    throw new Error("A Lisp application tick rate must be greater than zero and no more than 1000 Hz.");
+  }
+  const ticksPerAdvance = listAt(value, 2) === undefined ? 1 : numberAt(value, 2, "ticks per advance");
+  if (!Number.isInteger(ticksPerAdvance) || ticksPerAdvance <= 0) {
+    throw new Error("A Lisp application's ticks per advance must be a positive integer.");
+  }
+  return { tickRateHz, ticksPerAdvance };
+}
+
 function color(value: LispValue) {
+  if (typeof value === "string" && /^#[0-9a-f]{3,8}$/i.test(value)) return value;
   const index = typeof value === "number" ? value : 1;
   return palette[index] ?? palette[1]!;
 }
@@ -150,36 +107,51 @@ function drawCommands(context: CanvasRenderingContext2D, commands: LispList) {
   }
 }
 
-function directives(value: LispValue) {
-  if (!isList(value)) throw new Error("The Lisp application must return a directive list.");
-  return value.filter(isList);
-}
-
-function directive(values: LispList[], name: string) {
-  return values.find((value) => atomText(value[0] ?? "") === name);
-}
-
 function inputForm(held: ReadonlySet<string>, pressed: ReadonlySet<string>, controls: MountSpec["controls"]) {
   return `(${controls.map(({ action }) => `(${action} ${held.has(action) || pressed.has(action) ? 1 : 0})`).join(" ")})`;
 }
 
 export async function runApplication(root: HTMLElement, source: string) {
-  const evaluateOutput = async (form: string) => {
-    const session = await createSeedSession("bootstrap");
-    session.evaluateQuietly(source);
-    return session.evaluate(form);
-  };
-  const evaluate = async (form: string) => parseLispValue(await evaluateOutput(form));
-  const spec = mountSpec(await evaluate("(app.mount)"));
+  // Applications are long-lived Lisp programs. Reusing one initialized seed
+  // preserves their definitions and avoids recompiling the entire source for
+  // every simulation frame; the host still owns only input delivery and draw
+  // command presentation.
+  const session = await createSeedSession("bootstrap");
+  // One long-lived interactive session is declared to be worth this much
+  // memory. The seed has no collector yet, so this extends a session's
+  // lifetime rather than removing its limit; an application that needs more
+  // reserves more from its own Lisp source, and exhaustion still surfaces as
+  // the evaluator's own truthful diagnostic.
+  session.evaluateQuietly("(heap.reserve 33554432)");
+  session.evaluateQuietly(source);
+  // A program that reads original data files declares them itself and is
+  // handed their handles before it mounts. Retrieval failures are reported to
+  // the program rather than raised here: a checkout without the original data
+  // still loads the page, and what to say about that is the program's to say.
+  await mountDeclaredAssets(session, async (path) => {
+    const response = await fetch(path);
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return new Uint8Array(await response.arrayBuffer());
+  });
+  const evaluateOutput = async (form: string) => session.evaluate(form);
+  const driver = createApplicationDriver(session);
+  const spec = parseMountSpec(parseLispValue(await evaluateOutput("(app.mount)")));
+  const timing = parseTimingSpec(session.evaluate("(bound? 'app.timing)") === "true"
+    ? parseLispValue(await evaluateOutput("(app.timing)"))
+    : undefined);
+  const frameIntervalMs = (1000 * timing.ticksPerAdvance) / timing.tickRateHz;
   root.replaceChildren();
   root.setAttribute("aria-label", `${spec.title} YALISP application`);
   const canvas = document.createElement("canvas");
   canvas.width = spec.width;
   canvas.height = spec.height;
+  canvas.style.aspectRatio = `${spec.width} / ${spec.height}`;
+  canvas.style.imageRendering = "pixelated";
   canvas.setAttribute("aria-label", `Interactive ${spec.title} application`);
   root.append(canvas);
   const context = canvas.getContext("2d");
   if (!context) throw new Error("This browser cannot create the Canvas 2D application binding.");
+  const indexedFrame = spec.indexedSurface ? context.createImageData(spec.width, spec.height) : undefined;
   const toolbar = document.createElement("div");
   toolbar.className = "game-toolbar";
   const toggle = document.createElement("button");
@@ -234,44 +206,63 @@ export async function runApplication(root: HTMLElement, source: string) {
     if (control?.mode === "hold") held.delete(control.action);
   });
 
-  let state = await evaluate("(app.initial-state)");
+  driver.attach();
   let running = false;
   let busy = false;
   let lastStep = 0;
   let displayedResult: string | undefined;
-  const render = (value: LispValue, active: boolean, resultText?: string) => {
+  const render = async (value: LispValue, active: boolean, resultText?: string) => {
     const values = directives(value);
     const draw = directive(values, "draw");
     if (draw) drawCommands(context, draw.slice(1));
+    const framebuffer = directive(values, "framebuffer");
+    if (framebuffer) {
+      if (!spec.indexedSurface || !indexedFrame) throw new Error("The Lisp application requested a framebuffer without declaring an indexed surface.");
+      const expression = textAt(framebuffer, 1, "framebuffer expression");
+      if (!/^[A-Za-z0-9_.!?+*/<>=-]+$/.test(expression)) throw new Error("A framebuffer expression must be a Lisp symbol.");
+      indexedFrame.data.set(expandIndexedSurface(session.evaluateBytes(`(${expression})`), spec.width, spec.height, spec.indexedSurface.palette));
+      context.putImageData(indexedFrame, 0, 0);
+    }
     const summary = directive(values, "status");
     status.textContent = resultText ?? (summary ? `${summary.slice(1).map(atomText).join(" · ")} · ${active ? "playing" : "paused"}` : active ? "playing" : "paused");
   };
-  render(await evaluate(`(app.view '${printLispValue(state)})`), false);
+  await render(driver.present(), false);
   toggle.addEventListener("click", () => {
     running = !running;
+    lastStep = 0;
     toggle.textContent = `${running ? "Pause" : "Play"} ${spec.title}`;
     toggle.setAttribute("aria-pressed", String(running));
   });
   const frame = async (time: number) => {
-    if (running && !busy && time - lastStep >= frameIntervalMs) {
+    if (running && !busy) {
       busy = true;
-      lastStep = time;
       try {
-        const result = await evaluate(`(app.frame '${printLispValue(state)} '${inputForm(held, pressed, spec.controls)})`);
-        const values = directives(result);
-        const next = directive(values, "state");
-        if (!next?.[1]) throw new Error("The Lisp application did not return its next state.");
-        state = next[1];
-        const resultDirective = directive(values, "result");
-        if (resultDirective) displayedResult = await evaluateOutput("(app.result)");
-        render(result, true, displayedResult);
+        if (!lastStep) lastStep = time;
+        let ticked = false;
+        let requested = false;
+        // A tick that runs slower than the simulation cadence must not build an
+        // unbounded backlog: catch up by at most maxCatchUpTicks and drop the
+        // rest of the arrears, so a slow frame degrades instead of spiralling.
+        let budget = maxCatchUpTicks;
+        while (time - lastStep >= frameIntervalMs) {
+          if (budget === 0) { lastStep = time; break; }
+          requested = driver.tick(inputForm(held, pressed, spec.controls)).resultRequested || requested;
+          pressed.clear();
+          lastStep += frameIntervalMs;
+          budget -= 1;
+          ticked = true;
+        }
+        if (ticked) {
+          const result = driver.present();
+          if (requested || directive(directives(result), "result")) displayedResult = await evaluateOutput("(app.result)");
+          await render(result, true, displayedResult);
+        }
       } catch (error) {
         running = false;
         toggle.textContent = `Play ${spec.title}`;
         toggle.setAttribute("aria-pressed", "false");
         status.textContent = `Interpreter stopped: ${error instanceof Error ? error.message : String(error)}`;
       } finally {
-        pressed.clear();
         busy = false;
       }
     }

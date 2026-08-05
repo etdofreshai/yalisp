@@ -73,7 +73,8 @@ const examplePages = new Set([
   "/examples/hello-world/",
   "/examples/pong/",
   "/examples/breakout/",
-  "/examples/asteroids/"
+  "/examples/asteroids/",
+  "/examples/wolf3d/"
 ]);
 
 export const normalizePath = (path: string) => {
@@ -227,6 +228,9 @@ export function mountProjectNavigation(host: HTMLElement, options: NavigationOpt
               </li>
               <li class="project-nav-stage">
                 ${pageLink("/examples/asteroids/", '<span class="project-nav-index">04</span><span>Asteroids</span>')}
+              </li>
+              <li class="project-nav-stage">
+                ${pageLink("/examples/wolf3d/", '<span class="project-nav-index">05</span><span>Wolf3D</span>')}
               </li>`)}
           </li>
         </ul>

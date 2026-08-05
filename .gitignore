@@ -1,5 +1,9 @@
 node_modules/
+._*
 dist/
 apps/web/public/yalisp/seed.wasm
+# Original game data mounted by scripts/mount-assets.mjs. These are commercial
+# redistributables owned by their publisher and are never committed here.
+apps/web/public/assets/
 .DS_Store
 *.log

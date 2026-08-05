@@ -13,6 +13,9 @@ const { instance } = await WebAssembly.instantiate(wasm, {
   host: {
     write(pointer, length) {
       process.stdout.write(decoder.decode(new Uint8Array(memory.buffer, pointer, length)));
+    },
+    bytes_write() {
+      throw new Error("the hello-world CLI does not request binary output");
     }
   }
 });

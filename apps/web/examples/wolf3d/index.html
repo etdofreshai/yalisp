@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#101310" />
+    <meta name="description" content="Decode the original Wolfenstein 3D map data in YALISP" />
+    <title>Wolf3D · YALISP Examples</title>
+    <style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style>
+    <script src="/theme-init.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to example</a>
+    <header class="docs-header"><a class="brand" href="/" aria-label="YALISP home">Y<span>A</span>LISP</a><div class="header-actions"><button class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="true" data-theme-toggle><span aria-hidden="true">☀</span><span>Light</span></button><button class="docs-menu" type="button" aria-label="Toggle project navigation" aria-expanded="false" data-docs-menu><span></span><span></span></button></div></header>
+    <div class="docs-shell playground-shell" data-docs-shell>
+      <aside class="docs-nav" aria-label="Project navigation"></aside>
+      <main id="content" class="examples-main">
+        <p class="eyebrow"><a href="/examples/">Examples</a> / Wolf3D</p>
+        <section>
+          <p class="section-number">05 / Original data</p>
+          <h1>Wolf3D map data,<br /><em>decoded in Lisp.</em></h1>
+          <p class="lede">The application declares the original <code>MAPHEAD.WL6</code> and <code>GAMEMAPS.WL6</code>, the host hands over their bytes, and Lisp does the rest: <code>ID_CA.C</code>’s map header structures, then Carmack and RLEW expansion of both planes of the first level. What you see is that decode drawn one tile per block — a readout of the original bytes, not a rendered level.</p>
+          <div class="example-meta"><span class="example-badge">Original Steam data files</span><span class="example-badge">Native 320×200 canvas</span><span class="example-badge">ID_CA.C ported to Lisp</span></div>
+          <div class="game-frame" data-lisp-app="wolf3d">Loading the YALISP Wolf3D map decoder…</div>
+          <p class="game-instructions">Arrow keys step one tile along the original’s <code>dirtype</code> facing, refusing solid tiles by <code>SetupGameLevel</code>’s own rule. The originals are commercial data files and are not part of this repository: without them mounted, the page says so instead of showing something invented. The next gate is <code>VSWAP</code> and <code>VGAGRAPH</code>, which carry the real palette and wall textures, and then the raycaster.</p>
+          <div class="application-package">
+            <p><strong>Authenticity boundary.</strong> TypeScript fetches the two declared files, hands their bytes to the evaluator, forwards declared input, and puts a returned framebuffer on a canvas. Every offset, tag, expander, and tile rule below is Lisp, ported from the original C.</p>
+            <article class="application-source"><header><span>src/examples/wolf3d/id-ca.lisp + app.lisp</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/wolf3d/app.lisp">Source ↗</a></header><pre><code data-lisp-application-source="wolf3d">Loading executed YALISP source…</code></pre></article>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/examples.ts"></script>
+  </body>
+</html>

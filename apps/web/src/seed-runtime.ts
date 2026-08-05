@@ -6,6 +6,9 @@ interface SeedExports extends WebAssembly.Exports {
   eval_all(pointer: number, length: number): void;
   eval_print(pointer: number, length: number): void;
   eval_dom_print(pointer: number, length: number): void;
+  eval_bytes(pointer: number, length: number): void;
+  asset_begin(length: number): number;
+  asset_commit(): number;
 }
 
 interface SeedExample {
@@ -99,6 +102,7 @@ function loadBootstrap() {
 export async function createSeedSession(stage: SeedStage) {
   let memory: WebAssembly.Memory | undefined;
   let outputBytes: Uint8Array[] = [];
+  let binaryOutput: Uint8Array | undefined;
   const instance = await WebAssembly.instantiate(await loadModule(), {
     host: {
       write(pointer: number, length: number) {
@@ -106,6 +110,10 @@ export async function createSeedSession(stage: SeedStage) {
         // The DOM serializer may write one UTF-8 byte at a time. Copy before
         // the seed reuses its scratch buffer, then decode the completed stream.
         outputBytes.push(new Uint8Array(memory.buffer, pointer, length).slice());
+      },
+      bytes_write(pointer: number, length: number) {
+        if (!memory) throw new Error("seed memory is not initialized");
+        binaryOutput = new Uint8Array(memory.buffer, pointer, length).slice();
       }
     }
   });
@@ -161,6 +169,27 @@ export async function createSeedSession(stage: SeedStage) {
     },
     evaluateQuietly(source: string) {
       run(() => exports.eval_all(inputPointer, load(source)));
+    },
+    evaluateBytes(source: string) {
+      binaryOutput = undefined;
+      run(() => exports.eval_bytes(inputPointer, load(source)));
+      if (!binaryOutput) throw new Error("The Lisp evaluation did not produce a byte buffer.");
+      return binaryOutput;
+    },
+    // Hand the evaluator an immutable buffer of bytes and get back the handle
+    // it will be known by. The host does not read, validate, or interpret the
+    // bytes: what they mean is decided entirely by the Lisp program that
+    // reserved the capacity to hold them.
+    ingestBytes(bytes: Uint8Array) {
+      let handle = -1;
+      run(() => {
+        const pointer = exports.asset_begin(bytes.length);
+        // asset_begin may have grown the memory, detaching any earlier view,
+        // so the destination is taken from the buffer as it is now.
+        new Uint8Array(exports.memory.buffer).set(bytes, pointer);
+        handle = exports.asset_commit();
+      });
+      return handle;
     }
   };
 }

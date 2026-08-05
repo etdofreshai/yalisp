@@ -17,6 +17,9 @@ const { instance } = await WebAssembly.instantiate(seed, {
   host: {
     write(pointer, length) {
       output += decoder.decode(new Uint8Array(memory.buffer, pointer, length));
+    },
+    bytes_write() {
+      throw new Error("the AOT compiler build does not request binary output");
     }
   }
 });

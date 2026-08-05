@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import wabtInit from "wabt";
+import { wolf3dSource } from "./wolf3d-source.mjs";
 
 const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url), "utf8");
 const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
@@ -12,6 +13,11 @@ const pongApplication = await readFile(new URL("../src/examples/pong/app.lisp", 
 const breakoutApplication = await readFile(new URL("../src/examples/breakout/app.lisp", import.meta.url), "utf8");
 const landingApplication = await readFile(new URL("../src/site/landing.lisp", import.meta.url), "utf8");
 const asteroidsApplication = await readFile(new URL("../src/examples/asteroids/app.lisp", import.meta.url), "utf8");
+// The Wolf3D port is several Lisp modules, and they are loaded here in the
+// order examples.ts uses rather than as a subset: what the application contract
+// reaches is the program's business, and a partial load that happened to be
+// enough would be this test deciding it.
+const wolf3dApplication = wolf3dSource;
 const generatedWasm = await readFile(new URL("../public/yalisp/seed.wasm", import.meta.url));
 const uiSource = await readFile(new URL("../src/seed-runtime.ts", import.meta.url), "utf8");
 const wabt = await wabtInit();
@@ -28,10 +34,14 @@ const inputEnd = 131072;
 async function createSession({ boot = false } = {}) {
   let memory;
   let outputBytes = [];
+  let binaryOutput;
   const { instance } = await WebAssembly.instantiate(buffer, {
     host: {
       write(pointer, length) {
         outputBytes.push(new Uint8Array(memory.buffer, pointer, length).slice());
+      },
+      bytes_write(pointer, length) {
+        binaryOutput = new Uint8Array(memory.buffer, pointer, length).slice();
       }
     }
   });
@@ -87,6 +97,12 @@ async function createSession({ boot = false } = {}) {
     evaluateQuietly(source) {
       outputBytes = [];
       instance.exports.eval_all(inputPointer, load(source));
+    },
+    evaluateBytes(source) {
+      binaryOutput = undefined;
+      instance.exports.eval_bytes(inputPointer, load(source));
+      assert.ok(binaryOutput, "expected a byte-buffer host callback");
+      return binaryOutput;
     }
   };
 }
@@ -177,6 +193,51 @@ test("Asteroids entities, declared input, hit rules, and draw protocol execute i
   assert.equal(session.evaluate("(app.mount)"), "(mount 640 360 Asteroids ((left hold rotate-left (ArrowLeft a)) (right hold rotate-right (ArrowRight d)) (thrust hold thrust (ArrowUp w)) (fire press fire (Space))))");
   assert.match(session.evaluate("(app.frame '(320 180 0 0 nil ((360 180 0 0 20))) '((left 0) (right 0) (thrust 0) (fire 1)))"), /^\(\(state \(320 180 0 100 nil nil\)\)/);
   assert.match(session.evaluate("(app.frame '(320 180 0 0 nil nil) '((left 1) (right 0) (thrust 0) (fire 0)))"), /^\(\(state \(320 180 3 0 nil nil\)\)/);
+});
+
+// What Wolf3D decodes, draws, and refuses to draw is checked against the
+// original data in wolf3d-map.test.mjs and wolf3d-application.test.mjs. What
+// belongs here is only that the shared application contract still holds for it
+// in a bare bootstrap session, with no assets and no host.
+test("Wolf3D declares a native-resolution indexed surface and reports absent originals", async () => {
+  const session = await createSession({ boot: true });
+  session.evaluateQuietly(wolf3dApplication);
+  const mount = session.evaluate("(app.mount)");
+  assert.match(mount, /^\(mount 320 200 Wolf3D /, "the original's own screen mode is what it mounts");
+  assert.match(mount, /\(surface indexed8 \(#[0-9a-f]{6}( #[0-9a-f]{6})*\)\)\)$/, "a paletted byte surface, not draw commands");
+
+  // Nothing has been mounted in this session, so the program is in the state a
+  // checkout without the commercial data files is in. It has to say so rather
+  // than draw something, which is what keeps the absence visible instead of
+  // being filled in with invented content.
+  assert.equal(session.evaluate("(app.mounted?)"), "false");
+  const view = session.evaluate("(app.view (app.initial-state))");
+  assert.ok(!view.includes("framebuffer"), "no framebuffer may be presented without decoded planes");
+  assert.match(view, /originals not mounted/);
+});
+
+test("generic byte buffers and fixed-point primitives support Wolf3D-sized data without host game logic", async () => {
+  const session = await createSession({ boot: true });
+  assert.equal(session.evaluate(`(begin
+    (define framebuffer (bytes.alloc 64000))
+    (u8! framebuffer 0 18)
+    (u8! framebuffer 63998 52)
+    (u8! framebuffer 63999 18)
+    (list (bytes.length framebuffer) (u8@ framebuffer 0) (u16@ framebuffer 63998)))`), "(64000 18 4660)");
+  assert.equal(session.evaluate("(list (bit.and 13 11) (bit.or 12 3) (bit.xor 12 10) (bit.shl 3 4) (bit.shr -32 3))"), "(9 15 6 48 -4)");
+  assert.equal(session.evaluate("(fx.mul-shift 98304 131072 16)"), "196608");
+});
+
+test("generic byte-buffer evaluation transfers raw bytes without DOM serialization", async () => {
+  const session = await createSession({ boot: true });
+  const bytes = session.evaluateBytes(`(begin
+    (define frame (bytes.alloc 64000))
+    (u8! frame 0 18)
+    (u8! frame 31999 52)
+    (u8! frame 63999 86)
+    frame)`);
+  assert.equal(bytes.length, 64000);
+  assert.deepEqual([bytes[0], bytes[31999], bytes[63999]], [18, 52, 86]);
 });
 
 test("bootstrap or short-circuits without double evaluation or identifier capture", async () => {

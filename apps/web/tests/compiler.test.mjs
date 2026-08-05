@@ -22,6 +22,9 @@ async function createCompilerSession() {
     host: {
       write(pointer, length) {
         output += decoder.decode(new Uint8Array(memory.buffer, pointer, length));
+      },
+      bytes_write() {
+        throw new Error("the compiler test does not request binary output");
       }
     }
   });
