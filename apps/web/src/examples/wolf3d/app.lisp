@@ -215,9 +215,10 @@
             bestweapon weapon chosenweapon faceframe attackframe attackcount
             weaponframe secretcount treasurecount killcount secrettotal
             treasuretotal killtotal pwallstate pwallpos pwallx pwally pwalldir
-            doorchecksum rndindex plane0hash plane1hash)
-    (encoding plane0hash u32-decimal plane1hash u32-decimal)
-    (omitted actorhash worldhash)))
+            doorchecksum rndindex plane0hash plane1hash worldhash)
+    (encoding plane0hash u32-decimal plane1hash u32-decimal
+              worldhash u32-decimal)
+    (omitted actorhash)))
 
 (defn app.trace-record ()
   (list (list 'tick app.time-count)
@@ -261,7 +262,8 @@
         (list 'doorchecksum (wl.door-checksum))
         (list 'rndindex wl.rndindex)
         (list 'plane0hash (wl.u32-decimal app.plane0hash-high app.plane0hash-low))
-        (list 'plane1hash (wl.u32-decimal app.plane1hash-high app.plane1hash-low))))
+        (list 'plane1hash (wl.u32-decimal app.plane1hash-high app.plane1hash-low))
+        (list 'worldhash (wl.world-hash-decimal))))
 
 (defn app.replay-advance (tics controlx controly buttons)
   (if (app.mounted?)

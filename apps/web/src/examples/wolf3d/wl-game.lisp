@@ -452,6 +452,77 @@
                    (wl.door-ticcount@ door))
           65535))))
 
+;; The v3 world fingerprint walks every live static field and then every live
+;; door field in source list order. The original TraceMix operates on uint32,
+;; while this seed evaluator's exact integer range is signed 32-bit, so the
+;; hash is carried as two unsigned 16-bit words. Negative signed operands such
+;; as removed statics' shapenum=-1 XOR 0xffff into both words. The recursion
+;; runs under its own heap mark and leaves only these two scalar words alive;
+;; otherwise a per-tick trace read would retain hundreds of evaluator frames.
+(define wl.worldhash-high 0)
+(define wl.worldhash-low 5381)
+
+(defn wl.world-hash-refresh ()
+  (wl.world-hash-refresh-marked (heap.used)))
+
+(defn wl.world-hash-refresh-marked (mark)
+  (begin
+    (wl.world-hash-static-at 0 0 0 5381)
+    (heap.release mark)))
+
+(defn wl.world-hash-words ()
+  (begin
+    (wl.world-hash-refresh)
+    (list wl.worldhash-high wl.worldhash-low)))
+
+(defn wl.world-hash-static-at (index field high low)
+  (if (= index wl.staticcount)
+      (wl.world-hash-door-at 0 0 high low)
+      (let ((value (cond ((= field 0) (u8@ wl.staticx index))
+                         ((= field 1) (u8@ wl.staticy index))
+                         ((= field 2) (wl.static-shapenum@ index))
+                         ((= field 3) (wl.static-flags@ index))
+                         (true (u8@ wl.staticitem index)))))
+        (wl.world-hash-static-mix index field high value (* low 33)))))
+
+(defn wl.world-hash-static-mix (index field high value low-product)
+  (let ((mixed-high
+          (bit.xor
+            (bit.and (+ (* high 33) (/ low-product 65536)) 65535)
+            (if (< value 0) 65535 0)))
+        (mixed-low (bit.xor (bit.and low-product 65535)
+                            (bit.and value 65535))))
+    (if (= field 4)
+        (wl.world-hash-static-at (+ index 1) 0 mixed-high mixed-low)
+        (wl.world-hash-static-at index (+ field 1) mixed-high mixed-low))))
+
+(defn wl.world-hash-door-at (index field high low)
+  (if (= index wl.doornum)
+      (begin (set! wl.worldhash-high high) (set! wl.worldhash-low low))
+      (let ((value (cond ((= field 0) (wl.door-x@ index))
+                         ((= field 1) (wl.door-y@ index))
+                         ((= field 2) (wl.door-vertical@ index))
+                         ((= field 3) (wl.door-lock@ index))
+                         ((= field 4) (wl.door-action@ index))
+                         (true (wl.door-ticcount@ index)))))
+        (wl.world-hash-door-mix index field high value (* low 33)))))
+
+(defn wl.world-hash-door-mix (index field high value low-product)
+  (let ((mixed-high
+          (bit.xor
+            (bit.and (+ (* high 33) (/ low-product 65536)) 65535)
+            (if (< value 0) 65535 0)))
+        (mixed-low (bit.xor (bit.and low-product 65535)
+                            (bit.and value 65535))))
+    (if (= field 5)
+        (wl.world-hash-door-at (+ index 1) 0 mixed-high mixed-low)
+        (wl.world-hash-door-at index (+ field 1) mixed-high mixed-low))))
+
+(defn wl.world-hash-decimal ()
+  (begin
+    (wl.world-hash-refresh)
+    (wl.u32-decimal wl.worldhash-high wl.worldhash-low)))
+
 (defn wl.plane-hash-words (plane) (wl.plane-hash-at plane 0 0 5381))
 
 (defn wl.plane-hash-at (plane index high low)

@@ -19,12 +19,12 @@ replay validation remain later gates.
 
 The application also exposes a narrow `wolf3d-trace-bin-v3` field projection
 for canonical R1 replay. It directly consumes recorded `tics`, `controlx`,
-`controly`, and button bits, and reports the 42 fields currently owned by this
+`controly`, and button bits, and reports the 43 fields currently owned by this
 port: time and input, player and game state, level-progress totals and counters,
 pushwall state, the door checksum, the deterministic random-table cursor, and
-map-plane hashes. All 42 fields match the retained 401-record R1 route. This
-remains a deliberately partial actor and world system: `actorhash` and
-`worldhash` are explicitly omitted. Cursor parity establishes only the random
+map-plane hashes plus the live static-and-door `worldhash`. All 43 fields match
+the retained 401-record R1 route. This remains a deliberately partial actor
+system: `actorhash` is explicitly omitted. Cursor parity establishes only the random
 consumers reached by canonical R1; it is not all-route RNG completion, a
 complete v3 trace, or a claim of D1/R0-R5 parity.
 
@@ -41,5 +41,6 @@ entry in map-scan order, including each entry's source shapenum, flags, and
 itemnumber plus blocking `actorat` occupancy. Pickup removal changes only the
 shapenum to -1; flags and itemnumber remain in the reusable source slot. This
 reproduces all 121 E1M1 static records and the record-366 clip transition while
-leaving the existing 401-by-42 R1 trace projection exact. It is a storage and
-lifecycle prerequisite only: `worldhash` remains deliberately unpromoted.
+feeding `worldhash` directly from the five live fields of every static followed
+by the six live fields of every door in source order. The 32-bit hash uses the
+source's multiply-by-33/XOR operation without fixture or host substitution.
