@@ -19,17 +19,27 @@ VGAGRAPH, and VGADICT files, converts the original four VGA planes to indexed
 rows, and preserves that static 320x40 image below every 160-row refresh. The
 source-shaped latch-picture path now draws and updates the living non-SPEAR
 face from health and faceframe, draws `DrawHealth` through the original
-right-justified three-cell `LatchNumber(21,16,3,health)` arithmetic, then draws
-and updates `DrawAmmo` with the original right-justified two-cell
-`LatchNumber(27,16,2,ammo)` arithmetic, then draws and updates the non-SPEAR
-status weapon with the original unguarded
+right-justified three-cell `LatchNumber(21,16,3,health)` arithmetic, then
+`DrawLives` at `(14,16)` and non-SPEAR `DrawLevel` at `(2,16)` with the raw
+`map+1` value. It next draws and updates `DrawAmmo` with the original
+right-justified two-cell `LatchNumber(27,16,2,ammo)` arithmetic, draws both
+`DrawKeys` slots in gold-then-silver order from raw key bits zero and one,
+draws the non-SPEAR status weapon with the original unguarded
 `KNIFEPIC + weapon` selection arithmetic, and finally draws and updates
 `DrawScore` with the original right-justified six-cell
 `LatchNumber(6,16,6,score)` arithmetic. The numeric conversion retains the
 original visible-minus bug: `'-'-'0'+N_0PIC` selects GOLDKEYPIC. Dead and
-special faces, the other status numbers, and keys remain intentionally absent. Actor
-collision and area/sound side effects for doors, generalized sprites, menus,
-audio, saves, and full oracle replay validation remain later gates.
+special faces remain intentionally absent, and this status slice does not claim
+key-pickup or audio call-graph parity. Actor collision and area/sound side
+effects for doors, generalized sprites, menus, audio, saves, and full oracle
+replay validation remain later gates.
+
+Malformed graphics diagnostics are fail-closed traps. The seed has no
+language-level error recovery or unwind protection, so caught corruption tests
+inspect the already-written prefix and unchanged cache with an explicit
+test-harness heap rewind; they do not claim that an application session can
+recover from a corrupt mounted asset. Current mounted assets are immutable, and
+successful status refreshes are the path covered by the heap-bounded contract.
 
 The application also exposes a narrow `wolf3d-trace-bin-v3` field projection
 for canonical R1 replay. It directly consumes recorded `tics`, `controlx`,

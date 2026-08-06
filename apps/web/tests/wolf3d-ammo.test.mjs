@@ -27,7 +27,7 @@ const NUMBER_PLANAR_SHAS = [
   "9776c0cf2e5c845c2ca5fbcdae90e62e21a79116f3bb896217f0e53f5d784986"
 ];
 const AMMO_RECT_SHA = "127e7d0145965c1b1e9b0335e90be1dc52eaf673acd6b7b8869d44e589a24914";
-const INITIAL_STATUS_SHA = "b9b41e3af3a00d3923c88f82bf4c518a483f3939292c00c751abb8e26f291a26";
+const INITIAL_STATUS_SHA = "fca493ed539487f2b9bf0dd8f0c1110f46b915cc167d10de03690d79b62fef63";
 const FACE_ROW_SHA = "6d82bbd886150478be5960d7f2f4682bf013331585da6fd7c2eb17d3fc1bcb57";
 const HEALTH_ROW_SHA = "63fc8b795e664bc13ce7074c5d026cc9ec3637ec74a09621677d0f6cf3446c66";
 const WEAPON_ROW_SHA = "f4c288d41497cc63e170901e3f1246c4cdb9bb5943da2a9d814c50a0fd741d06";
@@ -189,7 +189,7 @@ test("ammo StatusDrawPic rejects sparse, truncated, wrong-length, dimension, and
   });
 });
 
-test("DrawPlayScreen and tick refresh preserve face-health-ammo-weapon-score order and caches", async () => {
+test("DrawPlayScreen and tick refresh preserve the complete source status order and ammo cache", async () => {
   const session = await createSeedSession();
   loadWolf3d(session);
   assert.equal(session.evaluate("app.drawn-ammo"), "nil", "numeric cache starts empty");
@@ -197,7 +197,10 @@ test("DrawPlayScreen and tick refresh preserve face-health-ammo-weapon-score ord
   assert.deepEqual(failed, []);
   assert.equal(session.evaluate("app.drawn-face-picture"), "109");
   assert.equal(session.evaluate("app.drawn-health"), "100");
+  assert.equal(session.evaluate("app.drawn-lives"), "3");
+  assert.equal(session.evaluate("app.drawn-level"), "1");
   assert.equal(session.evaluate("app.drawn-ammo"), "8");
+  assert.equal(session.evaluate("app.drawn-keys"), "0");
   assert.equal(session.evaluate("app.drawn-weapon-picture"), "92");
   assert.equal(session.evaluate("app.drawn-score"), "0");
   assert.equal(session.evaluate("(wl.ammo-latch-chunks)"), "(98 107)");
@@ -205,11 +208,10 @@ test("DrawPlayScreen and tick refresh preserve face-health-ammo-weapon-score ord
   const appSource = wolf3dSources[wolf3dModules.indexOf("app")];
   const setup = appSource.slice(appSource.indexOf("(defn app.setup-tables"), appSource.indexOf("(defn app.cache-plane-hashes"));
   const refresh = appSource.slice(appSource.indexOf("(defn app.refresh-renderer-state"), appSource.indexOf("(defn app.refresh-face"));
-  for (const source of [setup, refresh]) {
-    assert.ok(source.indexOf("(app.refresh-face)") < source.indexOf("(app.refresh-health)"));
-    assert.ok(source.indexOf("(app.refresh-health)") < source.indexOf("(app.refresh-ammo)"));
-    assert.ok(source.indexOf("(app.refresh-ammo)") < source.indexOf("(app.refresh-weapon)"));
-    assert.ok(source.indexOf("(app.refresh-weapon)") < source.indexOf("(app.refresh-score)"));
+  const ordered = ["face", "health", "lives", "level", "ammo", "keys", "weapon", "score"];
+  for (const source of [setup, refresh]) for (let index = 1; index < ordered.length; index += 1) {
+    assert.ok(source.indexOf(`(app.refresh-${ordered[index - 1]})`) <
+      source.indexOf(`(app.refresh-${ordered[index]})`));
   }
 
   const initial = session.evaluateBytes("(app.frame-bytes)");

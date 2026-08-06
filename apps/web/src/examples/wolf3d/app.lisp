@@ -21,7 +21,10 @@
 (define app.pictable nil)
 (define app.drawn-face-picture -1)
 (define app.drawn-health nil)
+(define app.drawn-lives nil)
+(define app.drawn-level nil)
 (define app.drawn-ammo nil)
+(define app.drawn-keys nil)
 (define app.drawn-weapon-picture -1)
 (define app.drawn-score nil)
 (define app.GRAPHICS-HEAP-RESERVE 2097152)
@@ -111,13 +114,19 @@
     (wl.setup-game-level app.wall-plane app.object-plane)
     (wl.init-player-loop)
     (vh.draw-statusbar app.vgahead app.vgagraph app.vgadict app.frame-buffer)
-    ;; DrawPlayScreen draws the static bar first, then face, health, ammo, weapon and score.
+    ;; DrawPlayScreen draws the static bar first, then the eight source HUD layers.
     (set! app.drawn-face-picture -1)
     (app.refresh-face)
     (set! app.drawn-health nil)
     (app.refresh-health)
+    (set! app.drawn-lives nil)
+    (app.refresh-lives)
+    (set! app.drawn-level nil)
+    (app.refresh-level)
     (set! app.drawn-ammo nil)
     (app.refresh-ammo)
+    (set! app.drawn-keys nil)
+    (app.refresh-keys)
     (set! app.drawn-weapon-picture -1)
     (app.refresh-weapon)
     (set! app.drawn-score nil)
@@ -218,7 +227,10 @@
     (wl.refresh-actor-visibility)
     (app.refresh-face)
     (app.refresh-health)
+    (app.refresh-lives)
+    (app.refresh-level)
     (app.refresh-ammo)
+    (app.refresh-keys)
     (app.refresh-weapon)
     (app.refresh-score)))
 
@@ -260,6 +272,34 @@
                                 app.pictable frame x y (car chunks))
         (app.draw-number-chunks frame (cdr chunks) (+ x 1) y))))
 
+(defn app.refresh-lives ()
+  (app.refresh-lives-number wl.lives))
+
+(defn app.refresh-lives-number (number)
+  (if (and (not (nil? app.drawn-lives)) (= number app.drawn-lives))
+      number
+      (app.draw-lives-number number (heap.used))))
+
+(defn app.draw-lives-number (number mark)
+  (begin
+    (app.draw-number-chunks app.frame-buffer (wl.latch-number-chunks 1 number) 14 16)
+    (heap.release mark)
+    (set! app.drawn-lives number)))
+
+(defn app.refresh-level ()
+  (app.refresh-level-number (+ wl.map 1)))
+
+(defn app.refresh-level-number (number)
+  (if (and (not (nil? app.drawn-level)) (= number app.drawn-level))
+      number
+      (app.draw-level-number number (heap.used))))
+
+(defn app.draw-level-number (number mark)
+  (begin
+    (app.draw-number-chunks app.frame-buffer (wl.latch-number-chunks 2 number) 2 16)
+    (heap.release mark)
+    (set! app.drawn-level number)))
+
 (defn app.refresh-ammo ()
   (app.refresh-ammo-number wl.ammo))
 
@@ -275,6 +315,27 @@
     (app.draw-number-chunks app.frame-buffer (wl.latch-number-chunks 2 number) 27 16)
     (heap.release mark)
     (set! app.drawn-ammo number)))
+
+(defn app.refresh-keys ()
+  (app.refresh-key-bits wl.keys))
+
+(defn app.refresh-key-bits (keys)
+  (if (and (not (nil? app.drawn-keys)) (= keys app.drawn-keys))
+      keys
+      (app.draw-key-pictures keys (heap.used))))
+
+(defn app.draw-key-pictures (keys mark)
+  (begin
+    ;; DrawKeys always writes gold then silver. A rejected silver picture must
+    ;; preserve the completed gold prefix without advancing the raw-bit cache.
+    (vh.status-draw-picture app.vgahead app.vgagraph app.vgadict
+                            app.pictable app.frame-buffer 30 4
+                            (wl.gold-key-picture keys))
+    (vh.status-draw-picture app.vgahead app.vgagraph app.vgadict
+                            app.pictable app.frame-buffer 30 20
+                            (wl.silver-key-picture keys))
+    (heap.release mark)
+    (set! app.drawn-keys keys)))
 
 (defn app.refresh-weapon ()
   (app.refresh-weapon-picture (wl.status-weapon-picture)))

@@ -11,7 +11,9 @@
 (define wl.FL-NEVERMARK 4)
 (define wl.WP-PISTOL 1)
 (define wl.KNIFEPIC 91)
+(define wl.NOKEYPIC 95)
 (define wl.GOLDKEYPIC 96)
+(define wl.SILVERKEYPIC 97)
 (define wl.N-BLANKPIC 98)
 (define wl.N-0PIC 99)
 (define wl.FACE1APIC 109)
@@ -138,8 +140,23 @@
 (defn wl.health-latch-chunks ()
   (wl.latch-number-chunks 3 wl.health))
 
+(defn wl.lives-latch-chunks ()
+  (wl.latch-number-chunks 1 wl.lives))
+
+(defn wl.level-latch-chunks ()
+  (wl.latch-number-chunks 2 (+ wl.map 1)))
+
 (defn wl.ammo-latch-chunks ()
   (wl.latch-number-chunks 2 wl.ammo))
+
+;;; DrawKeys tests the two source bits independently and always selects one
+;;; picture for each slot. Preserve raw signed bitwise behavior and ignore all
+;;; higher bits when selecting the pictures.
+(defn wl.gold-key-picture (keys)
+  (if (= (bit.and keys 1) 0) wl.NOKEYPIC wl.GOLDKEYPIC))
+
+(defn wl.silver-key-picture (keys)
+  (if (= (bit.and keys 2) 0) wl.NOKEYPIC wl.SILVERKEYPIC))
 
 (defn wl.score-latch-chunks ()
   (wl.latch-number-chunks 6 wl.score))
