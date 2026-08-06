@@ -7,6 +7,7 @@
 (define wl.ACTOR-SHOOT 110)
 (define wl.ACTOR-SHOOT2 111)
 (define wl.ACTOR-SHOOT3 112)
+(define wl.NEEDLEOBJ 12)
 
 (define wl.actorcount 0)
 (define wl.actorx (bytes.alloc 600))
@@ -545,14 +546,18 @@
                     (let ((roll (wl.us-rndt)))
                       (cond ((< distance 2) (bit.shr roll 2))
                             ((< distance 4) (bit.shr roll 3))
-                            (true (bit.shr roll 4)))))
+                            (true (bit.shr roll 4))))
+                    actor)
                   false))))))
 
-(defn wl.take-damage (points)
-  (let ((damage (if (= wl.difficulty 0) (bit.shr points 2) points)))
-    (begin
-      (set! wl.health (wl.max 0 (- wl.health damage)))
-      true)))
+(defn wl.take-damage (points attacker)
+  (begin
+    ;; The original records LastAttacker before any difficulty or health work.
+    (set! wl.last-attacker attacker)
+    (let ((damage (if (= wl.difficulty 0) (bit.shr points 2) points)))
+      (begin
+        (set! wl.health (wl.max 0 (- wl.health damage)))
+        true))))
 
 (defn wl.t-chase (actor)
   (let ((line (wl.actor-check-line-player actor)))

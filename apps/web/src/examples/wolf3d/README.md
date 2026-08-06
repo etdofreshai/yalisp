@@ -18,7 +18,11 @@ decodes STRUCTPIC and STATUSBARPIC directly from the original VGAHEAD,
 VGAGRAPH, and VGADICT files, converts the original four VGA planes to indexed
 rows, and preserves that static 320x40 image below every 160-row refresh. The
 source-shaped latch-picture path now draws and updates the living non-SPEAR
-face from health and faceframe, draws `DrawHealth` through the original
+face from health and faceframe. At zero health it retains the enemy passed to
+`TakeDamage`, draws `FACE8APIC` for an ordinary attacker or `MUTANTBJPIC` for
+the `needleobj` class, and preserves the original unconditional
+`LastAttacker` dereference as a fail-closed unset-attacker boundary. It draws
+`DrawHealth` through the original
 right-justified three-cell `LatchNumber(21,16,3,health)` arithmetic, then
 `DrawLives` at `(14,16)` and non-SPEAR `DrawLevel` at `(2,16)` with the raw
 `map+1` value. It next draws and updates `DrawAmmo` with the original
@@ -28,9 +32,10 @@ draws the non-SPEAR status weapon with the original unguarded
 `KNIFEPIC + weapon` selection arithmetic, and finally draws and updates
 `DrawScore` with the original right-justified six-cell
 `LatchNumber(6,16,6,score)` arithmetic. The numeric conversion retains the
-original visible-minus bug: `'-'-'0'+N_0PIC` selects GOLDKEYPIC. Dead and
-special faces remain intentionally absent, and this status slice does not claim
-key-pickup or audio call-graph parity. Actor collision and area/sound side
+original visible-minus bug: `'-'-'0'+N_0PIC` selects GOLDKEYPIC. Got-gatling,
+SPEAR-only, and other special faces remain intentionally absent, and this
+status slice does not claim key-pickup or audio call-graph parity. Actor
+collision and area/sound side
 effects for doors, generalized sprites, menus, audio, saves, and full oracle
 replay validation remain later gates.
 

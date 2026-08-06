@@ -17,12 +17,15 @@
 (define wl.N-BLANKPIC 98)
 (define wl.N-0PIC 99)
 (define wl.FACE1APIC 109)
+(define wl.FACE8APIC 130)
+(define wl.MUTANTBJPIC 132)
 
 (defn wl.player@ (field) (i32@ wl.player field))
 (defn wl.player! (field v) (u32! wl.player field v))
 
 (define wl.facecount 0)
 (define wl.faceframe 0)
+(define wl.last-attacker -1)
 (define wl.attack-active 0)
 (define wl.attackframe 0)
 (define wl.attackcount 0)
@@ -80,8 +83,8 @@
           (set! wl.facecount 0))
         nil)))
 
-;;; DrawFace's living, non-SPEAR selector. Dead and special override faces are
-;;; intentionally outside this slice and return no drawable latch picture.
+;;; DrawFace's living, non-SPEAR selector. Special override faces remain outside
+;;; this slice; the dead selector below retains the source's LastAttacker path.
 (defn wl.living-face-picture ()
   (if (and (> wl.health 0)
            (and (<= wl.health 100)
@@ -89,6 +92,15 @@
       (+ wl.FACE1APIC
          (+ (* 3 (/ (- 100 wl.health) 16)) wl.faceframe))
       -1))
+
+;;; DrawFace unconditionally dereferences LastAttacker when health reaches zero.
+;;; Keep the unset sentinel fail-closed rather than inventing a default killer.
+(defn wl.status-face-picture ()
+  (if (= wl.health 0)
+      (if (= (wl.actor-class@ wl.last-attacker) wl.NEEDLEOBJ)
+          wl.MUTANTBJPIC
+          wl.FACE8APIC)
+      (wl.living-face-picture)))
 
 ;;; DrawWeapon's exact non-SPEAR selector arithmetic, including the original's
 ;;; lack of a weapon-enum range guard.

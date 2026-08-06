@@ -235,7 +235,7 @@
     (app.refresh-score)))
 
 (defn app.refresh-face ()
-  (app.refresh-face-picture (wl.living-face-picture)))
+  (app.refresh-face-picture (wl.status-face-picture)))
 
 (defn app.refresh-face-picture (picture)
   (if (< picture 0)

@@ -15,6 +15,8 @@ const graphics = Object.fromEntries(await Promise.all(graphicsNames.map(async (n
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const FACE_PLANAR_SHA = "fae14b5f48c070fae2308c7ab812d7c455a66c6751a624baa36b1bd6a72440de";
 const FACE_ROW_SHA = "6d82bbd886150478be5960d7f2f4682bf013331585da6fd7c2eb17d3fc1bcb57";
+const DEAD_FACE_ROW_SHA = "f2ee72c3d853a3fa8c6d8f8ec7c20009dd2ae34c9ac54a9461a0de1ac38e2038";
+const NEEDLE_DEAD_FACE_ROW_SHA = "949d3cd6958a4751ff6a9ba690534629fd89c5357f55e0828d5eeb0ab6ad73a6";
 const FACE_STATUS_SHA = "fca493ed539487f2b9bf0dd8f0c1110f46b915cc167d10de03690d79b62fef63";
 const FACE_LEFT = 17 * 8;
 const FACE_TOP = 160 + 4;
@@ -90,6 +92,27 @@ test("StatusDrawPic decodes FACE1APIC exactly at x*8 and status y", async () => 
   assert.notEqual(sha256(mutated), FACE_ROW_SHA, "reversing the four VGA planes must fail parity");
 });
 
+test("StatusDrawPic decodes both current-asset death faces exactly", async () => {
+  const session = await decoderSession();
+  session.evaluateQuietly("(define test.frame (bytes.alloc 64000))");
+
+  const draw = (chunk) => {
+    session.evaluateQuietly("(bytes.fill test.frame 0 64000 37)");
+    return rectangle(session.evaluateBytes(drawFaceForm(17, 4, chunk)));
+  };
+
+  for (const chunk of [130, 132]) {
+    assert.equal(session.evaluate(`(list (vh.picture-width test.pictable ${chunk})
+                                         (vh.picture-height test.pictable ${chunk}))`), "(24 32)");
+  }
+  assert.equal(sha256(draw(130)), DEAD_FACE_ROW_SHA);
+  assert.equal(sha256(draw(132)), NEEDLE_DEAD_FACE_ROW_SHA);
+  assert.notEqual(sha256(draw(129)), DEAD_FACE_ROW_SHA, "living FACE7CPIC is not the ordinary death face");
+  assert.notEqual(sha256(draw(131)), DEAD_FACE_ROW_SHA, "GOTGATLINGPIC is not the ordinary death face");
+  assert.notEqual(sha256(draw(129)), NEEDLE_DEAD_FACE_ROW_SHA, "living FACE7CPIC is not the needle death face");
+  assert.notEqual(sha256(draw(131)), NEEDLE_DEAD_FACE_ROW_SHA, "GOTGATLINGPIC is not the needle death face");
+});
+
 test("the living non-SPEAR selector follows health tiers and face frames", async () => {
   const session = await createSeedSession();
   loadWolf3d(session);
@@ -100,6 +123,35 @@ test("the living non-SPEAR selector follows health tiers and face frames", async
   assert.equal(selected(85, 0), 109, "health 85 remains in the first face tier");
   assert.equal(selected(84, 0), 112, "health 84 begins the second face tier");
   assert.deepEqual([selected(0, 0), selected(-1, 0), selected(101, 0), selected(100, 3)], [-1, -1, -1, -1]);
+});
+
+test("the dead non-SPEAR selector retains and dereferences the exact attacker", async () => {
+  const session = await createSeedSession();
+  loadWolf3d(session);
+  session.evaluateQuietly("(u8! wl.actorclass 7 3)");
+  session.evaluateQuietly("(u8! wl.actorclass 8 wl.NEEDLEOBJ)");
+
+  session.evaluateQuietly("(begin (set! wl.health 8) (set! wl.difficulty 2))");
+  assert.equal(session.evaluate("(wl.take-damage 8 7)"), "true");
+  assert.equal(session.evaluate("wl.last-attacker"), "7");
+  for (const faceframe of [0, 2, 99]) {
+    session.evaluateQuietly(`(set! wl.faceframe ${faceframe})`);
+    assert.equal(session.evaluate("(wl.status-face-picture)"), "130", "dead faceframe is irrelevant");
+  }
+
+  session.evaluateQuietly("(set! wl.health 1)");
+  assert.equal(session.evaluate("(wl.take-damage 1 8)"), "true");
+  assert.equal(session.evaluate("wl.last-attacker"), "8");
+  assert.equal(session.evaluate("(wl.status-face-picture)"), "132");
+  assert.notEqual(session.evaluate("(wl.status-face-picture)"), "129");
+  assert.notEqual(session.evaluate("(wl.status-face-picture)"), "131");
+
+  session.evaluateQuietly("(begin (set! wl.health 1) (set! wl.faceframe 2))");
+  assert.equal(session.evaluate("(wl.status-face-picture)"), "129", "health one restores the living selector");
+
+  session.evaluateQuietly("(begin (set! wl.health 0) (set! wl.last-attacker -1))");
+  assert.match(rejectedDiagnostic(() => session.evaluate("(wl.status-face-picture)")), /byte index out of range/,
+    "the original unconditional LastAttacker dereference must fail closed when unset");
 });
 
 test("StatusDrawPic rejects malformed chunks, dimensions, and bounds", async (t) => {
@@ -205,7 +257,36 @@ test("initial DrawPlayScreen and selector changes preserve the face layer", asyn
   assert.equal(session.evaluate(`(u8@ app.frame-buffer ${FACE_TOP * 320 + FACE_LEFT})`), "77",
     "an unchanged selector does not redraw");
 
-  session.evaluateQuietly("(set! wl.faceframe 1)");
+  session.evaluateQuietly("(begin (u8! wl.actorclass 0 3) (u8! wl.actorclass 1 wl.NEEDLEOBJ))");
+  for (const [actor, chunk] of [[0, 130], [1, 132]]) {
+    const failureMark = Number(session.evaluate("(heap.used)"));
+    session.evaluateQuietly(`(begin
+      (set! wl.health 0)
+      (set! wl.last-attacker ${actor})
+      (u16! app.pictable (* (- ${chunk} vh.STARTPICS) 4) 22))`);
+    assert.match(rejectedDiagnostic(() => session.evaluate("(app.refresh-face)")), /byte index out of range/);
+    assert.equal(session.evaluate("app.drawn-face-picture"), "109", "a rejected death face cannot advance the cache");
+    session.evaluateQuietly(`(begin
+      (u16! app.pictable (* (- ${chunk} vh.STARTPICS) 4) 24)
+      (heap.release ${failureMark}))`);
+  }
+
+  session.evaluateQuietly("(begin (set! wl.health 0) (set! wl.last-attacker 0) (set! wl.faceframe 99))");
+  session.evaluateQuietly("(app.refresh-face)");
+  assert.equal(session.evaluate("app.drawn-face-picture"), "130");
+  assert.equal(sha256(rectangle(session.evaluateBytes("app.frame-buffer"))), DEAD_FACE_ROW_SHA);
+
+  session.evaluateQuietly("(set! wl.last-attacker 1)");
+  session.evaluateQuietly("(app.refresh-face)");
+  assert.equal(session.evaluate("app.drawn-face-picture"), "132");
+  assert.equal(sha256(rectangle(session.evaluateBytes("app.frame-buffer"))), NEEDLE_DEAD_FACE_ROW_SHA);
+
+  session.evaluateQuietly("(begin (set! wl.health 1) (set! wl.faceframe 2))");
+  session.evaluateQuietly("(app.refresh-face)");
+  assert.equal(session.evaluate("app.drawn-face-picture"), "129",
+    "dead-to-living restoration cannot be suppressed by the face cache");
+
+  session.evaluateQuietly("(begin (set! wl.health 100) (set! wl.faceframe 1))");
   session.evaluateQuietly("(app.refresh-face)");
   assert.equal(session.evaluate("app.drawn-face-picture"), "110");
   assert.equal(sha256(rectangle(session.evaluateBytes("app.frame-buffer"))),
@@ -213,8 +294,14 @@ test("initial DrawPlayScreen and selector changes preserve the face layer", asyn
 
   const before = Number(session.evaluate("(heap.used)"));
   for (let index = 0; index < 12; index += 1) {
-    session.evaluateQuietly(`(begin (set! wl.faceframe ${index % 2}) (app.refresh-face))`);
+    session.evaluateQuietly(`(begin
+      (set! wl.health 0)
+      (set! wl.last-attacker ${index % 2})
+      (app.refresh-face)
+      (set! wl.health 1)
+      (set! wl.faceframe ${index % 3})
+      (app.refresh-face))`);
   }
   const retained = Number(session.evaluate("(heap.used)")) - before;
-  assert.ok(retained < 65536, `bounded face redraw retained ${retained} bytes`);
+  assert.ok(retained < 131072, `bounded 24-transition face redraw retained ${retained} bytes`);
 });
