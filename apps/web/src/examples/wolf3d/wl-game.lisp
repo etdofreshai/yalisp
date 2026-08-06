@@ -36,19 +36,43 @@
 (define wl.staticcount 0)
 (define wl.staticx (bytes.alloc 400))
 (define wl.staticy (bytes.alloc 400))
+(define wl.staticshapenum (bytes.alloc 800))
+(define wl.staticflags (bytes.alloc 400))
 (define wl.staticitem (bytes.alloc 400))
+(define wl.FL-BONUS 2)
+(define wl.STAT-DRESSING 0)
+(define wl.STAT-BLOCK 1)
+(define wl.BO-GIBS 2)
+(define wl.BO-ALPO 3)
+(define wl.BO-FIRSTAID 4)
+(define wl.BO-KEY1 5)
+(define wl.BO-KEY2 6)
+(define wl.BO-KEY3 7)
+(define wl.BO-KEY4 8)
 (define wl.BO-CROSS 9)
 (define wl.BO-CHALICE 10)
 (define wl.BO-BIBLE 11)
 (define wl.BO-CROWN 12)
 (define wl.BO-CLIP 13)
+(define wl.BO-CLIP2 14)
+(define wl.BO-MACHINEGUN 15)
+(define wl.BO-CHAINGUN 16)
+(define wl.BO-FOOD 17)
 (define wl.BO-FULLHEAL 18)
+(define wl.BO-25CLIP 19)
+(define wl.BO-SPEAR 20)
 
 (defn wl.tilemap@ (x y) (u8@ wl.tilemap (+ (bit.shl x wl.MAPSHIFT) y)))
 (defn wl.tilemap! (x y v) (u8! wl.tilemap (+ (bit.shl x wl.MAPSHIFT) y) v))
 
 (defn wl.actorat-wall@ (x y) (u8@ wl.actorat-wall (+ (bit.shl x wl.MAPSHIFT) y)))
 (defn wl.actorat-wall! (x y v) (u8! wl.actorat-wall (+ (bit.shl x wl.MAPSHIFT) y) v))
+
+(defn wl.static-shapenum@ (index) (i16@ wl.staticshapenum (* index 2)))
+(defn wl.static-shapenum! (index shape)
+  (u16! wl.staticshapenum (* index 2) (if (< shape 0) (+ shape 65536) shape)))
+(defn wl.static-flags@ (index) (u8@ wl.staticflags index))
+(defn wl.static-flags! (index flags) (u8! wl.staticflags index flags))
 
 (defn wl.door-position@ (door) (u16@ wl.doorposition (* door 2)))
 (defn wl.door-position! (door position) (u16! wl.doorposition (* door 2) position))
@@ -466,37 +490,107 @@
     (if (>= tile 108)
         (if (wl.spawn-info-actor walls index tile)
             (set! wl.killtotal (+ wl.killtotal 1)) nil) nil)
-    (if (> (wl.static-item-for-tile tile) 0)
-        (wl.spawn-static-item (mod index wl.MAPSIZE) (/ index wl.MAPSIZE)
-                              (wl.static-item-for-tile tile)) nil)
+    (if (wl.static-tile? tile)
+        (wl.spawn-static (mod index wl.MAPSIZE) (/ index wl.MAPSIZE) (- tile 23)) nil)
     (if (wl.player-start? tile)
         (wl.spawn-player (mod index wl.MAPSIZE) (/ index wl.MAPSIZE)
                          (+ wl.NORTH (- tile wl.PLAYERSTART-FIRST)))
         nil)
     (wl.scan-info-plane walls objects (+ index 1))))
 
-;; ScanInfoPlane hands object tiles 23-74 to SpawnStatic as statinfo[tile-23].
-;; Only the bonus subset this slice owns is spawned: statinfo 26 clip and the
-;; five treasure entries 29-33. Blocking and dressing statics, the other
-;; pickups, and their actorat side effects are not part of this slice.
+;; The non-SPEAR statinfo table has source entries 0-47 plus the final clip2
+;; alias at 48. The shared ScanInfoPlane switch names the SPEAR-only 72-74
+;; tiles too, but no valid WL6 statinfo entry backs them. A WL6 static is thus
+;; an object tile 23-71, mapped through statinfo[tile-23].
+(defn wl.static-tile? (tile) (and (>= tile 23) (<= tile 71)))
+
 (defn wl.static-item-for-tile (tile)
-  (cond ((= tile 49) wl.BO-CLIP)
-        ((= tile 52) wl.BO-CROSS)
-        ((= tile 53) wl.BO-CHALICE)
-        ((= tile 54) wl.BO-BIBLE)
-        ((= tile 55) wl.BO-CROWN)
-        ((= tile 56) wl.BO-FULLHEAL)
-        (true 0)))
+  (if (wl.static-tile? tile) (wl.static-info-type (- tile 23)) -1))
+
+;; Exact non-SPEAR statinfo categories. SPR_STAT_0 starts at shapenum 2 and
+;; entries 0-47 stay sequential; entry 48 is bo_clip2 using SPR_STAT_26.
+(defn wl.static-info-type (type)
+  (cond ((= type 6) wl.BO-ALPO)
+        ((= type 20) wl.BO-KEY1)
+        ((= type 21) wl.BO-KEY2)
+        ((= type 24) wl.BO-FOOD)
+        ((= type 25) wl.BO-FIRSTAID)
+        ((= type 26) wl.BO-CLIP)
+        ((= type 27) wl.BO-MACHINEGUN)
+        ((= type 28) wl.BO-CHAINGUN)
+        ((= type 29) wl.BO-CROSS)
+        ((= type 30) wl.BO-CHALICE)
+        ((= type 31) wl.BO-BIBLE)
+        ((= type 32) wl.BO-CROWN)
+        ((= type 33) wl.BO-FULLHEAL)
+        ((= type 34) wl.BO-GIBS)
+        ((= type 38) wl.BO-GIBS)
+        ((= type 48) wl.BO-CLIP2)
+        ((wl.static-dressing-type? type) wl.STAT-DRESSING)
+        ((and (>= type 0) (<= type 47)) wl.STAT-BLOCK)
+        (true -1)))
+
+(defn wl.static-dressing-type? (type)
+  (or (or (or (= type 0) (= type 4))
+          (or (= type 9) (= type 14)))
+      (or (or (or (= type 15) (= type 19))
+              (or (= type 23) (= type 41)))
+          (or (or (= type 42) (= type 43))
+              (or (= type 44) (= type 47))))))
+
+(defn wl.static-shape-for-type (type) (if (= type 48) 28 (+ type 2)))
 
 (defn wl.init-static-list ()
-  (begin (set! wl.staticcount 0) (bytes.fill wl.staticitem 0 wl.MAXSTATICS 0)))
+  ;; InitStaticList resets only laststatobj. SpawnStatic overwrites shape,
+  ;; position, and flags, but dressing/block entries deliberately retain the
+  ;; slot's prior itemnumber across a later level setup, as the C array does.
+  (set! wl.staticcount 0))
+
+(defn wl.spawn-static (x y type)
+  (if (or (= wl.staticcount wl.MAXSTATICS) (< (wl.static-info-type type) 0))
+      -1
+      (let ((index wl.staticcount) (item (wl.static-info-type type)))
+        (begin
+          (u8! wl.staticx index x)
+          (u8! wl.staticy index y)
+          (wl.static-shapenum! index (wl.static-shape-for-type type))
+          (if (= item wl.STAT-BLOCK)
+              (begin (wl.actorat-wall! x y 1) (wl.static-flags! index 0))
+              (if (= item wl.STAT-DRESSING)
+                  (wl.static-flags! index 0)
+                  (begin (wl.static-flags! index wl.FL-BONUS)
+                         (u8! wl.staticitem index item))))
+          (set! wl.staticcount (+ wl.staticcount 1))
+          index))))
 
 (defn wl.spawn-static-item (x y item)
-  (if (= wl.staticcount wl.MAXSTATICS) -1
-      (let ((index wl.staticcount))
-        (begin (u8! wl.staticx index x) (u8! wl.staticy index y)
-               (u8! wl.staticitem index item)
-               (set! wl.staticcount (+ wl.staticcount 1)) index))))
+  (wl.place-static-item x y item (wl.find-static-type item 0)))
+
+(defn wl.find-static-type (item type)
+  (if (> type 48) -1
+      (if (= (wl.static-info-type type) item) type
+          (wl.find-static-type item (+ type 1)))))
+
+(defn wl.place-static-item (x y item type)
+  (if (< type 0) -1
+      (wl.place-static-item-at x y item type (wl.first-free-static 0))))
+
+;; PlaceItemType reuses the first consumed slot before extending laststatobj.
+(defn wl.first-free-static (index)
+  (if (= index wl.staticcount) index
+      (if (= (wl.static-shapenum@ index) -1) index
+          (wl.first-free-static (+ index 1)))))
+
+(defn wl.place-static-item-at (x y item type index)
+  (if (= index wl.MAXSTATICS) -1
+      (begin
+        (if (= index wl.staticcount) (set! wl.staticcount (+ wl.staticcount 1)) nil)
+        (u8! wl.staticx index x)
+        (u8! wl.staticy index y)
+        (wl.static-shapenum! index (wl.static-shape-for-type type))
+        (wl.static-flags! index wl.FL-BONUS)
+        (u8! wl.staticitem index item)
+        index)))
 
 (defn wl.static-at (x y index)
   (if (= index wl.staticcount) -1
@@ -512,8 +606,9 @@
 ;; is offered to the same bounds test.
 (defn wl.update-static-at (index)
   (if (= index wl.staticcount) false
-      (let ((got (if (and (> (u8@ wl.staticitem index) 0)
-                           (wl.transform-tile-in-range? (u8@ wl.staticx index) (u8@ wl.staticy index)))
+      (let ((got (if (and (= (bit.and (wl.static-flags@ index) wl.FL-BONUS) wl.FL-BONUS)
+                           (and (not (= (wl.static-shapenum@ index) -1))
+                                (wl.transform-tile-in-range? (u8@ wl.staticx index) (u8@ wl.staticy index))))
                       (wl.get-static index) false)))
         (if (wl.update-static-at (+ index 1)) true got))))
 
@@ -530,8 +625,9 @@
                      (< ny (/ wl.TILEGLOBAL 2))))))))
 
 (defn wl.get-static (index)
-  (let ((got (wl.apply-static-item (u8@ wl.staticitem index))))
-    (if got (begin (u8! wl.staticitem index 0) true) false)))
+  (if (= (wl.static-shapenum@ index) -1) false
+      (let ((got (wl.apply-static-item (u8@ wl.staticitem index))))
+        (if got (begin (wl.static-shapenum! index -1) true) false))))
 
 (defn wl.apply-static-item (item)
   (cond ((= item wl.BO-CROSS) (wl.give-treasure 100))

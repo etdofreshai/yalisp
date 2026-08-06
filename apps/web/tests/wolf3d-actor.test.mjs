@@ -242,7 +242,9 @@ test("general statics apply each source treasure bonus once", async (t) => {
   session.evaluateQuietly("(wl.player! wl.PLAYER-X (- (wl.player@ wl.PLAYER-X) 16000))");
   const cross = number(session, `(wl.spawn-static-item (wl.player@ wl.PLAYER-TILEX) (wl.player@ wl.PLAYER-TILEY) wl.BO-CROSS)`);
   assert.equal(session.evaluate("(wl.update-static-bonuses)"), "true", "TransformTile-range collection owns pickup");
-  assert.deepEqual([number(session, "wl.score"), number(session, "wl.treasurecount"), number(session, `(u8@ wl.staticitem ${cross})`)], [100, 1, 0]);
+  assert.deepEqual([number(session, "wl.score"), number(session, "wl.treasurecount"),
+    number(session, `(wl.static-shapenum@ ${cross})`), number(session, `(u8@ wl.staticitem ${cross})`)],
+  [100, 1, -1, number(session, "wl.BO-CROSS")]);
   assert.equal(session.evaluate(`(wl.get-static ${cross})`), "false", "removed cross cannot score twice");
 
   for (const [item, points] of [["wl.BO-CHALICE", 500], ["wl.BO-CROWN", 5000]]) {
@@ -250,7 +252,9 @@ test("general statics apply each source treasure bonus once", async (t) => {
     session.evaluateQuietly("(set! wl.treasurecount 0)");
     const index = number(session, `(wl.spawn-static-item 1 1 ${item})`);
     assert.equal(session.evaluate(`(wl.get-static ${index})`), "true");
-    assert.deepEqual([number(session, "wl.score"), number(session, "wl.treasurecount"), number(session, `(u8@ wl.staticitem ${index})`)], [points, 1, 0]);
+    assert.deepEqual([number(session, "wl.score"), number(session, "wl.treasurecount"),
+      number(session, `(wl.static-shapenum@ ${index})`), number(session, `(u8@ wl.staticitem ${index})`)],
+    [points, 1, -1, number(session, item)]);
     assert.equal(session.evaluate(`(wl.get-static ${index})`), "false");
   }
 
@@ -261,7 +265,8 @@ test("general statics apply each source treasure bonus once", async (t) => {
   const bible = number(session, "(wl.spawn-static-item 1 1 wl.BO-BIBLE)");
   assert.equal(session.evaluate(`(wl.get-static ${bible})`), "true");
   assert.deepEqual([number(session, "wl.score"), number(session, "wl.nextextra"), number(session, "wl.lives"), number(session, "wl.treasurecount")], [40500, 80000, 4, 1]);
-  assert.equal(number(session, `(u8@ wl.staticitem ${bible})`), 0);
+  assert.deepEqual([number(session, `(wl.static-shapenum@ ${bible})`), number(session, `(u8@ wl.staticitem ${bible})`)],
+    [-1, number(session, "wl.BO-BIBLE")]);
   assert.equal(session.evaluate(`(wl.get-static ${bible})`), "false");
 
   session.evaluateQuietly("(set! wl.health 1)");
@@ -273,13 +278,16 @@ test("general statics apply each source treasure bonus once", async (t) => {
   session.evaluateQuietly("(set! wl.treasurecount 0)");
   const fullheal = number(session, "(wl.spawn-static-item 1 1 wl.BO-FULLHEAL)");
   assert.equal(session.evaluate(`(wl.get-static ${fullheal})`), "true");
-  assert.deepEqual([number(session, "wl.health"), number(session, "wl.ammo"), number(session, "wl.weapon"), number(session, "wl.lives"), number(session, "wl.treasurecount"), number(session, `(u8@ wl.staticitem ${fullheal})`)], [100, 25, 1, 9, 1, 0]);
+  assert.deepEqual([number(session, "wl.health"), number(session, "wl.ammo"), number(session, "wl.weapon"), number(session, "wl.lives"), number(session, "wl.treasurecount"),
+    number(session, `(wl.static-shapenum@ ${fullheal})`), number(session, `(u8@ wl.staticitem ${fullheal})`)],
+  [100, 25, 1, 9, 1, -1, number(session, "wl.BO-FULLHEAL")]);
   assert.equal(session.evaluate(`(wl.get-static ${fullheal})`), "false");
   assert.equal(number(session, "wl.treasurecount"), 1);
   const cappedFullheal = number(session, "(wl.spawn-static-item 1 1 wl.BO-FULLHEAL)");
   assert.equal(session.evaluate(`(wl.get-static ${cappedFullheal})`), "true");
   assert.deepEqual([number(session, "wl.health"), number(session, "wl.ammo"), number(session, "wl.lives"), number(session, "wl.treasurecount")], [100, 50, 9, 2]);
-  assert.equal(number(session, `(u8@ wl.staticitem ${cappedFullheal})`), 0);
+  assert.deepEqual([number(session, `(wl.static-shapenum@ ${cappedFullheal})`), number(session, `(u8@ wl.staticitem ${cappedFullheal})`)],
+    [-1, number(session, "wl.BO-FULLHEAL")]);
 
   session.evaluateQuietly("(set! wl.health 0)");
   const healed = number(session, "(wl.spawn-static-item 1 1 wl.BO-FULLHEAL)");
@@ -367,7 +375,9 @@ test("the retained bo_clip is picked up once at the source TransformTile boundar
 
   advance(session, route.records[365]);
   assert.equal(number(session, "wl.ammo"), 15, "record 366 applies bo_clip GiveAmmo(8)");
-  assert.equal(number(session, `(u8@ wl.staticitem ${clip})`), 0, "GetBonus removes the static");
+  assert.equal(number(session, `(wl.static-shapenum@ ${clip})`), -1, "GetBonus removes only the shape");
+  assert.equal(number(session, `(u8@ wl.staticitem ${clip})`), number(session, "wl.BO-CLIP"),
+    "GetBonus retains the source itemnumber");
   assert.equal(session.evaluate("(wl.update-static-bonuses)"), "false");
   assert.equal(number(session, "wl.ammo"), 15, "a removed clip cannot be collected twice");
 
@@ -624,9 +634,10 @@ test("bo_clip GiveAmmo clamps at 99 and leaves a full-ammo pickup present", asyn
   session.evaluateQuietly("(set! wl.ammo 95)");
   assert.equal(session.evaluate(`(wl.get-static ${clip})`), "true");
   assert.equal(number(session, "wl.ammo"), 99);
-  assert.equal(number(session, `(u8@ wl.staticitem ${clip})`), 0);
+  assert.deepEqual([number(session, `(wl.static-shapenum@ ${clip})`), number(session, `(u8@ wl.staticitem ${clip})`)],
+    [-1, number(session, "wl.BO-CLIP")]);
 
-  session.evaluateQuietly(`(u8! wl.staticitem ${clip} wl.BO-CLIP)`);
+  session.evaluateQuietly(`(wl.static-shapenum! ${clip} 28)`);
   assert.equal(session.evaluate(`(wl.get-static ${clip})`), "false");
   assert.equal(number(session, "wl.ammo"), 99);
   assert.equal(number(session, `(u8@ wl.staticitem ${clip})`), number(session, "wl.BO-CLIP"),

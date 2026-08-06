@@ -34,3 +34,12 @@ for the source reason: GunAttack finds no crosshair target and draws nothing;
 its noise makes the area-2 guard's `SightPlayer` consume byte 221 and schedule
 a 56-tic reaction. The implemented chase, shooting, and damage paths retain the
 canonical random cursor through all 401 R1 records.
+
+Static storage now follows the non-SPEAR `statinfo` table rather than keeping a
+bonus-only subset. `SetupGameLevel` retains every dressing, blocking, and bonus
+entry in map-scan order, including each entry's source shapenum, flags, and
+itemnumber plus blocking `actorat` occupancy. Pickup removal changes only the
+shapenum to -1; flags and itemnumber remain in the reusable source slot. This
+reproduces all 121 E1M1 static records and the record-366 clip transition while
+leaving the existing 401-by-42 R1 trace projection exact. It is a storage and
+lifecycle prerequisite only: `worldhash` remains deliberately unpromoted.
