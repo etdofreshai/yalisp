@@ -18,8 +18,9 @@ decodes STRUCTPIC and STATUSBARPIC directly from the original VGAHEAD,
 VGAGRAPH, and VGADICT files, converts the original four VGA planes to indexed
 rows, and preserves that static 320x40 image below every 160-row refresh. The
 source-shaped latch-picture path now draws and updates the living non-SPEAR
-face from health and faceframe. Dead and special faces, numbers, keys, and the
-weapon HUD remain intentionally absent. Actor
+face from health and faceframe, then draws and updates the non-SPEAR status
+weapon with the original unguarded `KNIFEPIC + weapon` selection arithmetic.
+Dead and special faces, numbers, and keys remain intentionally absent. Actor
 collision and area/sound side effects for doors, generalized sprites, menus,
 audio, saves, and full oracle replay validation remain later gates.
 

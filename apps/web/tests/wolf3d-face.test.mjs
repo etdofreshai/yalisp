@@ -15,7 +15,7 @@ const graphics = Object.fromEntries(await Promise.all(graphicsNames.map(async (n
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const FACE_PLANAR_SHA = "fae14b5f48c070fae2308c7ab812d7c455a66c6751a624baa36b1bd6a72440de";
 const FACE_ROW_SHA = "6d82bbd886150478be5960d7f2f4682bf013331585da6fd7c2eb17d3fc1bcb57";
-const FACE_STATUS_SHA = "18d8d180ad6c9631b4ae263ede9ba2ca5f71bdbee5b83e4195f67af35bf135ed";
+const FACE_STATUS_SHA = "14e635066e1fe8b9fcc47b71d003a5073cb5cde4f6de1015f31747af15b7b9fd";
 const FACE_LEFT = 17 * 8;
 const FACE_TOP = 160 + 4;
 const FACE_WIDTH = 24;

@@ -20,6 +20,7 @@
 (define app.vgadict nil)
 (define app.pictable nil)
 (define app.drawn-face-picture -1)
+(define app.drawn-weapon-picture -1)
 (define app.GRAPHICS-HEAP-RESERVE 2097152)
 (define app.map-name "")
 (define app.frame-buffer (bytes.alloc 64000))
@@ -107,9 +108,11 @@
     (wl.setup-game-level app.wall-plane app.object-plane)
     (wl.init-player-loop)
     (vh.draw-statusbar app.vgahead app.vgagraph app.vgadict app.frame-buffer)
-    ;; DrawPlayScreen draws the static bar first, then DrawFace.
+    ;; DrawPlayScreen draws the static bar first, then DrawFace and DrawWeapon.
     (set! app.drawn-face-picture -1)
     (app.refresh-face)
+    (set! app.drawn-weapon-picture -1)
+    (app.refresh-weapon)
     (set! app.time-count 0)
     (set! app.use-held 0)
     (set! app.attack-held 0)
@@ -204,7 +207,8 @@
 (defn app.refresh-renderer-state ()
   (begin
     (wl.refresh-actor-visibility)
-    (app.refresh-face)))
+    (app.refresh-face)
+    (app.refresh-weapon)))
 
 (defn app.refresh-face ()
   (app.refresh-face-picture (wl.living-face-picture)))
@@ -218,6 +222,17 @@
             (vh.status-draw-picture app.vgahead app.vgagraph app.vgadict
                                     app.pictable app.frame-buffer 17 4 picture)
             (set! app.drawn-face-picture picture)))))
+
+(defn app.refresh-weapon ()
+  (app.refresh-weapon-picture (wl.status-weapon-picture)))
+
+(defn app.refresh-weapon-picture (picture)
+  (if (= picture app.drawn-weapon-picture)
+      picture
+      (begin
+        (vh.status-draw-picture app.vgahead app.vgagraph app.vgadict
+                                app.pictable app.frame-buffer 32 8 picture)
+        (set! app.drawn-weapon-picture picture))))
 
 ;; Only dirty gameplay planes are rehashed.
 (defn app.refresh-plane-hashes ()

@@ -10,6 +10,7 @@
 (define wl.PLAYER-FLAGS 28)
 (define wl.FL-NEVERMARK 4)
 (define wl.WP-PISTOL 1)
+(define wl.KNIFEPIC 91)
 (define wl.FACE1APIC 109)
 
 (defn wl.player@ (field) (i32@ wl.player field))
@@ -83,6 +84,11 @@
       (+ wl.FACE1APIC
          (+ (* 3 (/ (- 100 wl.health) 16)) wl.faceframe))
       -1))
+
+;;; DrawWeapon's exact non-SPEAR selector arithmetic, including the original's
+;;; lack of a weapon-enum range guard.
+(defn wl.status-weapon-picture ()
+  (+ wl.KNIFEPIC wl.weapon))
 
 (defn wl.start-attack ()
   (begin
