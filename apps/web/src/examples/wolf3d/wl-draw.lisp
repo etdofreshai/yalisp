@@ -21,7 +21,7 @@
         (wl.advance-fine a (fx.div16 (/ (* i wl.VIEWGLOBAL) wl.viewwidth) wl.facedist)))))
 
 (defn wl.advance-fine (a tang)
-  (if (<= (fx.tan16 (* (+ a 1) fx.FINE)) tang)
+  (if (< (fx.tan16 (* (+ a 1) fx.FINE)) tang)
       (wl.advance-fine (+ a 1) tang)
       a))
 

@@ -36,6 +36,43 @@ async function application(fetcher = fromPublic) {
 const number = (session, form) => Number(session.evaluate(form));
 const inputForm = (...held) =>
   `(${["forward", "backward", "turn-left", "turn-right"].map((name) => `(${name} ${held.includes(name) ? 1 : 0})`).join(" ")})`;
+const route = JSON.parse(await readFile(new URL("./fixtures/wolf3d-r1-route-v3.json", import.meta.url), "utf8"));
+
+test("CalcProjection matches the original float-angle table at viewsize 15", async () => {
+  const session = await createSeedSession();
+  session.evaluateQuietly(source);
+  session.evaluateQuietly("(wl.calc-projection)");
+  const width = number(session, "wl.viewwidth");
+  const half = width / 2;
+  const facedist = number(session, "wl.facedist");
+  const radtoint = 3600 / 2 / 3.141592657;
+  const expected = Array(width);
+  for (let i = 0; i < half; i += 1) {
+    const tang = Math.trunc(i * 0x10000 / width) / facedist;
+    const angle = Math.trunc(Math.atan(tang) * radtoint);
+    expected[half - 1 - i] = angle;
+    expected[half + i] = angle === 0 ? 0 : -angle;
+  }
+  const actual = Array.from({ length: width }, (unused, i) => number(session, `(wl.pixelangle@ ${i})`));
+  assert.deepEqual(actual, expected);
+  assert.deepEqual([actual[88], actual[151]], [106, -106], "the two former quantization boundaries");
+});
+
+test("canonical record 13 selects the original wall texture column at post 151", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const { session } = await application();
+  for (const record of route.records.slice(0, 13)) {
+    session.evaluate(`(app.replay-advance ${record.tics} ${record.controlx} ${record.controly} ${record.buttons})`);
+  }
+  assert.deepEqual([
+    number(session, "(wl.pixelangle@ 151)"),
+    number(session, "(u8@ wl.wallpic 151)"),
+    number(session, "(wl.wallheight@ 151)"),
+    number(session, "(wl.walltexture@ 151)")
+  ], [-106, 15, 231, 64]);
+  const frame = session.evaluateBytes("(app.frame-bytes)");
+  assert.equal(frame[54 * 320 + 191], 156, "physical pixel 191,54 comes from picture 15 column 1");
+});
 
 // --- this harness's own readings of the two files ----------------------------
 
