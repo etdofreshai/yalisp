@@ -40,9 +40,9 @@ const canonicalProjectionFields = [
   "weapon", "chosenweapon", "faceframe", "attackframe", "attackcount", "weaponframe",
   "secretcount", "treasurecount", "killcount", "secrettotal", "treasuretotal", "killtotal",
   "pwallstate", "pwallpos", "pwallx", "pwally", "pwalldir",
-  "doorchecksum", "rndindex", "plane0hash", "plane1hash", "worldhash"
+  "doorchecksum", "rndindex", "plane0hash", "plane1hash", "actorhash", "worldhash"
 ];
-const canonicalOmittedFields = ["actorhash"];
+const canonicalOmittedFields = [];
 
 async function application() {
   const session = await createSeedSession();
@@ -120,7 +120,7 @@ test("the Lisp-owned projection declares its exact v3 subset and exclusions", as
   assertCanonicalFixtureSchema(fixture);
   assertCanonicalFixtureSchema(routeFixture, true);
   assert.deepEqual(contract.find((row) => Array.isArray(row) && row[0] === "fields").slice(1), fixture.fields);
-  assert.equal(fixture.fields.length, 43);
+  assert.equal(fixture.fields.length, 44);
   for (const field of promotedFields) assert.ok(fixture.fields.includes(field), `${field} must be projected`);
   assert.equal(fixture.fields.indexOf("secretcount"), fixture.fields.indexOf("weaponframe") + 1,
     "secretcount takes the canonical slot immediately after weaponframe");
@@ -131,7 +131,8 @@ test("the Lisp-owned projection declares its exact v3 subset and exclusions", as
     pwallPromotedFields,
     "the five pushwall variables are the contiguous canonical block before doorchecksum");
   assert.deepEqual(contract.find((row) => Array.isArray(row) && row[0] === "encoding").slice(1),
-    ["plane0hash", "u32-decimal", "plane1hash", "u32-decimal", "worldhash", "u32-decimal"]);
+    ["plane0hash", "u32-decimal", "plane1hash", "u32-decimal", "actorhash", "u32-decimal",
+      "worldhash", "u32-decimal"]);
   const omitted = contract.find((row) => Array.isArray(row) && row[0] === "omitted").slice(1);
   assert.deepEqual(fixture.omitted, canonicalOmittedFields);
   assert.deepEqual(omitted, fixture.omitted);
@@ -139,7 +140,8 @@ test("the Lisp-owned projection declares its exact v3 subset and exclusions", as
   for (const field of rndindexPromotedFields) assert.ok(fixture.fields.includes(field), `${field} must be projected`);
   assert.equal(fixture.fields.indexOf("rndindex"), fixture.fields.indexOf("doorchecksum") + 1);
   assert.equal(fixture.fields.indexOf("plane0hash"), fixture.fields.indexOf("rndindex") + 1);
-  assert.equal(fixture.fields.indexOf("worldhash"), fixture.fields.indexOf("plane1hash") + 1);
+  assert.equal(fixture.fields.indexOf("actorhash"), fixture.fields.indexOf("plane1hash") + 1);
+  assert.equal(fixture.fields.indexOf("worldhash"), fixture.fields.indexOf("actorhash") + 1);
 });
 
 test("the promoted cursor is emitted at the setup and first-replay boundaries", async (t) => {

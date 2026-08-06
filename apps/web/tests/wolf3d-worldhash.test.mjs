@@ -41,14 +41,14 @@ test("worldhash is live Lisp state, canonical at the boundary, and operand-sensi
   assert.equal(Number(session.evaluate("(wl.world-hash-decimal)")), emitted.worldhash);
 });
 
-test("worldhash is promoted while actorhash stays explicitly excluded", async (t) => {
+test("worldhash and actorhash are both promoted", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
   const contract = parseLispValue(session.evaluate("(app.trace-projection-contract)"));
   const fields = contract.find((row) => Array.isArray(row) && row[0] === "fields").slice(1);
   const omitted = contract.find((row) => Array.isArray(row) && row[0] === "omitted").slice(1);
-  assert.equal(fields.length, 43);
+  assert.equal(fields.length, 44);
   assert.equal(fields.at(-1), "worldhash");
-  assert.deepEqual(omitted, ["actorhash"]);
-  assert.ok(!fields.includes("actorhash"));
+  assert.deepEqual(omitted, []);
+  assert.equal(fields.at(-2), "actorhash");
 });
