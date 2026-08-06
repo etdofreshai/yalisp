@@ -27,6 +27,7 @@ const killcountPromotedFields = ["killcount"];
 const treasurecountPromotedFields = ["treasurecount"];
 const secretcountPromotedFields = ["secretcount"];
 const pwallPromotedFields = ["pwallstate", "pwallpos", "pwallx", "pwally", "pwalldir"];
+const rndindexPromotedFields = ["rndindex"];
 // TRACE-SCHEMA.md orders the level-progress block secretcount, treasurecount,
 // killcount, then the three totals, so secretcount takes the slot between
 // weaponframe and treasurecount. Offsets 74-82 then give the five pushwall
@@ -39,9 +40,9 @@ const canonicalProjectionFields = [
   "weapon", "chosenweapon", "faceframe", "attackframe", "attackcount", "weaponframe",
   "secretcount", "treasurecount", "killcount", "secrettotal", "treasuretotal", "killtotal",
   "pwallstate", "pwallpos", "pwallx", "pwally", "pwalldir",
-  "doorchecksum", "plane0hash", "plane1hash"
+  "doorchecksum", "rndindex", "plane0hash", "plane1hash"
 ];
-const canonicalOmittedFields = ["rndindex", "actorhash", "worldhash"];
+const canonicalOmittedFields = ["actorhash", "worldhash"];
 
 async function application() {
   const session = await createSeedSession();
@@ -96,6 +97,18 @@ function assertProjection(expected, actual, fields = fixture.fields) {
   );
 }
 
+function assertCanonicalFixtureSchema(candidate, route = false) {
+  assert.deepEqual(candidate.fields, canonicalProjectionFields);
+  if (route) assert.deepEqual(candidate.fullRouteFields, canonicalProjectionFields);
+  assert.deepEqual(candidate.omitted, canonicalOmittedFields);
+  if (route) assert.deepEqual(candidate.diagnosticFields, []);
+  else assert.ok(!Object.hasOwn(candidate, "diagnosticFields"));
+  for (const record of candidate.records) {
+    assert.deepEqual(Object.keys(record), canonicalProjectionFields);
+    assert.ok(Number.isInteger(record.rndindex) && record.rndindex >= 0 && record.rndindex <= 255);
+  }
+}
+
 test("the Lisp-owned projection declares its exact v3 subset and exclusions", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
@@ -104,8 +117,10 @@ test("the Lisp-owned projection declares its exact v3 subset and exclusions", as
   assert.equal(contract[1], "wolf3d-trace-bin-v3");
   assert.deepEqual(fixture.fields, canonicalProjectionFields);
   assert.deepEqual(routeFixture.fullRouteFields, canonicalProjectionFields);
+  assertCanonicalFixtureSchema(fixture);
+  assertCanonicalFixtureSchema(routeFixture, true);
   assert.deepEqual(contract.find((row) => Array.isArray(row) && row[0] === "fields").slice(1), fixture.fields);
-  assert.equal(fixture.fields.length, 41);
+  assert.equal(fixture.fields.length, 42);
   for (const field of promotedFields) assert.ok(fixture.fields.includes(field), `${field} must be projected`);
   assert.equal(fixture.fields.indexOf("secretcount"), fixture.fields.indexOf("weaponframe") + 1,
     "secretcount takes the canonical slot immediately after weaponframe");
@@ -121,7 +136,51 @@ test("the Lisp-owned projection declares its exact v3 subset and exclusions", as
   assert.deepEqual(fixture.omitted, canonicalOmittedFields);
   assert.deepEqual(omitted, fixture.omitted);
   for (const field of canonicalOmittedFields) assert.ok(!fixture.fields.includes(field));
-  assert.deepEqual(routeFixture.diagnosticFields, ["rndindex"]);
+  for (const field of rndindexPromotedFields) assert.ok(fixture.fields.includes(field), `${field} must be projected`);
+  assert.equal(fixture.fields.indexOf("rndindex"), fixture.fields.indexOf("doorchecksum") + 1);
+  assert.equal(fixture.fields.indexOf("plane0hash"), fixture.fields.indexOf("rndindex") + 1);
+});
+
+test("the promoted cursor is emitted at the setup and first-replay boundaries", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  assert.equal(Number(session.evaluate("wl.rndindex")), 6,
+    "deterministic E1M1 setup consumes six active-patrol spawn draws");
+  const afterSetup = projectedRecord(session.evaluate("(app.trace-record)"));
+  assert.deepEqual(Object.keys(afterSetup), canonicalProjectionFields);
+  assert.equal(afterSetup.rndindex, 6, "trace-record reads the live cursor without advancing it");
+
+  const input = routeFixture.records[0];
+  const first = projectedRecord(session.evaluate(
+    `(app.replay-advance ${input.tics} ${input.controlx} ${input.controly} ${input.buttons})`
+  ));
+  assert.equal(first.rndindex, 7, "the first retained tic performs the canonical pre-increment draw");
+
+  session.evaluateQuietly("(set! wl.rndindex 200)");
+  session.evaluateQuietly("(wl.setup-game-level app.wall-plane app.object-plane)");
+  assert.equal(Number(session.evaluate("wl.rndindex")), 6,
+    "fresh deterministic setup resets before scanning and consuming the six patrol draws");
+  assert.equal(projectedRecord(session.evaluate("(app.trace-record)")).rndindex, 6);
+});
+
+test("fixture schema validation rejects partial rndindex promotion", () => {
+  const missing = structuredClone(routeFixture);
+  delete missing.records[99].rndindex;
+  assert.throws(() => assertCanonicalFixtureSchema(missing, true));
+
+  const reordered = structuredClone(routeFixture);
+  const value = reordered.records[99].rndindex;
+  delete reordered.records[99].rndindex;
+  reordered.records[99].rndindex = value;
+  assert.throws(() => assertCanonicalFixtureSchema(reordered, true));
+
+  const omitted = structuredClone(routeFixture);
+  omitted.omitted = ["rndindex", ...canonicalOmittedFields];
+  assert.throws(() => assertCanonicalFixtureSchema(omitted, true));
+
+  const diagnostic = structuredClone(routeFixture);
+  diagnostic.diagnosticFields = ["rndindex"];
+  assert.throws(() => assertCanonicalFixtureSchema(diagnostic, true));
 });
 
 test("the promoted totals report alternate-level scan ownership through the trace boundary", async (t) => {
@@ -257,9 +316,12 @@ test("three fresh evaluators produce byte-identical full-route projections", asy
   const runs = [];
   for (let run = 0; run < 3; run += 1) {
     const { projected, rndindices } = await replay(routeFixture.records);
-    assert.deepEqual(rndindices, routeFixture.records.map((record) => record.rndindex),
-      `fresh evaluator ${run + 1} canonical cursor sequence`);
-    runs.push(JSON.stringify({ projected, rndindices }));
+    assert.deepEqual(rndindices, projected.map((record) => record.rndindex),
+      `fresh evaluator ${run + 1} side-read agrees with emitted cursor`);
+    assert.deepEqual(projected.map((record) => record.rndindex),
+      routeFixture.records.map((record) => record.rndindex),
+      `fresh evaluator ${run + 1} canonical emitted cursor sequence`);
+    runs.push(JSON.stringify(projected));
   }
   assert.equal(runs[1], runs[0]);
   assert.equal(runs[2], runs[0]);
@@ -287,6 +349,13 @@ test("full-route negative controls identify the intended first divergent field",
   const changedPlaneHash = structuredClone(routeFixture.records);
   changedPlaneHash[299].plane0hash += 1;
   const canonical = (await replay(routeFixture.records)).projected;
+
+  const changedRndindex = structuredClone(routeFixture.records);
+  changedRndindex[99].rndindex = (changedRndindex[99].rndindex + 1) & 255;
+  assert.deepEqual(firstDifference(changedRndindex, canonical, routeFixture.fullRouteFields), {
+    record: 100, tick: 100, field: "rndindex", original: changedRndindex[99].rndindex,
+    lisp: routeFixture.records[99].rndindex
+  });
 
   for (const field of [...newlyPromotedFields, ...totalPromotedFields, ...killcountPromotedFields,
     ...treasurecountPromotedFields, ...secretcountPromotedFields, ...pwallPromotedFields]) {
