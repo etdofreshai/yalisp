@@ -4,6 +4,9 @@
   '(assets (maphead "/assets/wolf3d/MAPHEAD.WL6")
            (gamemaps "/assets/wolf3d/GAMEMAPS.WL6")
            (vswap "/assets/wolf3d/VSWAP.WL6")
+           (vgahead "/assets/wolf3d/VGAHEAD.WL6")
+           (vgagraph "/assets/wolf3d/VGAGRAPH.WL6")
+           (vgadict "/assets/wolf3d/VGADICT.WL6")
            (gamepal "/assets/wolf3d/GAMEPAL.OBJ")))
 
 (define app.tinf nil)
@@ -12,6 +15,10 @@
 (define app.wall-plane nil)
 (define app.object-plane nil)
 (define app.gamepal nil)
+(define app.vgahead nil)
+(define app.vgagraph nil)
+(define app.vgadict nil)
+(define app.GRAPHICS-HEAP-RESERVE 2097152)
 (define app.map-name "")
 (define app.frame-buffer (bytes.alloc 64000))
 (define app.use-held 0)
@@ -38,13 +45,29 @@
 (defn app.assets-mounted (mounted)
   (begin
     (app.setup-pictures mounted)
-    (if (and (assoc 'maphead mounted) (assoc 'gamemaps mounted))
+    (if (app.required-assets? mounted)
         (begin
+          ;; Huffman expansion is Lisp-owned and transiently evaluates one
+          ;; bounded source block at a time. Declare its headroom before setup
+          ;; so capacity failure happens here rather than halfway through a chunk.
+          (heap.reserve app.GRAPHICS-HEAP-RESERVE)
+          (set! app.vgahead (app.asset mounted 'vgahead))
+          (set! app.vgagraph (app.asset mounted 'vgagraph))
+          (set! app.vgadict (app.asset mounted 'vgadict))
           (wl.new-game 2 0)
           (app.setup-level (asset.ref (app.at (assoc 'maphead mounted) 1))
                            (asset.ref (app.at (assoc 'gamemaps mounted) 1))
                            0))
         nil)))
+
+(defn app.required-assets? (mounted)
+  (and (assoc 'maphead mounted)
+       (and (assoc 'gamemaps mounted)
+            (and (assoc 'vswap mounted)
+                 (and (assoc 'gamepal mounted)
+                      (and (assoc 'vgahead mounted)
+                           (and (assoc 'vgagraph mounted)
+                                (assoc 'vgadict mounted))))))))
 
 (defn app.asset (mounted name)
   (let ((row (assoc name mounted)))
@@ -79,6 +102,7 @@
     (wl.calc-projection)
     (wl.setup-game-level app.wall-plane app.object-plane)
     (wl.init-player-loop)
+    (vh.draw-statusbar app.vgahead app.vgagraph app.vgadict app.frame-buffer)
     (set! app.time-count 0)
     (set! app.use-held 0)
     (set! app.attack-held 0)

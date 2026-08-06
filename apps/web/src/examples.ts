@@ -10,6 +10,7 @@ import wolf3dFixedSource from "./examples/wolf3d/wl-fixed.lisp?raw";
 import wolf3dMapSource from "./examples/wolf3d/id-ca.lisp?raw";
 import wolf3dPageSource from "./examples/wolf3d/id-pm.lisp?raw";
 import wolf3dPaletteSource from "./examples/wolf3d/id-vl.lisp?raw";
+import wolf3dPictureSource from "./examples/wolf3d/id-vh.lisp?raw";
 import wolf3dTablesSource from "./examples/wolf3d/wl-main.lisp?raw";
 import wolf3dGameSource from "./examples/wolf3d/wl-game.lisp?raw";
 import wolf3dAgentSource from "./examples/wolf3d/wl-agent.lisp?raw";
@@ -24,7 +25,7 @@ import lispApplicationRuntimeSource from "./examples/runtime/lisp-application?ra
 // The Wolf3D application is several Lisp modules, each named for the original
 // file it is a port of, in an order that mirrors the game's own build: the
 // definitions header, the fixed-point layer, the caching manager, the page
-// file, the palette, the tables, the level setup, the player, the actor-world
+// file, the palette and pictures, the tables, the level setup, the player, the actor-world
 // prerequisite, the raycaster, and then the program that binds them to this
 // host. Each module is evaluated in order in the same resident session; the
 // joined text is display-only, so what runs is still shown.
@@ -34,6 +35,7 @@ const wolf3dApplicationModules = [
   wolf3dMapSource,
   wolf3dPageSource,
   wolf3dPaletteSource,
+  wolf3dPictureSource,
   wolf3dTablesSource,
   wolf3dGameSource,
   wolf3dAgentSource,

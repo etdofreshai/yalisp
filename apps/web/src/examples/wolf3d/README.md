@@ -13,9 +13,13 @@ file set and file contents before either copy is committed.
 The current package is a source-shaped wall-and-door raycaster slice,
 not a complete port or a parity claim. It decodes the original map and wall-page
 inputs, runs SpawnDoor and the position/action/ticcount door state machine, and
-produces a Lisp-owned indexed framebuffer. Actor collision and area/sound side
-effects for doors, actors, sprites, menus, HUD, audio, saves, and full oracle
-replay validation remain later gates.
+produces a Lisp-owned indexed framebuffer. Its initial play-screen path also
+decodes STRUCTPIC and STATUSBARPIC directly from the original VGAHEAD,
+VGAGRAPH, and VGADICT files, converts the original four VGA planes to indexed
+rows, and preserves that static 320x40 image below every 160-row refresh. The
+dynamic face, numbers, keys, and weapon HUD remain intentionally absent. Actor
+collision and area/sound side effects for doors, generalized sprites, menus,
+audio, saves, and full oracle replay validation remain later gates.
 
 The application also exposes a narrow `wolf3d-trace-bin-v3` field projection
 for canonical R1 replay. It directly consumes recorded `tics`, `controlx`,

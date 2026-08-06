@@ -409,16 +409,14 @@
 
 (defn wl.clear-screen (frame)
   (if (wl.textured?)
-      (wl.clear-screen-with frame wl.VGACEILING wl.VGAFLOOR wl.VGASTATUS)
-      (wl.clear-screen-with frame wl.CEILING wl.FLOOR wl.STATUS)))
+      (wl.clear-screen-with frame wl.VGACEILING wl.VGAFLOOR)
+      (wl.clear-screen-with frame wl.CEILING wl.FLOOR)))
 
-(defn wl.clear-screen-with (frame ceiling floor status)
+(defn wl.clear-screen-with (frame ceiling floor)
   (begin
     (bytes.fill frame 0 (* (- wl.SCREENHEIGHT wl.STATUSLINES) wl.SCREENWIDTH) 127)
     (wl.fill-view frame 0 (/ wl.viewheight 2) ceiling)
-    (wl.fill-view frame (/ wl.viewheight 2) wl.viewheight floor)
-    (bytes.fill frame (* (- wl.SCREENHEIGHT wl.STATUSLINES) wl.SCREENWIDTH)
-                (* wl.STATUSLINES wl.SCREENWIDTH) status)))
+    (wl.fill-view frame (/ wl.viewheight 2) wl.viewheight floor)))
 
 (defn wl.fill-view (frame row stop colour)
   (if (= row stop)

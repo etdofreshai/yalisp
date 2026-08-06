@@ -1,6 +1,6 @@
 {
   "target": "wolf3d",
-  "note": "Original Wolfenstein 3D data files from a local Steam installation, plus the game palette. These are commercial redistributables: they are mounted into public/assets/wolf3d/ at build time by scripts/mount-assets.mjs and are never committed. The port reads them only through the evaluator's generic asset handles. GAMEPAL.OBJ is not a Steam data file and is not beside the others: the VGA palette was linked into the game's executable rather than shipped as data, so the copy of it that can be read is the object file in id's published source release. It is declared with its own source roots for that reason, and the port draws flat colours rather than textures without it.",
+  "note": "Original Wolfenstein 3D data files from a local Steam installation, plus the game palette. These are commercial redistributables: they are mounted into public/assets/wolf3d/ at build time by scripts/mount-assets.mjs and are never committed. The port reads them only through the evaluator's generic asset handles; MAPHEAD/GAMEMAPS, VSWAP, and the VGAHEAD/VGAGRAPH/VGADICT graphics set are decoded in Lisp. GAMEPAL.OBJ is not a Steam data file and is not beside the others: the VGA palette was linked into the game's executable rather than shipped as data, so the copy of it that can be read is the object file in id's published source release. It is declared with its own source roots for that reason, and the port draws flat colours rather than textures without it.",
   "sourceEnvironmentVariable": "YALISP_WOLF3D_ASSET_SOURCE",
   "sourceRoots": [
     "../../../../../wolf3d-typescript-monorepo-continuation/steam-release/base",
@@ -10,6 +10,9 @@
     { "name": "MAPHEAD.WL6" },
     { "name": "GAMEMAPS.WL6" },
     { "name": "VSWAP.WL6" },
+    { "name": "VGAHEAD.WL6" },
+    { "name": "VGAGRAPH.WL6" },
+    { "name": "VGADICT.WL6" },
     {
       "name": "GAMEPAL.OBJ",
       "sourceEnvironmentVariable": "YALISP_WOLF3D_PALETTE_SOURCE",

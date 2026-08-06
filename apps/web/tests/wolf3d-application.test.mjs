@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
 import { createApplicationDriver } from "../src/examples/runtime/application-driver.ts";
 import { assetRequests, mountDeclaredAssets, mountedForm } from "../src/examples/runtime/asset-mount.ts";
@@ -425,17 +426,15 @@ test("the frame is a 320x200 indexed surface with the view above the status bar"
   const { width, height, left, top: viewTop, screenWidth, screenHeight, statusLines } = view(session);
   assert.equal(pixels.length, 320 * 200, "the surface is the original's 320x200");
 
-  // Which three indices VGAClearScreen wrote depends on which palette the
-  // frame is in, and that follows from what was mounted. The test reads the
-  // program's own answer rather than assuming either mode.
+  // Which two playfield indices VGAClearScreen wrote depends on which palette
+  // the frame is in, and that follows from what was mounted. The status rows
+  // are the separately cached original picture and are not cleared per frame.
   const textured = session.evaluate("(wl.textured?)") === "true";
   const ceiling = number(session, textured ? "wl.VGACEILING" : "wl.CEILING");
   const floor = number(session, textured ? "wl.VGAFLOOR" : "wl.FLOOR");
-  const status = number(session, textured ? "wl.VGASTATUS" : "wl.STATUS");
-  // Below the view is the status bar's rows, untouched by the raycaster.
-  for (let index = (screenHeight - statusLines) * screenWidth; index < screenWidth * screenHeight; index += 1) {
-    assert.equal(pixels[index], status, `status bar pixel ${index}`);
-  }
+  const statusAt = (screenHeight - statusLines) * screenWidth;
+  assert.equal(createHash("sha256").update(pixels.subarray(statusAt)).digest("hex"),
+    "f53ff1ff3e318af36f1b839848bb1b2c2713392a1703f0a83c813b864591129e");
 
   assert.deepEqual([width, height, left, viewTop], [240, 120, 40, 20], "no-config viewsize 15 geometry");
   const outside = (x, y) => {
