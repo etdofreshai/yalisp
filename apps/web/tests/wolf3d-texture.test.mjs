@@ -72,6 +72,91 @@ test("canonical record 13 selects the original wall texture column at post 151",
   ], [-106, 15, 231, 64]);
   const frame = session.evaluateBytes("(app.frame-bytes)");
   assert.equal(frame[54 * 320 + 191], 156, "physical pixel 191,54 comes from picture 15 column 1");
+  const visible = Array.from({ length: number(session, "wl.actorcount") }, (unused, actor) => actor)
+    .filter((actor) => number(session, `(bit.and (wl.actor-flags@ ${actor}) wl.FL-VISABLE)`));
+  assert.deepEqual(visible, [19]);
+  assert.deepEqual([
+    number(session, "(wl.actor-flags@ 19)"),
+    number(session, "(wl.actor-viewx@ 19)"),
+    number(session, "(wl.actor-transx@ 19)"),
+    number(session, "(wl.actor-viewheight@ 19)"),
+    number(session, "(wl.actor-shapenum 19)")
+  ], [8, 119, 136956, 314, 95]);
+  assert.deepEqual([
+    number(session, "pm.sprite-start"),
+    number(session, "(pm.sprite-page 95)"),
+    number(session, "(u16@ pm.file (pm.sprite-page 95))"),
+    number(session, "(u16@ pm.file (+ (pm.sprite-page 95) 2))")
+  ], [106, 561664, 15, 62]);
+  assert.deepEqual(Array.from(frame.slice(101 * 320 + 149, 101 * 320 + 157)), [22, 22, 24, 25, 25, 26, 27, 28]);
+  assert.deepEqual(Array.from(frame.slice(102 * 320 + 149, 102 * 320 + 157)), [22, 22, 24, 25, 25, 26, 27, 28]);
+  assert.deepEqual(Array.from(frame.slice(103 * 320 + 148, 103 * 320 + 159)), [22, 18, 25, 26, 26, 26, 26, 27, 27, 28, 28]);
+  assert.deepEqual([
+    number(session, "wl.SPR-PISTOLREADY"),
+    number(session, "(pm.sprite-page wl.SPR-PISTOLREADY)"),
+    number(session, "(u16@ pm.file (pm.sprite-page wl.SPR-PISTOLREADY))"),
+    number(session, "(u16@ pm.file (+ (pm.sprite-page wl.SPR-PISTOLREADY) 2))")
+  ], [421, 1127424, 25, 39]);
+  assert.deepEqual([frame[108 * 320 + 160], frame[109 * 320 + 160]], [25, 25],
+    "the ready pistol overwrites the dead guard in the original foreground order");
+});
+
+test("ScaleShape uses raw-height wall occlusion and source-centered sprite geometry", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const { session } = await application();
+  session.evaluateQuietly(`
+    (define test.sprite-frame (bytes.alloc 64000))
+    (defn test.sprite-walls (x height)
+      (if (= x wl.viewwidth) nil
+          (begin (wl.wallheight! x height) (test.sprite-walls (+ x 1) height))))
+    (defn test.sprite (center shape walls)
+      (begin (bytes.fill test.sprite-frame 0 64000 200)
+             (test.sprite-walls 0 walls)
+             (wl.scale-shape test.sprite-frame center shape 314)
+             test.sprite-frame))`);
+  const occluded = session.evaluateBytes("(test.sprite 119 95 314)");
+  assert.ok(occluded.every((value) => value === 200), "an equal raw wallheight fully occludes the actor");
+
+  const visible = session.evaluateBytes("(test.sprite 119 95 313)");
+  assert.deepEqual(Array.from(visible.slice(101 * 320 + 149, 101 * 320 + 157)), [22, 22, 24, 25, 25, 26, 27, 28]);
+  const shifted = session.evaluateBytes("(test.sprite 118 95 313)");
+  assert.notDeepEqual(shifted, visible, "moving the source anchor one pixel changes the raster");
+  const otherShape = session.evaluateBytes("(test.sprite 119 94 313)");
+  assert.notDeepEqual(otherShape, visible, "a neighboring shape cannot stand in for page 201");
+});
+
+test("SimpleScaleShape composes the record-13 ready pistol after the world actor", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const { session } = await application();
+  session.evaluateQuietly(`
+    (define test.weapon-frame (bytes.alloc 64000))
+    (defn test.weapon (center shape height)
+      (begin (bytes.fill test.weapon-frame 0 64000 200)
+             (wl.scale-shape test.weapon-frame 119 95 314)
+             (wl.simple-scale-shape test.weapon-frame center shape height)
+             test.weapon-frame))
+    (defn test.weapon-only ()
+      (begin (bytes.fill test.weapon-frame 0 64000 1)
+             (wl.simple-scale-shape test.weapon-frame 120 421 121)
+             test.weapon-frame))
+    (defn test.weapon-reversed ()
+      (begin (bytes.fill test.weapon-frame 0 64000 200)
+             (wl.simple-scale-shape test.weapon-frame 120 421 121)
+             (wl.scale-shape test.weapon-frame 119 95 314)
+             test.weapon-frame))`);
+  const weaponOnly = session.evaluateBytes("(test.weapon-only)");
+  assert.equal(weaponOnly.reduce((count, value) => count + (value === 1 ? 0 : 1), 0), 652,
+    "the direct VSWAP post stream produces the original pistol-ready raster size");
+  const composed = session.evaluateBytes("(test.weapon 120 421 121)");
+  assert.deepEqual([composed[108 * 320 + 160], composed[109 * 320 + 160]], [25, 25]);
+  const reversed = session.evaluateBytes("(test.weapon-reversed)");
+  assert.deepEqual([reversed[108 * 320 + 160], reversed[109 * 320 + 160]], [209, 202]);
+  assert.notDeepEqual(session.evaluateBytes("(test.weapon 119 421 121)"), composed,
+    "a one-pixel weapon-center mutation changes the raster");
+  assert.notDeepEqual(session.evaluateBytes("(test.weapon 120 420 121)"), composed,
+    "a neighboring weapon shape cannot replace pistol-ready");
+  assert.notDeepEqual(session.evaluateBytes("(test.weapon 120 421 126)"), composed,
+    "the adjacent source scaler changes the raster");
 });
 
 // --- this harness's own readings of the two files ----------------------------

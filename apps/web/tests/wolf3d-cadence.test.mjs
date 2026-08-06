@@ -25,7 +25,7 @@ test("the generic Canvas host schedules the application-declared cadence", async
 test("Wolf3D browser and test loading share an ordered, input-bounded module list", async () => {
   assert.deepEqual(wolf3dModules, [
     "wl-def", "wl-fixed", "id-ca", "id-pm", "id-vl",
-    "wl-main", "wl-game", "wl-agent", "wl-act2", "wl-draw", "app"
+    "wl-main", "wl-game", "wl-agent", "wl-act2", "wl-draw", "wl-scale", "app"
   ]);
   assert.equal(wolf3dSources.length, wolf3dModules.length);
   assert.ok(wolf3dSources.every((module) => new TextEncoder().encode(module).length <= LIMIT));
@@ -39,7 +39,7 @@ test("Wolf3D browser and test loading share an ordered, input-bounded module lis
   assert.deepEqual(moduleBlock.match(/wolf3d[A-Za-z]+Source/g), [
     "wolf3dDefSource", "wolf3dFixedSource", "wolf3dMapSource", "wolf3dPageSource",
     "wolf3dPaletteSource", "wolf3dTablesSource", "wolf3dGameSource", "wolf3dAgentSource",
-    "wolf3dActorsSource", "wolf3dDrawSource", "wolf3dAppSource"
+    "wolf3dActorsSource", "wolf3dDrawSource", "wolf3dScaleSource", "wolf3dAppSource"
   ]);
   assert.match(examples, /runApplication\(root, wolf3dApplicationModules\)/);
   assert.match(examples, /wolf3dApplicationModules\.join\("\\n"\)/);

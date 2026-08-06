@@ -453,11 +453,22 @@ test("the frame is a 320x200 indexed surface with the view above the status bar"
     }
   }
 
+  // Validate wall geometry on the same renderer's wall-only pass. The frame
+  // handed to the host now correctly composes actors and the weapon after the
+  // walls, so treating every non-wall pixel in that final frame as untouched
+  // ceiling/floor would reject those later source layers.
+  session.evaluateQuietly("(define test.wall-only-frame (bytes.alloc 64000))");
+  const wallPixels = session.evaluateBytes(`(begin
+    (wl.clear-screen test.wall-only-frame)
+    (wl.draw-play-border test.wall-only-frame)
+    (bytes.fill wl.spotvis 0 4096 0)
+    (wl.calc-view)
+    (wl.asm-refresh)
+    (wl.scale-walls test.wall-only-frame 0)
+    test.wall-only-frame)`);
   // A post's rows are decided by CalcHeight and the horizon, so where it is
-  // can be asked of the program and checked against the pixels. This is by
-  // position rather than by colour on purpose: a texel is free to be the same
-  // index as the ceiling, and once posts carry textures a colour test would be
-  // asserting that a wall never contains one particular shade.
+  // can be asked of the program and checked against the wall-only pixels. This
+  // remains positional: a wall texel may equal a ceiling or floor palette byte.
   let walls = 0;
   for (let column = 0; column < width; column += 1) {
     const wallheight = number(session, `(wl.wallheight@ ${column})`);
@@ -467,7 +478,7 @@ test("the frame is a 320x200 indexed surface with the view above the status bar"
     const postTop = drawn ? Math.max(0, height / 2 - half) : height;
     const postBottom = drawn ? Math.min(height - 1, height / 2 + half - 1) : -1;
     for (let row = 0; row < height; row += 1) {
-      const pixel = pixels[(row + viewTop) * screenWidth + left + column];
+      const pixel = wallPixels[(row + viewTop) * screenWidth + left + column];
       if (row >= postTop && row <= postBottom) { walls += 1; continue; }
       // Outside the post, and only outside it, VGAClearScreen's own two bytes
       // stand, each on its own side of the horizon.

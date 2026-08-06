@@ -52,6 +52,10 @@
 ;;; with a segment and an offset.
 (defn pm.get-page (n) (pm.page-offset n))
 
+;;; PM_GetSpritePage adds PMSpriteStart before asking the page manager for the
+;;; original compressed-shape page.
+(defn pm.sprite-page (n) (pm.get-page (+ pm.sprite-start n)))
+
 ;;; The wall pages are the ones before PMSpriteStart. The original never asks
 ;;; whether a page is a wall, because the pictures it looks up are always wall
 ;;; pictures; this port can be handed a picture number for a tile the original

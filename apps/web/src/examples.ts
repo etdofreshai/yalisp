@@ -15,6 +15,7 @@ import wolf3dGameSource from "./examples/wolf3d/wl-game.lisp?raw";
 import wolf3dAgentSource from "./examples/wolf3d/wl-agent.lisp?raw";
 import wolf3dActorsSource from "./examples/wolf3d/wl-act2.lisp?raw";
 import wolf3dDrawSource from "./examples/wolf3d/wl-draw.lisp?raw";
+import wolf3dScaleSource from "./examples/wolf3d/wl-scale.lisp?raw";
 import wolf3dAppSource from "./examples/wolf3d/app.lisp?raw";
 
 import helloCliSource from "../examples/hello-world/cli.mjs?raw";
@@ -38,6 +39,7 @@ const wolf3dApplicationModules = [
   wolf3dAgentSource,
   wolf3dActorsSource,
   wolf3dDrawSource,
+  wolf3dScaleSource,
   wolf3dAppSource
 ];
 const wolf3dApplicationSource = wolf3dApplicationModules.join("\n");

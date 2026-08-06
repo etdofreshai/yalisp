@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 
 export const wolf3dModules = [
   "wl-def", "wl-fixed", "id-ca", "id-pm", "id-vl",
-  "wl-main", "wl-game", "wl-agent", "wl-act2", "wl-draw", "app"
+  "wl-main", "wl-game", "wl-agent", "wl-act2", "wl-draw", "wl-scale", "app"
 ];
 
 export const wolf3dSources = await Promise.all(wolf3dModules.map((name) =>

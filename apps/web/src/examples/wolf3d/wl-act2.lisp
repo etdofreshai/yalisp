@@ -27,6 +27,7 @@
 (define wl.actoraux (bytes.alloc 900))
 (define wl.actorviewx (bytes.alloc 600))
 (define wl.actortransx (bytes.alloc 600))
+(define wl.actorviewheight (bytes.alloc 300))
 (define wl.actorat (bytes.alloc 4096))
 (define wl.spotvis (bytes.alloc 4096))
 
@@ -70,6 +71,8 @@
 (defn wl.actor-viewx! (actor value) (u32! wl.actorviewx (* actor 4) value))
 (defn wl.actor-transx@ (actor) (i32@ wl.actortransx (* actor 4)))
 (defn wl.actor-transx! (actor value) (u32! wl.actortransx (* actor 4) value))
+(defn wl.actor-viewheight@ (actor) (u16@ wl.actorviewheight (* actor 2)))
+(defn wl.actor-viewheight! (actor value) (u16! wl.actorviewheight (* actor 2) value))
 (defn wl.actorat@ (x y) (u8@ wl.actorat (+ (bit.shl x wl.MAPSHIFT) y)))
 (defn wl.actorat! (x y owner) (u8! wl.actorat (+ (bit.shl x wl.MAPSHIFT) y) owner))
 
@@ -428,8 +431,11 @@
                  (fx.by-frac gx (wl.view@ wl.VIEWSIN)))))
       (begin (wl.actor-transx! actor nx)
         (if (>= nx wl.MINDIST)
-            (begin (wl.actor-viewx! actor (+ wl.centerx (/ (* ny wl.scale) nx))) true)
-            false)))))
+            (begin
+              (wl.actor-viewx! actor (+ wl.centerx (/ (* ny wl.scale) nx)))
+              (wl.actor-viewheight! actor (/ wl.heightnumerator (bit.shr nx 8)))
+              true)
+            (begin (wl.actor-viewheight! actor 0) false))))))
 
 (defn wl.refresh-actor-visibility ()
   (begin (bytes.fill wl.spotvis 0 4096 0) (wl.calc-view) (wl.asm-refresh)

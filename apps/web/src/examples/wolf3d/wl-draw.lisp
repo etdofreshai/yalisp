@@ -440,9 +440,13 @@
   (begin
     (wl.clear-screen frame)
     (wl.draw-play-border frame)
+    (bytes.fill wl.spotvis 0 4096 0)
     (wl.calc-view)
     (wl.asm-refresh)
     (wl.scale-walls frame 0)
+    (wl.refresh-actor-projection 0)
+    (wl.draw-r1-inert-actors frame)
+    (wl.draw-r1-ready-pistol frame)
     frame))
 
 (defn wl.scale-walls (frame postx)
