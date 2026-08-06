@@ -14,6 +14,7 @@ const graphics = Object.fromEntries(await Promise.all(graphicsNames.map(async (n
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const STATUS_SHA = "f53ff1ff3e318af36f1b839848bb1b2c2713392a1703f0a83c813b864591129e";
+const INITIAL_STATUS_SHA = "18d8d180ad6c9631b4ae263ede9ba2ca5f71bdbee5b83e4195f67af35bf135ed";
 const PLANAR_SHA = "45e8cf189bbd973643d9902f23344d77a0090ca21ab0b49d10a18a2a7270c0f6";
 const STRUCTPIC_SHA = "21176f816a55d72073ad36f860ab2dfc4ff0e0bc05ec619bcbb55e67e929bb2b";
 const STATUS_START = 320 * 160;
@@ -148,7 +149,7 @@ test("initial placement and repeated ThreeDRefresh preserve the source status by
 
   const initial = session.evaluateBytes("(app.frame-bytes)");
   const repeated = session.evaluateBytes("(app.frame-bytes)");
-  assert.equal(sha256(initial.subarray(STATUS_START)), STATUS_SHA);
+  assert.equal(sha256(initial.subarray(STATUS_START)), INITIAL_STATUS_SHA);
   assert.deepEqual(repeated.subarray(STATUS_START), initial.subarray(STATUS_START));
   assert.deepEqual(repeated.subarray(0, STATUS_START), initial.subarray(0, STATUS_START),
     "rows 0..159 remain unchanged by the statusbar slice");

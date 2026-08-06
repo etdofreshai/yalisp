@@ -5,9 +5,9 @@
 ;;; chunks expand in the four consecutive VGA planes consumed by
 ;;; VL_MemToScreen: plane p owns columns whose low two bits equal p.
 ;;;
-;;; This slice intentionally exposes only the source operations needed by
-;;; DrawPlayScreen's STATUSBARPIC. It does not add faces, numbers, keys,
-;;; weapons, menus, palettes, or generalized picture ownership.
+;;; This slice exposes DrawPlayScreen's STATUSBARPIC and the original
+;;; latch-picture operation used by the status window. It does not add number,
+;;; key, weapon, menu, palette, or generalized screen-picture ownership.
 
 (define vh.STRUCTPIC 0)
 (define vh.STARTPICS 3)
@@ -17,6 +17,8 @@
 (define vh.STATUSBAR-HEIGHT 40)
 (define vh.STATUSBAR-X 0)
 (define vh.STATUSBAR-Y 160)
+(define vh.LATCHPICS-START 91)
+(define vh.LATCHPICS-END 134)
 (define vh.STRUCTPIC-BYTES (* vh.NUMPICS 4))
 (define vh.STATUSBAR-BYTES (* vh.STATUSBAR-WIDTH vh.STATUSBAR-HEIGHT))
 (define vh.DRAW-BLOCK-PIXELS 64)
@@ -41,6 +43,15 @@
   (and (= (bytes.length structpic) vh.STRUCTPIC-BYTES)
        (and (= (vh.picture-width structpic vh.STATUSBARPIC) vh.STATUSBAR-WIDTH)
             (= (vh.picture-height structpic vh.STATUSBARPIC) vh.STATUSBAR-HEIGHT))))
+
+(defn vh.pictable? (structpic)
+  (= (bytes.length structpic) vh.STRUCTPIC-BYTES))
+
+(defn vh.load-pictable (head graph dictionary)
+  (ca.expand-gr-chunk-exact head graph dictionary vh.STRUCTPIC vh.STRUCTPIC-BYTES))
+
+(defn vh.latch-picture? (chunk)
+  (and (>= chunk vh.LATCHPICS-START) (<= chunk vh.LATCHPICS-END)))
 
 (defn vh.picture-bytes (width height)
   (if (and (> width 0) (and (> height 0) (= (mod width 4) 0)))
@@ -125,3 +136,40 @@
   (vh.decode-statusbar-into head graph dictionary frame
                             (+ vh.STATUSBAR-X (* vh.STATUSBAR-Y vh.STATUSBAR-WIDTH))
                             vh.STATUSBAR-WIDTH))
+
+;;; StatusDrawPic sets the status-window page base, then LatchDrawPic converts
+;;; its character-cell x coordinate to pixels with x*8. The browser has one
+;;; persistent 320x200 page, so the same operation writes at (x*8,160+y).
+;;; Dimensions still come from STRUCTPIC and the chunk's explicit expanded
+;;; length must equal width*height before allocation.
+(defn vh.status-draw-picture (head graph dictionary pictable frame x y chunk)
+  (vh.status-draw-picture-marked head graph dictionary pictable frame x y chunk
+                                 (heap.used)))
+
+(defn vh.status-draw-picture-marked (head graph dictionary pictable frame x y chunk mark)
+  (if (vh.pictable? pictable)
+      (if (vh.latch-picture? chunk)
+          (vh.status-draw-picture-sized head graph dictionary pictable frame x y chunk mark
+                                        (vh.picture-width pictable chunk)
+                                        (vh.picture-height pictable chunk))
+          (ca.graphics-reject pictable))
+      (ca.graphics-reject pictable)))
+
+(defn vh.status-draw-picture-sized (head graph dictionary pictable frame x y chunk mark width height)
+  (let ((expected (vh.picture-bytes width height))
+        (left (* x 8)) (top (+ vh.STATUSBAR-Y y)))
+    (if (and (> expected 0)
+             (and (>= x 0) (and (>= y 0)
+               (and (<= (+ left width) vh.STATUSBAR-WIDTH)
+                    (<= (+ top height) (+ vh.STATUSBAR-Y vh.STATUSBAR-HEIGHT))))))
+        (vh.status-draw-picture-planar head graph dictionary frame chunk mark
+                                       expected width height left top)
+        (ca.graphics-reject frame))))
+
+(defn vh.status-draw-picture-planar (head graph dictionary frame chunk mark expected width height left top)
+  (let ((planar (ca.expand-gr-chunk-exact head graph dictionary chunk expected)))
+    (begin
+      (vh.deplane-into planar width height frame 0
+                       (+ left (* top vh.STATUSBAR-WIDTH)) vh.STATUSBAR-WIDTH)
+      (heap.release mark)
+      frame)))

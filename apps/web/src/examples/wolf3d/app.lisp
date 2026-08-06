@@ -18,6 +18,8 @@
 (define app.vgahead nil)
 (define app.vgagraph nil)
 (define app.vgadict nil)
+(define app.pictable nil)
+(define app.drawn-face-picture -1)
 (define app.GRAPHICS-HEAP-RESERVE 2097152)
 (define app.map-name "")
 (define app.frame-buffer (bytes.alloc 64000))
@@ -54,6 +56,8 @@
           (set! app.vgahead (app.asset mounted 'vgahead))
           (set! app.vgagraph (app.asset mounted 'vgagraph))
           (set! app.vgadict (app.asset mounted 'vgadict))
+          (set! app.pictable
+                (vh.load-pictable app.vgahead app.vgagraph app.vgadict))
           (wl.new-game 2 0)
           (app.setup-level (asset.ref (app.at (assoc 'maphead mounted) 1))
                            (asset.ref (app.at (assoc 'gamemaps mounted) 1))
@@ -103,6 +107,9 @@
     (wl.setup-game-level app.wall-plane app.object-plane)
     (wl.init-player-loop)
     (vh.draw-statusbar app.vgahead app.vgagraph app.vgadict app.frame-buffer)
+    ;; DrawPlayScreen draws the static bar first, then DrawFace.
+    (set! app.drawn-face-picture -1)
+    (app.refresh-face)
     (set! app.time-count 0)
     (set! app.use-held 0)
     (set! app.attack-held 0)
@@ -194,7 +201,23 @@
           (wl.control-movement controlx controly)))
     (set! app.attack-held (if (> attack 0) 1 0))))
 
-(defn app.refresh-renderer-state () (wl.refresh-actor-visibility))
+(defn app.refresh-renderer-state ()
+  (begin
+    (wl.refresh-actor-visibility)
+    (app.refresh-face)))
+
+(defn app.refresh-face ()
+  (app.refresh-face-picture (wl.living-face-picture)))
+
+(defn app.refresh-face-picture (picture)
+  (if (< picture 0)
+      (set! app.drawn-face-picture -1)
+      (if (= picture app.drawn-face-picture)
+          picture
+          (begin
+            (vh.status-draw-picture app.vgahead app.vgagraph app.vgadict
+                                    app.pictable app.frame-buffer 17 4 picture)
+            (set! app.drawn-face-picture picture)))))
 
 ;; Only dirty gameplay planes are rehashed.
 (defn app.refresh-plane-hashes ()

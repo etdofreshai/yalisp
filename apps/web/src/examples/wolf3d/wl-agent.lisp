@@ -10,6 +10,7 @@
 (define wl.PLAYER-FLAGS 28)
 (define wl.FL-NEVERMARK 4)
 (define wl.WP-PISTOL 1)
+(define wl.FACE1APIC 109)
 
 (defn wl.player@ (field) (i32@ wl.player field))
 (defn wl.player! (field v) (u32! wl.player field v))
@@ -72,6 +73,16 @@
           (if (= wl.faceframe 3) (set! wl.faceframe 1) nil)
           (set! wl.facecount 0))
         nil)))
+
+;;; DrawFace's living, non-SPEAR selector. Dead and special override faces are
+;;; intentionally outside this slice and return no drawable latch picture.
+(defn wl.living-face-picture ()
+  (if (and (> wl.health 0)
+           (and (<= wl.health 100)
+                (and (>= wl.faceframe 0) (<= wl.faceframe 2))))
+      (+ wl.FACE1APIC
+         (+ (* 3 (/ (- 100 wl.health) 16)) wl.faceframe))
+      -1))
 
 (defn wl.start-attack ()
   (begin
