@@ -200,7 +200,7 @@ test("GunAttack misses honestly and SightPlayer advances the cursor at record 21
   assert.equal(number(session, "wl.rndindex"), 229);
   assert.equal(number(session, "wl.attackframe"), 1);
   assert.equal(number(session, "wl.attackcount"), 1);
-  assert.equal(number(session, `(wl.actor-viewx@ ${target})`), 288,
+  assert.equal(number(session, `(wl.actor-viewx@ ${target})`), 216,
     "record 106 source transform is retained after visibility clears at record 107");
   assert.equal(number(session, `(wl.actor-flags@ ${target})`), 1, "renderer visibility remains clear");
   assert.equal(session.evaluate(`(wl.actor-check-line-player ${target})`), "false",
@@ -221,10 +221,10 @@ test("GunAttack retains blocked viewdist and accepts zero damage", async (t) => 
     session.evaluateQuietly(`(wl.actor-flags! ${actor} (bit.and (wl.actor-flags@ ${actor}) 247))`);
   }
   session.evaluateQuietly("(wl.actor-flags! 0 9)");
-  session.evaluateQuietly("(wl.actor-viewx! 0 159)");
+  session.evaluateQuietly("(wl.actor-viewx! 0 119)");
   session.evaluateQuietly("(wl.actor-transx! 0 1000)");
   session.evaluateQuietly("(wl.actor-flags! 20 9)");
-  session.evaluateQuietly("(wl.actor-viewx! 20 159)");
+  session.evaluateQuietly("(wl.actor-viewx! 20 119)");
   session.evaluateQuietly("(wl.actor-transx! 20 2000)");
   const cursor = number(session, "wl.rndindex");
   assert.equal(session.evaluate("(wl.gun-attack)"), "false",

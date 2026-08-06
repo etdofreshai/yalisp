@@ -455,15 +455,17 @@ function postColumn(session, pic, height, texture) {
   const frame = session.evaluateBytes(`(t.post ${pic} ${height} ${texture})`);
   const width = number(session, "wl.SCREENWIDTH");
   const view = number(session, "wl.viewheight");
-  return Array.from({ length: view }, (unused, row) => frame[row * width + 160]);
+  const left = number(session, "wl.viewleft");
+  const top = number(session, "wl.viewtop");
+  return Array.from({ length: view }, (unused, row) => frame[(row + top) * width + left + 160]);
 }
 
 test("a post is the texture column, top texel at the top, over the rows the height gives", async () => {
   const session = await scaler();
-  // wallheight>>3 of 40 is a post 80 rows tall, centred on the horizon at 80.
+  // wallheight>>3 of 40 is a post 80 rows tall, centred on the horizon at 60.
   const column = postColumn(session, 0, 40, 0);
-  const top = 40;
-  const bottom = 119;
+  const top = 20;
+  const bottom = 99;
 
   for (let row = 0; row < column.length; row += 1) {
     if (row < top || row > bottom) assert.equal(column[row], 200, `row ${row} is outside the post and should be untouched`);
@@ -503,7 +505,7 @@ test("the texture offset selects the column of the page, and the picture selects
   // c is c all the way down - which is only true if the offset addressed the
   // column the raycaster asked for.
   for (const wanted of [0, 1, 17, 62, 63]) {
-    const column = postColumn(session, 1, 40, wanted).slice(40, 120);
+    const column = postColumn(session, 1, 40, wanted).slice(20, 100);
     assert.deepEqual([...new Set(column)], [wanted], `texture offset ${wanted * 64} should draw column ${wanted}`);
   }
   // And the same offset in the other page is not the same bytes, so the picture
@@ -517,7 +519,7 @@ test("a picture with no wall page is not sampled", async () => {
   // door tile puts the renderer in. It has to be drawn as the port's own
   // marker rather than as whatever bytes follow the wall pages.
   const nopic = number(session, "wl.VGANOPIC");
-  const column = postColumn(session, 2, 40, 0).slice(40, 120);
+  const column = postColumn(session, 2, 40, 0).slice(20, 100);
   assert.deepEqual([...new Set(column)], [nopic], "a post with no wall page should be the no-picture index");
 });
 
@@ -551,17 +553,20 @@ test("a textured frame is deterministic, responds to input, and is not a flat fi
   const width = number(session, "wl.viewwidth");
   const screenWidth = number(session, "wl.SCREENWIDTH");
   const height = number(session, "wl.viewheight");
+  const left = number(session, "wl.viewleft");
+  const topOffset = number(session, "wl.viewtop");
   const inPosts = new Set();
   let varied = 0;
   for (let column = 0; column < width; column += 1) {
-    const half = number(session, `(wl.wallheight@ ${column})`) >> 3;
-    if (half <= 0) continue;
+    const rawHalf = number(session, `(wl.wallheight@ ${column})`) >> 3;
+    if (rawHalf <= 0) continue;
+    const half = number(session, `(wl.scaler-height ${rawHalf})`);
     const top = Math.max(0, height / 2 - half);
     const bottom = Math.min(height - 1, height / 2 + half - 1);
     const post = new Set();
     for (let row = top; row <= bottom; row += 1) {
-      post.add(first[row * screenWidth + column]);
-      inPosts.add(first[row * screenWidth + column]);
+      post.add(first[(row + topOffset) * screenWidth + left + column]);
+      inPosts.add(first[(row + topOffset) * screenWidth + left + column]);
     }
     if (post.size > 1) varied += 1;
   }

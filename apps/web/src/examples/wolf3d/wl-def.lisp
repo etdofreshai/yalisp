@@ -41,9 +41,6 @@
 (define wl.ANG270 2700)
 (define wl.ANG360 3600)
 
-;; controldir_t. SpawnPlayer reads it out of the object plane, and it is also
-;; what Cmd_Use hands to PushWall, so the two uses share one enum as in the
-;; original; it is not the eight-way dirtype the actors walk with.
 (define wl.NORTH 0)
 (define wl.EAST 1)
 (define wl.SOUTH 2)
@@ -52,8 +49,11 @@
 (define wl.SCREENWIDTH 320)
 (define wl.SCREENHEIGHT 200)
 (define wl.STATUSLINES 40)
-(define wl.viewwidth 320)
-(define wl.viewheight 160)
+(define wl.viewwidth 240)
+(define wl.viewheight 120)
+(define wl.viewleft 40)
+(define wl.viewtop 20)
+(define wl.viewofs 6440)
 
 (define wl.MOVESCALE 150)
 (define wl.BACKMOVESCALE 100)

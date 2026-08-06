@@ -2,10 +2,12 @@
 (define wl.focallength wl.FOCALLENGTH)
 (define wl.facedist (+ wl.FOCALLENGTH wl.MINDIST))
 (define wl.halfview (/ wl.viewwidth 2))
+(define wl.centerx (- wl.halfview 1))
+(define wl.shootdelta (/ wl.viewwidth 10))
 (define wl.scale (/ (* wl.halfview wl.facedist) (/ wl.VIEWGLOBAL 2)))
 (define wl.heightnumerator (bit.shr (* wl.TILEGLOBAL wl.scale) 6))
 
-(define wl.pixelangle (bytes.alloc 1280))     ;; int pixelangle[MAXVIEWWIDTH]
+(define wl.pixelangle (bytes.alloc 1280))
 (defn wl.pixelangle@ (i) (i32@ wl.pixelangle (* i 4)))
 (defn wl.pixelangle! (i v) (u32! wl.pixelangle (* i 4) v))
 
@@ -255,7 +257,7 @@
                           (wl.texture-column (- xintercept (wl.door-position@ door)))))
 
 (define wl.TEXTUREHEIGHT 64)
-(define wl.TEXTUREHIGH 4032)                  ;; 0xfc0
+(define wl.TEXTUREHIGH 4032)
 
 (defn wl.door-wall () (- pm.sprite-start 8))
 
@@ -323,16 +325,16 @@
 (define wl.WALL-SHADES 8)
 (define wl.STATUS 11)
 
-(define wl.VGACEILING 29)                     ;; vgaCeiling[0], 0x1d
-(define wl.VGAFLOOR 25)                       ;; 0x19
+(define wl.VGACEILING 29)
+(define wl.VGAFLOOR 25)
 (define wl.VGASTATUS 0)
 (define wl.VGANOPIC 0)
 
 (defn wl.post-colour (pic)
   (+ wl.WALL-FIRST (mod pic wl.WALL-SHADES)))
 
-(define wl.MAXSCALE 239)                      ;; SetupScaling (viewwidth*1.5)
-(define wl.STEPBYTWO 80)                      ;; viewheight/2
+(define wl.MAXSCALE 179)
+(define wl.STEPBYTWO 60)
 
 (defn wl.scaler-height (h)
   (wl.scaler-stepped (if (> h wl.MAXSCALE) wl.MAXSCALE h)))
@@ -383,7 +385,7 @@
 (defn wl.scale-run-span (frame postx source src top bottom)
   (if (>= top bottom)
       nil
-      (bytes.fill-stride frame (+ (* top wl.SCREENWIDTH) postx)
+      (bytes.fill-stride frame (+ wl.viewofs (+ (* top wl.SCREENWIDTH) postx))
                          (- bottom top) wl.SCREENWIDTH
                          (pm.texel source src))))
 
@@ -401,7 +403,7 @@
   (if (< row 0) 0 (if (> row (- wl.viewheight 1)) (- wl.viewheight 1) row)))
 
 (defn wl.scale-post-span (frame postx colour top bottom)
-  (bytes.fill-stride frame (+ (* top wl.SCREENWIDTH) postx)
+  (bytes.fill-stride frame (+ wl.viewofs (+ (* top wl.SCREENWIDTH) postx))
                      (+ (- bottom top) 1) wl.SCREENWIDTH
                      colour))
 
@@ -412,15 +414,32 @@
 
 (defn wl.clear-screen-with (frame ceiling floor status)
   (begin
-    (bytes.fill frame 0 (* (/ wl.viewheight 2) wl.SCREENWIDTH) ceiling)
-    (bytes.fill frame (* (/ wl.viewheight 2) wl.SCREENWIDTH)
-                (* (/ wl.viewheight 2) wl.SCREENWIDTH) floor)
-    (bytes.fill frame (* wl.viewheight wl.SCREENWIDTH)
+    (bytes.fill frame 0 (* (- wl.SCREENHEIGHT wl.STATUSLINES) wl.SCREENWIDTH) 127)
+    (wl.fill-view frame 0 (/ wl.viewheight 2) ceiling)
+    (wl.fill-view frame (/ wl.viewheight 2) wl.viewheight floor)
+    (bytes.fill frame (* (- wl.SCREENHEIGHT wl.STATUSLINES) wl.SCREENWIDTH)
                 (* wl.STATUSLINES wl.SCREENWIDTH) status)))
+
+(defn wl.fill-view (frame row stop colour)
+  (if (= row stop)
+      frame
+      (begin
+        (bytes.fill frame (+ wl.viewofs (* row wl.SCREENWIDTH))
+                    wl.viewwidth colour)
+        (wl.fill-view frame (+ row 1) stop colour))))
+
+(defn wl.draw-play-border (frame)
+  (begin
+    (bytes.fill frame 6119 242 0)
+    (bytes.fill frame 44839 242 125)
+    (bytes.fill-stride frame 6119 122 wl.SCREENWIDTH 0)
+    (bytes.fill-stride frame 6360 122 wl.SCREENWIDTH 125)
+    (u8! frame 44839 124)))
 
 (defn wl.three-d-refresh (frame)
   (begin
     (wl.clear-screen frame)
+    (wl.draw-play-border frame)
     (wl.calc-view)
     (wl.asm-refresh)
     (wl.scale-walls frame 0)

@@ -126,7 +126,7 @@
       (list closest viewdist)
       (if (and (and (> (bit.and (wl.actor-flags@ actor) wl.FL-SHOOTABLE) 0)
                     (> (bit.and (wl.actor-flags@ actor) wl.FL-VISABLE) 0))
-               (and (< (wl.abs (- (wl.actor-viewx@ actor) 159)) 32)
+               (and (< (wl.abs (- (wl.actor-viewx@ actor) wl.centerx)) wl.shootdelta)
                     (< (wl.actor-transx@ actor) viewdist)))
           (wl.gun-scan (+ actor 1) actor (wl.actor-transx@ actor))
           (wl.gun-scan (+ actor 1) closest viewdist))))

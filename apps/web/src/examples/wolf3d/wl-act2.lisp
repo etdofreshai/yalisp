@@ -428,7 +428,7 @@
                  (fx.by-frac gx (wl.view@ wl.VIEWSIN)))))
       (begin (wl.actor-transx! actor nx)
         (if (>= nx wl.MINDIST)
-            (begin (wl.actor-viewx! actor (+ 159 (/ (* ny wl.scale) nx))) true)
+            (begin (wl.actor-viewx! actor (+ wl.centerx (/ (* ny wl.scale) nx))) true)
             false)))))
 
 (defn wl.refresh-actor-visibility ()

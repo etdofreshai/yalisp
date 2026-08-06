@@ -49,7 +49,11 @@ function view(session) {
   return {
     width: number(session, "wl.viewwidth"),
     height: number(session, "wl.viewheight"),
+    left: number(session, "wl.viewleft"),
+    top: number(session, "wl.viewtop"),
     screenWidth: number(session, "wl.SCREENWIDTH"),
+    screenHeight: number(session, "wl.SCREENHEIGHT"),
+    statusLines: number(session, "wl.STATUSLINES"),
     heightnumerator: number(session, "wl.heightnumerator"),
     mindist: number(session, "wl.MINDIST"),
     focallength: number(session, "wl.focallength")
@@ -277,7 +281,7 @@ test("every column's wall height is the one the real plane-0 tiles put there", a
 test("changing the wall tile the centre column hits changes that column", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
   const { session } = await application();
-  const { width, screenWidth } = view(session);
+  const { width, left, top, screenWidth } = view(session);
   const centre = width / 2 - 1;
 
   const before = session.evaluateBytes("(app.frame-bytes)").slice();
@@ -303,7 +307,8 @@ test("changing the wall tile the centre column hits changes that column", async 
   // And it changed on the screen, in that column, not merely in a variable.
   const changed = [];
   for (let row = 0; row < view(session).height; row += 1) {
-    if (before[row * screenWidth + centre] !== after[row * screenWidth + centre]) changed.push(row);
+    const index = (row + top) * screenWidth + left + centre;
+    if (before[index] !== after[index]) changed.push(row);
   }
   assert.ok(changed.length > 0, "the centre column's pixels should have changed");
   // The rest of the frame is still whatever it was; the check is that a
@@ -417,7 +422,7 @@ test("the frame is a 320x200 indexed surface with the view above the status bar"
   assert.ok(framebuffer, "a mounted application should return a framebuffer");
 
   const pixels = session.evaluateBytes(`(${framebuffer[1]})`);
-  const { width, height, screenWidth } = view(session);
+  const { width, height, left, top: viewTop, screenWidth, screenHeight, statusLines } = view(session);
   assert.equal(pixels.length, 320 * 200, "the surface is the original's 320x200");
 
   // Which three indices VGAClearScreen wrote depends on which palette the
@@ -428,8 +433,24 @@ test("the frame is a 320x200 indexed surface with the view above the status bar"
   const floor = number(session, textured ? "wl.VGAFLOOR" : "wl.FLOOR");
   const status = number(session, textured ? "wl.VGASTATUS" : "wl.STATUS");
   // Below the view is the status bar's rows, untouched by the raycaster.
-  for (let index = height * screenWidth; index < 320 * 200; index += 1) {
+  for (let index = (screenHeight - statusLines) * screenWidth; index < screenWidth * screenHeight; index += 1) {
     assert.equal(pixels[index], status, `status bar pixel ${index}`);
+  }
+
+  assert.deepEqual([width, height, left, viewTop], [240, 120, 40, 20], "no-config viewsize 15 geometry");
+  const outside = (x, y) => {
+    if (x === left - 1 && y === viewTop + height) return 124;
+    if (x === left + width && y >= viewTop - 1 && y <= viewTop + height) return 125;
+    if (y === viewTop + height && x >= left && x <= left + width) return 125;
+    if (x === left - 1 && y >= viewTop - 1 && y < viewTop + height) return 0;
+    if (y === viewTop - 1 && x >= left - 1 && x < left + width) return 0;
+    return 127;
+  };
+  for (let y = 0; y < screenHeight - statusLines; y += 1) {
+    for (let x = 0; x < screenWidth; x += 1) {
+      if (x >= left && x < left + width && y >= viewTop && y < viewTop + height) continue;
+      assert.equal(pixels[y * screenWidth + x], outside(x, y), `play border pixel ${x},${y}`);
+    }
   }
 
   // A post's rows are decided by CalcHeight and the horizon, so where it is
@@ -441,17 +462,18 @@ test("the frame is a 320x200 indexed surface with the view above the status bar"
   for (let column = 0; column < width; column += 1) {
     const wallheight = number(session, `(wl.wallheight@ ${column})`);
     const drawn = number(session, `(u8@ wl.wallpic ${column})`) !== 255 && wallheight >> 3 > 0;
-    const half = wallheight >> 3;
-    const top = drawn ? Math.max(0, height / 2 - half) : height;
-    const bottom = drawn ? Math.min(height - 1, height / 2 + half - 1) : -1;
+    const rawHalf = wallheight >> 3;
+    const half = textured ? number(session, `(wl.scaler-height ${rawHalf})`) : rawHalf;
+    const postTop = drawn ? Math.max(0, height / 2 - half) : height;
+    const postBottom = drawn ? Math.min(height - 1, height / 2 + half - 1) : -1;
     for (let row = 0; row < height; row += 1) {
-      const pixel = pixels[row * screenWidth + column];
-      if (row >= top && row <= bottom) { walls += 1; continue; }
+      const pixel = pixels[(row + viewTop) * screenWidth + left + column];
+      if (row >= postTop && row <= postBottom) { walls += 1; continue; }
       // Outside the post, and only outside it, VGAClearScreen's own two bytes
       // stand, each on its own side of the horizon.
       assert.equal(pixel, row < height / 2 ? ceiling : floor, `unpainted pixel at ${column},${row}`);
     }
-    assert.equal(Math.max(0, bottom - top + 1), Math.min(height, 2 * half),
+    assert.equal(Math.max(0, postBottom - postTop + 1), Math.min(height, 2 * half),
       `column ${column} covers the wrong rows for wall height ${wallheight}`);
   }
   assert.ok(walls > 5000, `the view should be substantially wall, found ${walls} wall pixels`);
