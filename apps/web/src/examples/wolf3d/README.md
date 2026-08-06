@@ -18,9 +18,12 @@ decodes STRUCTPIC and STATUSBARPIC directly from the original VGAHEAD,
 VGAGRAPH, and VGADICT files, converts the original four VGA planes to indexed
 rows, and preserves that static 320x40 image below every 160-row refresh. The
 source-shaped latch-picture path now draws and updates the living non-SPEAR
-face from health and faceframe, then draws and updates the non-SPEAR status
-weapon with the original unguarded `KNIFEPIC + weapon` selection arithmetic.
-Dead and special faces, numbers, and keys remain intentionally absent. Actor
+face from health and faceframe, draws `DrawHealth` through the original
+right-justified three-cell `LatchNumber(21,16,3,health)` arithmetic, then draws
+and updates the non-SPEAR status weapon with the original unguarded
+`KNIFEPIC + weapon` selection arithmetic. The numeric conversion retains the
+original visible-minus bug: `'-'-'0'+N_0PIC` selects GOLDKEYPIC. Dead and
+special faces, the other status numbers, and keys remain intentionally absent. Actor
 collision and area/sound side effects for doors, generalized sprites, menus,
 audio, saves, and full oracle replay validation remain later gates.
 

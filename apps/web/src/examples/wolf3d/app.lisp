@@ -20,6 +20,7 @@
 (define app.vgadict nil)
 (define app.pictable nil)
 (define app.drawn-face-picture -1)
+(define app.drawn-health nil)
 (define app.drawn-weapon-picture -1)
 (define app.GRAPHICS-HEAP-RESERVE 2097152)
 (define app.map-name "")
@@ -108,9 +109,11 @@
     (wl.setup-game-level app.wall-plane app.object-plane)
     (wl.init-player-loop)
     (vh.draw-statusbar app.vgahead app.vgagraph app.vgadict app.frame-buffer)
-    ;; DrawPlayScreen draws the static bar first, then DrawFace and DrawWeapon.
+    ;; DrawPlayScreen draws the static bar first, then face, health and weapon.
     (set! app.drawn-face-picture -1)
     (app.refresh-face)
+    (set! app.drawn-health nil)
+    (app.refresh-health)
     (set! app.drawn-weapon-picture -1)
     (app.refresh-weapon)
     (set! app.time-count 0)
@@ -208,6 +211,7 @@
   (begin
     (wl.refresh-actor-visibility)
     (app.refresh-face)
+    (app.refresh-health)
     (app.refresh-weapon)))
 
 (defn app.refresh-face ()
@@ -222,6 +226,31 @@
             (vh.status-draw-picture app.vgahead app.vgagraph app.vgadict
                                     app.pictable app.frame-buffer 17 4 picture)
             (set! app.drawn-face-picture picture)))))
+
+(defn app.refresh-health ()
+  (app.refresh-health-number wl.health))
+
+(defn app.refresh-health-number (number)
+  (if (and (not (nil? app.drawn-health)) (= number app.drawn-health))
+      number
+      (app.draw-health-number number (heap.used))))
+
+(defn app.draw-health-number (number mark)
+  (begin
+    ;; LatchNumber draws directly and left-to-right.  A rejected later cell can
+    ;; therefore leave its already-drawn prefix, but the cache advances only
+    ;; after the complete number succeeds.
+    (app.draw-health-chunks app.frame-buffer (wl.latch-number-chunks 3 number) 21)
+    (heap.release mark)
+    (set! app.drawn-health number)))
+
+(defn app.draw-health-chunks (frame chunks x)
+  (if (nil? chunks)
+      frame
+      (begin
+        (vh.status-draw-picture app.vgahead app.vgagraph app.vgadict
+                                app.pictable frame x 16 (car chunks))
+        (app.draw-health-chunks frame (cdr chunks) (+ x 1)))))
 
 (defn app.refresh-weapon ()
   (app.refresh-weapon-picture (wl.status-weapon-picture)))

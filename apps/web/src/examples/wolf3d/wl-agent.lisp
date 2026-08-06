@@ -11,6 +11,9 @@
 (define wl.FL-NEVERMARK 4)
 (define wl.WP-PISTOL 1)
 (define wl.KNIFEPIC 91)
+(define wl.GOLDKEYPIC 96)
+(define wl.N-BLANKPIC 98)
+(define wl.N-0PIC 99)
 (define wl.FACE1APIC 109)
 
 (defn wl.player@ (field) (i32@ wl.player field))
@@ -89,6 +92,51 @@
 ;;; lack of a weapon-enum range guard.
 (defn wl.status-weapon-picture ()
   (+ wl.KNIFEPIC wl.weapon))
+
+;;; LatchNumber's non-SPEAR decimal-to-latch arithmetic.  The original sends
+;;; every visible character through `str[c]-'0'+N_0PIC`, including a minus
+;;; sign; consequently a visible '-' selects chunk 96 (GOLDKEYPIC).  Keep the
+;;; conversion numeric so over-width values can discard their leading
+;;; characters before a chunk is selected.
+(defn wl.decimal-digit-count (magnitude)
+  (if (< magnitude 10)
+      1
+      (+ 1 (wl.decimal-digit-count (/ magnitude 10)))))
+
+(defn wl.decimal-power10 (power)
+  (if (= power 0) 1 (* 10 (wl.decimal-power10 (- power 1)))))
+
+(defn wl.decimal-character-chunk (negative magnitude digits index)
+  (if (and (= negative 1) (= index 0))
+      wl.GOLDKEYPIC
+      (let ((digit-index (- index negative)))
+        (+ wl.N-0PIC
+           (mod (/ magnitude (wl.decimal-power10 (- digits digit-index 1))) 10)))))
+
+(defn wl.latch-number-chunks (width number)
+  (let ((negative (if (< number 0) 1 0))
+        (magnitude (if (< number 0) (- 0 number) number)))
+    (let ((digits (wl.decimal-digit-count magnitude)))
+      (let ((length (+ digits negative)))
+        (wl.latch-number-chunks-loop
+          width
+          (if (< length width) (- width length) 0)
+          (if (> length width) (- length width) 0)
+          negative magnitude digits)))))
+
+(defn wl.latch-number-chunks-loop (remaining padding index negative magnitude digits)
+  (if (= remaining 0)
+      nil
+      (if (> padding 0)
+          (cons wl.N-BLANKPIC
+                (wl.latch-number-chunks-loop (- remaining 1) (- padding 1) index
+                                             negative magnitude digits))
+          (cons (wl.decimal-character-chunk negative magnitude digits index)
+                (wl.latch-number-chunks-loop (- remaining 1) 0 (+ index 1)
+                                             negative magnitude digits)))))
+
+(defn wl.health-latch-chunks ()
+  (wl.latch-number-chunks 3 wl.health))
 
 (defn wl.start-attack ()
   (begin

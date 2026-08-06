@@ -17,7 +17,7 @@ const WEAPON_PLANAR_SHA = "3d2a9dc2a8f74ea4cacd1ed763ab636f3a15481757d5680ae67e1
 const WEAPON_ROW_SHA = "f4c288d41497cc63e170901e3f1246c4cdb9bb5943da2a9d814c50a0fd741d06";
 const CHAINGUN_ROW_SHA = "0a0abf52d4f62452e6536170024a20e7d2fae210eb26cc72e3598089165bd11e";
 const FACE_ROW_SHA = "6d82bbd886150478be5960d7f2f4682bf013331585da6fd7c2eb17d3fc1bcb57";
-const INITIAL_STATUS_SHA = "14e635066e1fe8b9fcc47b71d003a5073cb5cde4f6de1015f31747af15b7b9fd";
+const INITIAL_STATUS_SHA = "a087739f8046a23c852315d2f671defd3c7929e013e1b53f1280f166b96d5c06";
 const WEAPON_LEFT = 32 * 8;
 const WEAPON_TOP = 160 + 8;
 const WEAPON_WIDTH = 48;
@@ -172,6 +172,7 @@ test("initial DrawPlayScreen and weapon selector changes preserve status layers"
   assert.deepEqual(failed, []);
   assert.equal(session.evaluate("app.GRAPHICS-HEAP-RESERVE"), "2097152");
   assert.equal(session.evaluate("app.drawn-face-picture"), "109");
+  assert.equal(session.evaluate("app.drawn-health"), "100");
   assert.equal(session.evaluate("app.drawn-weapon-picture"), "92");
 
   const initial = session.evaluateBytes("(app.frame-bytes)");
