@@ -434,8 +434,9 @@ test("the frame is a 320x200 indexed surface with the view above the status bar"
   const floor = number(session, textured ? "wl.VGAFLOOR" : "wl.FLOOR");
   const statusAt = (screenHeight - statusLines) * screenWidth;
   assert.equal(createHash("sha256").update(pixels.subarray(statusAt)).digest("hex"),
-    "a087739f8046a23c852315d2f671defd3c7929e013e1b53f1280f166b96d5c06");
+    "95cfa2986609a97df4556441bff224ad48def406199448f5c3ff130218ee4290");
   assert.equal(session.evaluate("app.drawn-health"), "100");
+  assert.equal(session.evaluate("app.drawn-score"), "0");
 
   assert.deepEqual([width, height, left, viewTop], [240, 120, 40, 20], "no-config viewsize 15 geometry");
   const outside = (x, y) => {

@@ -138,6 +138,9 @@
 (defn wl.health-latch-chunks ()
   (wl.latch-number-chunks 3 wl.health))
 
+(defn wl.score-latch-chunks ()
+  (wl.latch-number-chunks 6 wl.score))
+
 (defn wl.start-attack ()
   (begin
     (set! wl.attack-active 1)

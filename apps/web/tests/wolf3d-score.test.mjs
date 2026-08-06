@@ -26,22 +26,23 @@ const NUMBER_PLANAR_SHAS = [
   "b87e8a2ab40afe16f7c7031f6d4ecb0b5280f0c9dbc3e61d590585306dcba906",
   "9776c0cf2e5c845c2ca5fbcdae90e62e21a79116f3bb896217f0e53f5d784986"
 ];
-const HEALTH_RECT_SHA = "63fc8b795e664bc13ce7074c5d026cc9ec3637ec74a09621677d0f6cf3446c66";
+const SCORE_RECT_SHA = "e808bf7db3924b1688a0896521a101411d07dee72d0661863825d269bf4175cf";
 const INITIAL_STATUS_SHA = "95cfa2986609a97df4556441bff224ad48def406199448f5c3ff130218ee4290";
 const FACE_ROW_SHA = "6d82bbd886150478be5960d7f2f4682bf013331585da6fd7c2eb17d3fc1bcb57";
+const HEALTH_ROW_SHA = "63fc8b795e664bc13ce7074c5d026cc9ec3637ec74a09621677d0f6cf3446c66";
 const WEAPON_ROW_SHA = "f4c288d41497cc63e170901e3f1246c4cdb9bb5943da2a9d814c50a0fd741d06";
-const HEALTH_LEFT = 21 * 8;
-const HEALTH_TOP = 160 + 16;
-const HEALTH_WIDTH = 24;
-const HEALTH_HEIGHT = 16;
+const SCORE_LEFT = 6 * 8;
+const SCORE_TOP = 160 + 16;
+const SCORE_WIDTH = 48;
+const SCORE_HEIGHT = 16;
 
 function rejectedDiagnostic(action) {
   try { action(); } catch (error) { return error.diagnostic ?? ""; }
-  assert.fail("malformed health picture input was accepted");
+  assert.fail("malformed score picture input was accepted");
 }
 
-function rectangle(frame, left = HEALTH_LEFT, top = HEALTH_TOP,
-  width = HEALTH_WIDTH, height = HEALTH_HEIGHT) {
+function rectangle(frame, left = SCORE_LEFT, top = SCORE_TOP,
+  width = SCORE_WIDTH, height = SCORE_HEIGHT) {
   const output = new Uint8Array(width * height);
   for (let y = 0; y < height; y += 1) {
     output.set(frame.subarray((top + y) * 320 + left, (top + y) * 320 + left + width), y * width);
@@ -65,7 +66,7 @@ async function decoderSession(overrides = {}) {
   return session;
 }
 
-function drawPictureForm(x = 21, y = 16, chunk = 100) {
+function drawPictureForm(x = 6, y = 16, chunk = 99) {
   return `(vh.status-draw-picture (asset.ref 0) (asset.ref 1) (asset.ref 2)
             test.pictable test.frame ${x} ${y} ${chunk})`;
 }
@@ -76,7 +77,7 @@ async function originalFetcher(path) {
   return new Uint8Array(await readFile(new URL(name, root)));
 }
 
-test("number latch chunks 98 through 108 have exact dimensions and planar bytes", async () => {
+test("score latch chunks 98 through 108 have exact dimensions and planar bytes", async () => {
   const session = await decoderSession();
   for (let chunk = 98; chunk <= 108; chunk += 1) {
     assert.equal(session.evaluate(`(list (vh.picture-width test.pictable ${chunk})
@@ -87,53 +88,55 @@ test("number latch chunks 98 through 108 have exact dimensions and planar bytes"
   }
 });
 
-test("LatchNumber numeric helpers preserve padding, truncation, and raw minus arithmetic", async () => {
+test("six-cell LatchNumber preserves zero, padding, truncation, and raw minus arithmetic", async () => {
   const session = await createSeedSession();
   loadWolf3d(session);
-  const chunks = (number, width = 3) =>
-    session.evaluate(`(wl.latch-number-chunks ${width} ${number})`);
+  const chunks = (number) => session.evaluate(`(wl.latch-number-chunks 6 ${number})`);
 
-  assert.deepEqual([chunks(0), chunks(7), chunks(12), chunks(100)],
-    ["(98 98 99)", "(98 98 106)", "(98 100 101)", "(100 99 99)"]);
-  assert.deepEqual([chunks(123), chunks(1234), chunks(98765)],
-    ["(100 101 102)", "(101 102 103)", "(106 105 104)"]);
-  assert.deepEqual([chunks(-1), chunks(-12), chunks(-123), chunks(-1234)],
-    ["(98 96 100)", "(96 100 101)", "(100 101 102)", "(101 102 103)"]);
-  assert.equal(chunks(42, 5), "(98 98 98 103 101)");
+  assert.deepEqual([chunks(0), chunks(7), chunks(12), chunks(123456)], [
+    "(98 98 98 98 98 99)", "(98 98 98 98 98 106)",
+    "(98 98 98 98 100 101)", "(100 101 102 103 104 105)"
+  ]);
+  assert.deepEqual([chunks(1234567), chunks(-1), chunks(-12), chunks(-12345), chunks(-123456)], [
+    "(101 102 103 104 105 106)", "(98 98 98 98 96 100)",
+    "(98 98 98 96 100 101)", "(96 100 101 102 103 104)",
+    "(100 101 102 103 104 105)"
+  ]);
+
+  session.evaluateQuietly("(set! wl.score 0)");
+  assert.equal(session.evaluate("(wl.score-latch-chunks)"), "(98 98 98 98 98 99)");
 });
 
-test("DrawHealth places 100 at physical 168,176 and rejects shifted or substituted output", async () => {
+test("DrawScore places score 0 at physical 48,176 with exact source bytes", async () => {
   const session = await decoderSession();
   session.evaluateQuietly("(define test.frame (bytes.alloc 64000))");
   session.evaluateQuietly("(bytes.fill test.frame 0 64000 37)");
-  for (const [cell, chunk] of [100, 99, 99].entries()) {
-    session.evaluateQuietly(drawPictureForm(21 + cell, 16, chunk));
-  }
+  for (let x = 6; x < 11; x += 1) session.evaluateQuietly(drawPictureForm(x, 16, 98));
+  session.evaluateQuietly(drawPictureForm(11, 16, 99));
   const frame = session.evaluateBytes("test.frame");
-  assert.equal(sha256(rectangle(frame)), HEALTH_RECT_SHA);
+  assert.equal(sha256(rectangle(frame)), SCORE_RECT_SHA);
+  assert.equal(frame[SCORE_TOP * 320 + SCORE_LEFT - 1], 37);
+  assert.equal(frame[SCORE_TOP * 320 + SCORE_LEFT + SCORE_WIDTH], 37);
+  assert.equal(frame[(SCORE_TOP - 1) * 320 + SCORE_LEFT], 37);
+  assert.equal(frame[(SCORE_TOP + SCORE_HEIGHT) * 320 + SCORE_LEFT], 37);
+});
 
-  for (let y = 0; y < 200; y += 1) for (let x = 0; x < 320; x += 1) {
-    if (x >= HEALTH_LEFT && x < HEALTH_LEFT + HEALTH_WIDTH &&
-        y >= HEALTH_TOP && y < HEALTH_TOP + HEALTH_HEIGHT) continue;
-    assert.equal(frame[y * 320 + x], 37, `unexpected write at ${x},${y}`);
-  }
+test("shifted, substituted, and reversed-plane score controls fail parity", async () => {
+  const session = await decoderSession();
+  session.evaluateQuietly("(define test.frame (bytes.alloc 64000))");
+  session.evaluateQuietly("(bytes.fill test.frame 0 64000 37)");
+  for (let x = 6; x < 11; x += 1) session.evaluateQuietly(drawPictureForm(x, 16, 98));
+  session.evaluateQuietly(drawPictureForm(11, 16, 99));
+  const frame = session.evaluateBytes("test.frame");
+  assert.notEqual(sha256(rectangle(frame, SCORE_LEFT + 1, SCORE_TOP, SCORE_WIDTH, SCORE_HEIGHT)), SCORE_RECT_SHA);
 
   session.evaluateQuietly("(bytes.fill test.frame 0 64000 37)");
-  for (const [cell, chunk] of [100, 99, 99].entries()) {
-    session.evaluateQuietly(drawPictureForm(22 + cell, 16, chunk));
-  }
-  assert.notEqual(sha256(rectangle(session.evaluateBytes("test.frame"))), HEALTH_RECT_SHA,
-    "a one-cell horizontal shift must fail parity");
-
-  session.evaluateQuietly("(bytes.fill test.frame 0 64000 37)");
-  session.evaluateQuietly(drawPictureForm(21, 16, 99));
-  session.evaluateQuietly(drawPictureForm(22, 16, 99));
-  session.evaluateQuietly(drawPictureForm(23, 16, 99));
-  assert.notEqual(sha256(rectangle(session.evaluateBytes("test.frame"))), HEALTH_RECT_SHA,
-    "the adjacent zero picture cannot replace the selected one picture");
+  for (let x = 6; x < 12; x += 1) session.evaluateQuietly(drawPictureForm(x, 16, 99));
+  assert.notEqual(sha256(rectangle(session.evaluateBytes("test.frame"))), SCORE_RECT_SHA,
+    "zero pictures cannot replace blank padding");
 
   const planar = session.evaluateBytes(`
-    (ca.expand-gr-chunk-exact (asset.ref 0) (asset.ref 1) (asset.ref 2) 100 128)`);
+    (ca.expand-gr-chunk-exact (asset.ref 0) (asset.ref 1) (asset.ref 2) 99 128)`);
   const reversed = new Uint8Array(128);
   for (let plane = 0; plane < 4; plane += 1) {
     reversed.set(planar.subarray(plane * 32, (plane + 1) * 32), (3 - plane) * 32);
@@ -142,23 +145,23 @@ test("DrawHealth places 100 at physical 168,176 and rejects shifted or substitut
   for (let y = 0; y < 16; y += 1) for (let x = 0; x < 8; x += 1) {
     row[y * 8 + x] = reversed[(x & 3) * 32 + y * 2 + (x >> 2)];
   }
-  assert.notEqual(sha256(row), sha256(rectangle(frame, HEALTH_LEFT, HEALTH_TOP, 8, 16)),
+  assert.notEqual(sha256(row), sha256(rectangle(frame, SCORE_LEFT + 40, SCORE_TOP, 8, 16)),
     "reversing the four VGA planes must fail parity");
 });
 
-test("number StatusDrawPic rejects sparse, truncated, wrong-length, dimension, and bounds inputs", async (t) => {
-  await t.test("sparse number chunk", async () => {
+test("score StatusDrawPic rejects sparse, truncated, wrong-length, dimension, and bounds inputs", async (t) => {
+  await t.test("sparse score chunk", async () => {
     const head = graphics["VGAHEAD.WL6"].slice();
-    head.fill(255, 100 * 3, 100 * 3 + 3);
+    head.fill(255, 99 * 3, 99 * 3 + 3);
     const session = await decoderSession({ "VGAHEAD.WL6": head });
     session.evaluateQuietly("(define test.frame (bytes.alloc 64000))");
     assert.match(rejectedDiagnostic(() => session.evaluateBytes(drawPictureForm())), /byte index out of range/);
   });
 
-  await t.test("truncated number chunk", async () => {
+  await t.test("truncated score chunk", async () => {
     const head = graphics["VGAHEAD.WL6"].slice();
-    const end = graphicsOffset(100) + 4;
-    head.set([end & 255, (end >> 8) & 255, (end >> 16) & 255], 101 * 3);
+    const end = graphicsOffset(99) + 4;
+    head.set([end & 255, (end >> 8) & 255, (end >> 16) & 255], 100 * 3);
     const session = await decoderSession({ "VGAHEAD.WL6": head });
     session.evaluateQuietly("(define test.frame (bytes.alloc 64000))");
     assert.match(rejectedDiagnostic(() => session.evaluateBytes(drawPictureForm())), /byte index out of range/);
@@ -166,7 +169,7 @@ test("number StatusDrawPic rejects sparse, truncated, wrong-length, dimension, a
 
   await t.test("wrong expanded length", async () => {
     const graph = graphics["VGAGRAPH.WL6"].slice();
-    graph.set([127, 0, 0, 0], graphicsOffset(100));
+    graph.set([127, 0, 0, 0], graphicsOffset(99));
     const session = await decoderSession({ "VGAGRAPH.WL6": graph });
     session.evaluateQuietly("(define test.frame (bytes.alloc 64000))");
     assert.match(rejectedDiagnostic(() => session.evaluateBytes(drawPictureForm())), /byte index out of range/);
@@ -175,7 +178,7 @@ test("number StatusDrawPic rejects sparse, truncated, wrong-length, dimension, a
   await t.test("wrong STRUCTPIC dimensions", async () => {
     const session = await decoderSession();
     session.evaluateQuietly("(define test.frame (bytes.alloc 64000))");
-    session.evaluateQuietly("(u16! test.pictable (* (- 100 vh.STARTPICS) 4) 12)");
+    session.evaluateQuietly("(u16! test.pictable (* (- 99 vh.STARTPICS) 4) 12)");
     assert.match(rejectedDiagnostic(() => session.evaluateBytes(drawPictureForm())), /byte index out of range/);
   });
 
@@ -183,20 +186,21 @@ test("number StatusDrawPic rejects sparse, truncated, wrong-length, dimension, a
     const session = await decoderSession();
     session.evaluateQuietly("(define test.frame (bytes.alloc 64000))");
     assert.match(rejectedDiagnostic(() => session.evaluateBytes(drawPictureForm(40, 16))), /byte index out of range/);
-    assert.match(rejectedDiagnostic(() => session.evaluateBytes(drawPictureForm(21, 25))), /byte index out of range/);
+    assert.match(rejectedDiagnostic(() => session.evaluateBytes(drawPictureForm(6, 25))), /byte index out of range/);
   });
 });
 
-test("DrawPlayScreen and tick refresh preserve face-health-weapon order and cache semantics", async () => {
+test("DrawPlayScreen and tick refresh preserve face-health-weapon-score order and caches", async () => {
   const session = await createSeedSession();
   loadWolf3d(session);
+  assert.equal(session.evaluate("app.drawn-score"), "nil", "numeric cache starts empty");
   const { failed } = await mountDeclaredAssets(session, originalFetcher);
   assert.deepEqual(failed, []);
   assert.equal(session.evaluate("app.drawn-face-picture"), "109");
   assert.equal(session.evaluate("app.drawn-health"), "100");
   assert.equal(session.evaluate("app.drawn-weapon-picture"), "92");
   assert.equal(session.evaluate("app.drawn-score"), "0");
-  assert.equal(session.evaluate("(wl.health-latch-chunks)"), "(100 99 99)");
+  assert.equal(session.evaluate("(wl.score-latch-chunks)"), "(98 98 98 98 98 99)");
 
   const appSource = wolf3dSources[wolf3dModules.indexOf("app")];
   const setup = appSource.slice(appSource.indexOf("(defn app.setup-tables"), appSource.indexOf("(defn app.cache-plane-hashes"));
@@ -209,44 +213,46 @@ test("DrawPlayScreen and tick refresh preserve face-health-weapon order and cach
 
   const initial = session.evaluateBytes("(app.frame-bytes)");
   assert.equal(sha256(initial.subarray(320 * 160)), INITIAL_STATUS_SHA);
-  assert.equal(sha256(rectangle(initial)), HEALTH_RECT_SHA);
+  assert.equal(sha256(rectangle(initial)), SCORE_RECT_SHA);
   assert.equal(sha256(rectangle(initial, 17 * 8, 164, 24, 32)), FACE_ROW_SHA);
+  assert.equal(sha256(rectangle(initial, 21 * 8, 176, 24, 16)), HEALTH_ROW_SHA);
   assert.equal(sha256(rectangle(initial, 32 * 8, 168, 48, 24)), WEAPON_ROW_SHA);
 
-  session.evaluateQuietly(`(u8! app.frame-buffer ${HEALTH_TOP * 320 + HEALTH_LEFT} 77)`);
-  session.evaluateQuietly("(app.refresh-health)");
-  assert.equal(session.evaluate(`(u8@ app.frame-buffer ${HEALTH_TOP * 320 + HEALTH_LEFT})`), "77",
-    "unchanged health skips redraw");
+  session.evaluateQuietly(`(u8! app.frame-buffer ${SCORE_TOP * 320 + SCORE_LEFT} 77)`);
+  session.evaluateQuietly("(app.refresh-score)");
+  assert.equal(session.evaluate(`(u8@ app.frame-buffer ${SCORE_TOP * 320 + SCORE_LEFT})`), "77",
+    "unchanged score skips redraw");
 
-  session.evaluateQuietly("(set! wl.health 99)");
-  session.evaluateQuietly("(app.refresh-health)");
-  assert.equal(session.evaluate("app.drawn-health"), "99");
+  session.evaluateQuietly("(set! wl.score 1)");
+  session.evaluateQuietly("(app.refresh-score)");
+  assert.equal(session.evaluate("app.drawn-score"), "1");
   const changed = session.evaluateBytes("app.frame-buffer");
-  assert.notEqual(sha256(rectangle(changed)), HEALTH_RECT_SHA);
+  assert.notEqual(sha256(rectangle(changed)), SCORE_RECT_SHA);
   assert.equal(sha256(rectangle(changed, 17 * 8, 164, 24, 32)), FACE_ROW_SHA);
+  assert.equal(sha256(rectangle(changed, 21 * 8, 176, 24, 16)), HEALTH_ROW_SHA);
   assert.equal(sha256(rectangle(changed, 32 * 8, 168, 48, 24)), WEAPON_ROW_SHA);
 
   const beforeFailure = changed.slice();
   session.evaluateQuietly("(u16! app.pictable (* (- 101 vh.STARTPICS) 4) 12)");
-  session.evaluateQuietly("(set! wl.health 12)");
-  assert.match(rejectedDiagnostic(() => session.evaluate("(app.refresh-health)")), /byte index out of range/);
-  assert.equal(session.evaluate("app.drawn-health"), "99", "failed suffix preserves the prior cache");
+  session.evaluateQuietly("(set! wl.score 12)");
+  assert.match(rejectedDiagnostic(() => session.evaluate("(app.refresh-score)")), /byte index out of range/);
+  assert.equal(session.evaluate("app.drawn-score"), "1", "failed suffix preserves the prior cache");
   const afterFailure = session.evaluateBytes("app.frame-buffer");
-  assert.notDeepEqual(rectangle(afterFailure, HEALTH_LEFT, HEALTH_TOP, 16, 16),
-    rectangle(beforeFailure, HEALTH_LEFT, HEALTH_TOP, 16, 16), "the source-shaped prefix was drawn");
-  assert.deepEqual(rectangle(afterFailure, HEALTH_LEFT + 16, HEALTH_TOP, 8, 16),
-    rectangle(beforeFailure, HEALTH_LEFT + 16, HEALTH_TOP, 8, 16), "the rejected suffix was untouched");
+  assert.notDeepEqual(rectangle(afterFailure, SCORE_LEFT, SCORE_TOP, 40, 16),
+    rectangle(beforeFailure, SCORE_LEFT, SCORE_TOP, 40, 16), "the source-shaped prefix was drawn");
+  assert.deepEqual(rectangle(afterFailure, SCORE_LEFT + 40, SCORE_TOP, 8, 16),
+    rectangle(beforeFailure, SCORE_LEFT + 40, SCORE_TOP, 8, 16), "the rejected suffix was untouched");
 
   session.evaluateQuietly("(u16! app.pictable (* (- 101 vh.STARTPICS) 4) 8)");
-  session.evaluateQuietly("(app.refresh-health)");
-  assert.equal(session.evaluate("app.drawn-health"), "12");
+  session.evaluateQuietly("(app.refresh-score)");
+  assert.equal(session.evaluate("app.drawn-score"), "12");
 
   const before = Number(session.evaluate("(heap.used)"));
   for (let index = 0; index < 12; index += 1) {
-    session.evaluateQuietly(`(begin (set! wl.health ${index % 2 ? 99 : 100}) (app.refresh-health))`);
+    session.evaluateQuietly(`(begin (set! wl.score ${index % 2}) (app.refresh-score))`);
   }
   const retained = Number(session.evaluate("(heap.used)")) - before;
-  assert.ok(retained < 65536, `bounded health redraw retained ${retained} bytes`);
+  assert.ok(retained < 65536, `bounded score redraw retained ${retained} bytes`);
 });
 
 test("every ordered Wolf3D module remains below the unchanged evaluator input capacity", () => {

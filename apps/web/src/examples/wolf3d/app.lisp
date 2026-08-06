@@ -22,6 +22,7 @@
 (define app.drawn-face-picture -1)
 (define app.drawn-health nil)
 (define app.drawn-weapon-picture -1)
+(define app.drawn-score nil)
 (define app.GRAPHICS-HEAP-RESERVE 2097152)
 (define app.map-name "")
 (define app.frame-buffer (bytes.alloc 64000))
@@ -109,13 +110,15 @@
     (wl.setup-game-level app.wall-plane app.object-plane)
     (wl.init-player-loop)
     (vh.draw-statusbar app.vgahead app.vgagraph app.vgadict app.frame-buffer)
-    ;; DrawPlayScreen draws the static bar first, then face, health and weapon.
+    ;; DrawPlayScreen draws the static bar first, then face, health, weapon and score.
     (set! app.drawn-face-picture -1)
     (app.refresh-face)
     (set! app.drawn-health nil)
     (app.refresh-health)
     (set! app.drawn-weapon-picture -1)
     (app.refresh-weapon)
+    (set! app.drawn-score nil)
+    (app.refresh-score)
     (set! app.time-count 0)
     (set! app.use-held 0)
     (set! app.attack-held 0)
@@ -212,7 +215,8 @@
     (wl.refresh-actor-visibility)
     (app.refresh-face)
     (app.refresh-health)
-    (app.refresh-weapon)))
+    (app.refresh-weapon)
+    (app.refresh-score)))
 
 (defn app.refresh-face ()
   (app.refresh-face-picture (wl.living-face-picture)))
@@ -240,17 +244,17 @@
     ;; LatchNumber draws directly and left-to-right.  A rejected later cell can
     ;; therefore leave its already-drawn prefix, but the cache advances only
     ;; after the complete number succeeds.
-    (app.draw-health-chunks app.frame-buffer (wl.latch-number-chunks 3 number) 21)
+    (app.draw-number-chunks app.frame-buffer (wl.latch-number-chunks 3 number) 21 16)
     (heap.release mark)
     (set! app.drawn-health number)))
 
-(defn app.draw-health-chunks (frame chunks x)
+(defn app.draw-number-chunks (frame chunks x y)
   (if (nil? chunks)
       frame
       (begin
         (vh.status-draw-picture app.vgahead app.vgagraph app.vgadict
-                                app.pictable frame x 16 (car chunks))
-        (app.draw-health-chunks frame (cdr chunks) (+ x 1)))))
+                                app.pictable frame x y (car chunks))
+        (app.draw-number-chunks frame (cdr chunks) (+ x 1) y))))
 
 (defn app.refresh-weapon ()
   (app.refresh-weapon-picture (wl.status-weapon-picture)))
@@ -262,6 +266,22 @@
         (vh.status-draw-picture app.vgahead app.vgagraph app.vgadict
                                 app.pictable app.frame-buffer 32 8 picture)
         (set! app.drawn-weapon-picture picture))))
+
+(defn app.refresh-score ()
+  (app.refresh-score-number wl.score))
+
+(defn app.refresh-score-number (number)
+  (if (and (not (nil? app.drawn-score)) (= number app.drawn-score))
+      number
+      (app.draw-score-number number (heap.used))))
+
+(defn app.draw-score-number (number mark)
+  (begin
+    ;; Preserve LatchNumber's direct left-to-right writes and advance the
+    ;; numeric cache only after all six source cells have completed.
+    (app.draw-number-chunks app.frame-buffer (wl.latch-number-chunks 6 number) 6 16)
+    (heap.release mark)
+    (set! app.drawn-score number)))
 
 ;; Only dirty gameplay planes are rehashed.
 (defn app.refresh-plane-hashes ()

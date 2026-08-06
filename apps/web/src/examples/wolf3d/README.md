@@ -21,7 +21,9 @@ source-shaped latch-picture path now draws and updates the living non-SPEAR
 face from health and faceframe, draws `DrawHealth` through the original
 right-justified three-cell `LatchNumber(21,16,3,health)` arithmetic, then draws
 and updates the non-SPEAR status weapon with the original unguarded
-`KNIFEPIC + weapon` selection arithmetic. The numeric conversion retains the
+`KNIFEPIC + weapon` selection arithmetic, and finally draws and updates
+`DrawScore` with the original right-justified six-cell
+`LatchNumber(6,16,6,score)` arithmetic. The numeric conversion retains the
 original visible-minus bug: `'-'-'0'+N_0PIC` selects GOLDKEYPIC. Dead and
 special faces, the other status numbers, and keys remain intentionally absent. Actor
 collision and area/sound side effects for doors, generalized sprites, menus,
