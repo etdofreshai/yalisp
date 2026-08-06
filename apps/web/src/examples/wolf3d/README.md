@@ -20,7 +20,9 @@ rows, and preserves that static 320x40 image below every 160-row refresh. The
 source-shaped latch-picture path now draws and updates the living non-SPEAR
 face from health and faceframe, draws `DrawHealth` through the original
 right-justified three-cell `LatchNumber(21,16,3,health)` arithmetic, then draws
-and updates the non-SPEAR status weapon with the original unguarded
+and updates `DrawAmmo` with the original right-justified two-cell
+`LatchNumber(27,16,2,ammo)` arithmetic, then draws and updates the non-SPEAR
+status weapon with the original unguarded
 `KNIFEPIC + weapon` selection arithmetic, and finally draws and updates
 `DrawScore` with the original right-justified six-cell
 `LatchNumber(6,16,6,score)` arithmetic. The numeric conversion retains the

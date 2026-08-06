@@ -21,6 +21,7 @@
 (define app.pictable nil)
 (define app.drawn-face-picture -1)
 (define app.drawn-health nil)
+(define app.drawn-ammo nil)
 (define app.drawn-weapon-picture -1)
 (define app.drawn-score nil)
 (define app.GRAPHICS-HEAP-RESERVE 2097152)
@@ -110,11 +111,13 @@
     (wl.setup-game-level app.wall-plane app.object-plane)
     (wl.init-player-loop)
     (vh.draw-statusbar app.vgahead app.vgagraph app.vgadict app.frame-buffer)
-    ;; DrawPlayScreen draws the static bar first, then face, health, weapon and score.
+    ;; DrawPlayScreen draws the static bar first, then face, health, ammo, weapon and score.
     (set! app.drawn-face-picture -1)
     (app.refresh-face)
     (set! app.drawn-health nil)
     (app.refresh-health)
+    (set! app.drawn-ammo nil)
+    (app.refresh-ammo)
     (set! app.drawn-weapon-picture -1)
     (app.refresh-weapon)
     (set! app.drawn-score nil)
@@ -215,6 +218,7 @@
     (wl.refresh-actor-visibility)
     (app.refresh-face)
     (app.refresh-health)
+    (app.refresh-ammo)
     (app.refresh-weapon)
     (app.refresh-score)))
 
@@ -255,6 +259,22 @@
         (vh.status-draw-picture app.vgahead app.vgagraph app.vgadict
                                 app.pictable frame x y (car chunks))
         (app.draw-number-chunks frame (cdr chunks) (+ x 1) y))))
+
+(defn app.refresh-ammo ()
+  (app.refresh-ammo-number wl.ammo))
+
+(defn app.refresh-ammo-number (number)
+  (if (and (not (nil? app.drawn-ammo)) (= number app.drawn-ammo))
+      number
+      (app.draw-ammo-number number (heap.used))))
+
+(defn app.draw-ammo-number (number mark)
+  (begin
+    ;; Preserve LatchNumber's direct left-to-right writes and advance the
+    ;; numeric cache only after both source cells have completed.
+    (app.draw-number-chunks app.frame-buffer (wl.latch-number-chunks 2 number) 27 16)
+    (heap.release mark)
+    (set! app.drawn-ammo number)))
 
 (defn app.refresh-weapon ()
   (app.refresh-weapon-picture (wl.status-weapon-picture)))

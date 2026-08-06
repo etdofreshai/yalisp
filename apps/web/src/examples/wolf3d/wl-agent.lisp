@@ -138,6 +138,9 @@
 (defn wl.health-latch-chunks ()
   (wl.latch-number-chunks 3 wl.health))
 
+(defn wl.ammo-latch-chunks ()
+  (wl.latch-number-chunks 2 wl.ammo))
+
 (defn wl.score-latch-chunks ()
   (wl.latch-number-chunks 6 wl.score))
 
