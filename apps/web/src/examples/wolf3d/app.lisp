@@ -70,10 +70,7 @@
     (set! app.wall-plane (car app.planes))
     (set! app.object-plane (car (cdr app.planes)))
     (set! app.map-name (ca.map-name maps (ca.header-offset tinf mapnum)))
-    ;; The planes, the plane list, and the name are live from here on and were
-    ;; allocated above, so the reclaimable region starts after them. Everything
-    ;; below writes into buffers that were allocated when this file was loaded
-    ;; and keeps nothing else, which is what makes the release sound.
+    ;; Setup temporaries precede this mark; later writes target persistent buffers.
     (app.setup-tables (heap.used))))
 
 (defn app.setup-tables (mark)
@@ -145,9 +142,7 @@
           (* (- (app.input? input 'backward) (app.input? input 'forward))
              (* wl.BASEMOVE wl.tics)))
     (set! app.trace-buttons (if (> (app.input? input 'use) 0) 8 0))
-    ;; PlayLoop moves doors and pushwalls before T_Player handles use and
-    ;; movement. Thus a use tick changes action only; position first changes on
-    ;; the next tick, and an activated pushwall first advances one tick later.
+    ;; Preserve PlayLoop order: doors/pwalls, then player input and movement.
     (set! wl.madenoise 0)
     (wl.move-doors)
     (wl.move-pwalls)
@@ -155,15 +150,14 @@
                      app.trace-controlx app.trace-controly)
     (wl.move-actors)
     (wl.update-static-bonuses)
-    (app.prepare-attack-visibility)
+    (app.refresh-renderer-state)
     (app.refresh-plane-hashes)
     (heap.release mark)))
 
 (defn app.player-tick (use attack controlx controly)
   (begin
     (wl.update-face)
-    ;; PollControls hands T_Player last frame's buttons as buttonheld, and
-    ;; T_Player then calls Cmd_Use on every tic the use button is down.
+    ;; buttonheld-use is the prior tic's use state.
     (set! wl.buttonheld-use app.use-held)
     (set! app.use-held (if (> use 0) 1 0))
     (if (= wl.attack-active 1)
@@ -176,15 +170,9 @@
           (wl.control-movement controlx controly)))
     (set! app.attack-held (if (> attack 0) 1 0))))
 
-(defn app.prepare-attack-visibility ()
-  (if (and (= wl.attack-active 1)
-           (and (= wl.attackframe 1) (<= wl.attackcount wl.tics)))
-      (wl.refresh-actor-visibility)
-      nil))
+(defn app.refresh-renderer-state () (wl.refresh-actor-visibility))
 
-;; PushWall and MovePWalls are the only writers of either map plane during play,
-;; so each cached fingerprint is recomputed only on the tic that actually
-;; removed a P tile or handed a vacated wall tile back to the player's area.
+;; Only dirty gameplay planes are rehashed.
 (defn app.refresh-plane-hashes ()
   (begin (app.refresh-plane0-hash) (app.refresh-plane1-hash)))
 
@@ -286,7 +274,7 @@
                      controlx controly)
     (wl.move-actors)
     (wl.update-static-bonuses)
-    (app.prepare-attack-visibility)
+    (app.refresh-renderer-state)
     (app.refresh-plane-hashes)
     (heap.release mark)
     (app.trace-record)))

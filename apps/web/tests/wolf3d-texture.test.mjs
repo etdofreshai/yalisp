@@ -166,6 +166,117 @@ test("a file that is not the palette object is refused", async (t) => {
   assert.equal(session.evaluate(`(vl.palette-at (asset.ref ${gamemaps.handle}))`), "-1");
 });
 
+async function rendererState() {
+  const session = await createSeedSession();
+  session.evaluateQuietly(source);
+  session.evaluateQuietly(`
+    (wl.view! wl.PIXX 0)
+    (wl.view! wl.VIEWX 0)
+    (wl.view! wl.VIEWY 0)
+    (wl.view! wl.VIEWCOS 65536)
+    (wl.view! wl.VIEWSIN 0)
+  `);
+  return session;
+}
+
+test("moving pushwall hits use the shifted plane, masked picture, and source orientation", async () => {
+  const session = await rendererState();
+  const tile = 193;
+  const verticalY = 20 * 65536 + 32768;
+  const horizontalX = 10 * 65536 + 32768;
+
+  for (const [position, tileStep, rayStep] of [[0, 1, 64], [63, -1, -64]]) {
+    session.evaluateQuietly(`
+      (set! wl.pwallpos ${position})
+      (wl.view! wl.XTILESTEP ${tileStep})
+      (wl.view! wl.YSTEP ${rayStep})
+      (wl.trace-vert-pwall 10 20 0 ${verticalY} ${tile})
+    `);
+    const mid = verticalY + ((rayStep * position) >> 6);
+    const offset = position << 10;
+    assert.equal(number(session, "(u8@ wl.wallpic 0)"), 1, "vertical wall 1 picture");
+    assert.equal(number(session, "(wl.view@ wl.XINTERCEPT)"),
+      10 * 65536 + (tileStep === -1 ? 65536 - offset : offset));
+    assert.equal(number(session, "(wl.view@ wl.YINTERCEPT)"), mid);
+    assert.equal(number(session, "(wl.walltexture@ 0)"), tileStep === -1
+      ? 4032 - ((mid >> 4) & 4032) : ((mid >> 4) & 4032));
+  }
+
+  for (const [position, tileStep, rayStep] of [[0, 1, 64], [63, -1, -64]]) {
+    session.evaluateQuietly(`
+      (set! wl.pwallpos ${position})
+      (wl.view! wl.YTILESTEP ${tileStep})
+      (wl.view! wl.XSTEP ${rayStep})
+      (wl.trace-horiz-pwall 10 20 ${horizontalX} 0 ${tile})
+    `);
+    const mid = horizontalX + ((rayStep * position) >> 6);
+    const offset = position << 10;
+    assert.equal(number(session, "(u8@ wl.wallpic 0)"), 0, "horizontal wall 1 picture");
+    assert.equal(number(session, "(wl.view@ wl.XINTERCEPT)"), mid);
+    assert.equal(number(session, "(wl.view@ wl.YINTERCEPT)"),
+      20 * 65536 + (tileStep === -1 ? 65536 - offset : offset));
+    assert.equal(number(session, "(wl.walltexture@ 0)"), tileStep === -1
+      ? ((mid >> 4) & 4032) : 4032 - ((mid >> 4) & 4032));
+  }
+
+  session.evaluateQuietly("(set! wl.pwallpos 63)");
+  assert.equal(number(session, "(wl.pwall-intercept 0 75099057)"), 6816770,
+    "positive partial step uses wrapped i32 multiply then arithmetic shift");
+  assert.equal(number(session, "(wl.pwall-intercept 0 -75099057)"), -6816771,
+    "negative partial step uses the same signed high-word result");
+});
+
+test("moving pushwall tile-cross passes mark spotvis and advance from the unshifted intercept", async () => {
+  const session = await rendererState();
+  session.evaluateQuietly(`
+    (define t.vx 0) (define t.vy 0) (define t.vxi 0) (define t.vyi 0)
+    (define t.hx 0) (define t.hy 0) (define t.hxi 0) (define t.hyi 0)
+    (defn wl.vert-loop (x y xi yi)
+      (begin (set! t.vx x) (set! t.vy y) (set! t.vxi xi) (set! t.vyi yi) true))
+    (defn wl.horiz-loop (x y xi yi)
+      (begin (set! t.hx x) (set! t.hy y) (set! t.hxi xi) (set! t.hyi yi) true))
+    (bytes.fill wl.spotvis 0 4096 0)
+    (set! wl.pwallpos 63)
+    (wl.view! wl.XTILESTEP 1) (wl.view! wl.YSTEP 128)
+    (wl.trace-vert-pwall 5 7 1234 720860 193)
+    (wl.view! wl.YTILESTEP 1) (wl.view! wl.XSTEP 128)
+    (wl.trace-horiz-pwall 7 5 720860 1234 193)
+  `);
+  assert.deepEqual(["t.vx", "t.vy", "t.vxi", "t.vyi"].map((form) => number(session, form)),
+    [6, 7, 1234, 720988], "vertical pass advances from yi, not the moving midpoint");
+  assert.deepEqual(["t.hx", "t.hy", "t.hxi", "t.hyi"].map((form) => number(session, form)),
+    [7, 6, 720988, 1234], "horizontal pass advances from xi, not the moving midpoint");
+  assert.equal(number(session, `(u8@ wl.spotvis ${5 * 64 + 10})`), 1, "vertical pass cell");
+  assert.equal(number(session, `(u8@ wl.spotvis ${10 * 64 + 5})`), 1, "horizontal pass cell");
+});
+
+test("normal doors still use door position, lock picture, and door midpoint", async () => {
+  const session = await rendererState();
+  session.evaluateQuietly(`
+    (set! pm.sprite-start 20)
+    (wl.door-position! 0 0)
+    (u8! wl.doorlock 0 0)
+    (set! wl.pwallpos 63)
+    (wl.view! wl.XTILESTEP 1) (wl.view! wl.YSTEP 0)
+    (wl.trace-vert-door 10 20 0 1343488 128)
+  `);
+  assert.deepEqual([
+    number(session, "(u8@ wl.wallpic 0)"),
+    number(session, "(wl.view@ wl.XINTERCEPT)"),
+    number(session, "(wl.view@ wl.YINTERCEPT)")
+  ], [13, 10 * 65536 + 32768, 1343488]);
+
+  session.evaluateQuietly(`
+    (wl.view! wl.YTILESTEP 1) (wl.view! wl.XSTEP 0)
+    (wl.trace-horiz-door 10 20 688128 0 128)
+  `);
+  assert.deepEqual([
+    number(session, "(u8@ wl.wallpic 0)"),
+    number(session, "(wl.view@ wl.XINTERCEPT)"),
+    number(session, "(wl.view@ wl.YINTERCEPT)")
+  ], [12, 688128, 20 * 65536 + 32768]);
+});
+
 // --- which page and which column a post is drawn from ------------------------
 
 // A march in floating point, from the camera the program says it has, recording

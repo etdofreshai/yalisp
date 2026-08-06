@@ -152,6 +152,43 @@ test("the real patrol path opens off-route door 8 at record 148", async (t) => {
   assert.equal(number(session, "(wl.door-checksum)"), 10413);
 });
 
+test("patrol diagonals update both reserved destination coordinates", async (t) => {
+  if (!(await haveOriginals())) return t.skip(skipReason);
+  const session = await application();
+  const dog = 13;
+
+  for (const record of route.records.slice(0, 102)) advance(session, record);
+  assert.deepEqual(
+    ["tilex", "tiley", "dir"].map((field) => number(session, `(wl.actor-${field}@ ${dog})`)),
+    [54, 44, 5],
+    "southwest path state reserved both destination axes"
+  );
+
+  advance(session, route.records[102]);
+  assert.deepEqual(
+    ["tilex", "tiley", "dir"].map((field) => number(session, `(wl.actor-${field}@ ${dog})`)),
+    [53, 43, 3],
+    "northwest path state reserves both destination axes"
+  );
+
+  for (const record of route.records.slice(103, 382)) advance(session, record);
+  const guard = 20;
+  assert.deepEqual(
+    ["x", "y", "tilex", "tiley", "dir"].map((field) =>
+      number(session, `(wl.actor-${field}@ ${guard})`)),
+    [2524160, 4030464, 38, 61, 4],
+    "guard remains westbound through record 382"
+  );
+
+  advance(session, route.records[382]);
+  assert.deepEqual(
+    ["x", "y", "tilex", "tiley", "dir"].map((field) =>
+      number(session, `(wl.actor-${field}@ ${guard})`)),
+    [2523648, 4029952, 39, 60, 1],
+    "reversed north/east ordering selects northeast at record 383"
+  );
+});
+
 test("GunAttack misses honestly and SightPlayer advances the cursor at record 215", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
@@ -163,7 +200,8 @@ test("GunAttack misses honestly and SightPlayer advances the cursor at record 21
   assert.equal(number(session, "wl.rndindex"), 229);
   assert.equal(number(session, "wl.attackframe"), 1);
   assert.equal(number(session, "wl.attackcount"), 1);
-  assert.equal(number(session, `(wl.actor-viewx@ ${target})`), 502, "retained projection is off crosshair");
+  assert.equal(number(session, `(wl.actor-viewx@ ${target})`), 288,
+    "record 106 source transform is retained after visibility clears at record 107");
   assert.equal(number(session, `(wl.actor-flags@ ${target})`), 1, "renderer visibility remains clear");
   assert.equal(session.evaluate(`(wl.actor-check-line-player ${target})`), "false",
     "the real DDA is blocked; madenoise, not fabricated visibility, wakes this guard");
@@ -585,6 +623,7 @@ test("Cmd_Use reaches PushWall on every held use tic, before the door gate", asy
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
   const objectAt = (x, y) => number(session, `(u16@ app.object-plane ${2 * (y * 64 + x)})`);
+  const doors = number(session, "(wl.door-checksum)");
 
   // (18,50) is the floor tile south of the pushwall; north is the only cardinal
   // Cmd_Use can pick that reaches it, and SpawnPlayer's north is 90 degrees.
@@ -600,6 +639,7 @@ test("Cmd_Use reaches PushWall on every held use tic, before the door gate", asy
   assert.equal(number(session, "wl.secretcount"), 1, "the first use tic activates");
   assert.equal(number(session, "wl.buttonheld-use"), 0, "buttonheld is last frame's button");
   assert.equal(objectAt(18, 49), 0);
+  assert.equal(number(session, "(wl.door-checksum)"), doors, "the moving wall is not decoded as a door");
 
   // Holding use keeps calling Cmd_Use, and the pushable test runs ahead of the
   // buttonheld gate, so PushWall is reached again and refuses on pwallstate.
@@ -612,14 +652,9 @@ test("Cmd_Use reaches PushWall on every held use tic, before the door gate", asy
   advance(session, { tics: 1, controlx: 0, controly: 0, buttons: 8 });
   assert.equal(number(session, "wl.secretcount"), 1);
 
-  // After activation the tile carries the source's own 0xc0 tag, and both this
-  // port's tilemap readers decode 0x80 as a door: Cmd_Use's door arm reaches
-  // door 65, past MAXDOORS, which is a genuine original out-of-range read of
-  // doorobjlist, and TryMove's solidity test reaches the same index, which is
-  // *not* original - TryMove reads actorat, where the tag never appears. Both
-  // are represented structurally here and neither is executed; the port traps
-  // on the read instead of walking adjacent memory. MovePWalls clears the tag
-  // on its first block crossing, which bounds the window to roughly 128 tics.
+  // The tilemap tag still decodes structurally as door 65, but the renderer's
+  // source 0x40 branch catches it before any door-list read. TryMove reads the
+  // untagged actorat wall value, as the original does.
   assert.equal(session.evaluate("(wl.door-tile? 193)"), "true");
   assert.equal(number(session, "(wl.door-number 193)"), 65);
   assert.ok(65 >= number(session, "wl.MAXDOORS"));

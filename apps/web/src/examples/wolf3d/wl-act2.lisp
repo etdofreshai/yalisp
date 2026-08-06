@@ -27,6 +27,7 @@
 (define wl.actorviewx (bytes.alloc 600))
 (define wl.actortransx (bytes.alloc 600))
 (define wl.actorat (bytes.alloc 4096))
+(define wl.spotvis (bytes.alloc 4096))
 
 (defn wl.actor-x@ (actor) (i32@ wl.actorx (* actor 4)))
 (defn wl.actor-x! (actor value) (u32! wl.actorx (* actor 4) value))
@@ -368,31 +369,56 @@
           ((= class 6) (+ 1 (/ (wl.us-rndt) 8)))
           (true 1))))
 
+(defn wl.spotvis-vert! (xtile yintercept)
+  (u8! wl.spotvis (+ (bit.shl xtile wl.MAPSHIFT) (bit.shr yintercept 16)) 1))
+
+(defn wl.spotvis-horiz! (ytile xintercept)
+  (u8! wl.spotvis (+ (bit.shl (bit.shr xintercept 16) 6) ytile) 1))
+
+(defn wl.spotvis-neighbor? (spot offset)
+  (and (> (u8@ wl.spotvis (+ spot offset)) 0)
+       (= (u8@ wl.tilemap (+ spot offset)) 0)))
+
+(defn wl.actor-spot-visible? (actor)
+  (let ((spot (+ (bit.shl (wl.actor-tilex@ actor) wl.MAPSHIFT)
+                 (wl.actor-tiley@ actor))))
+    (or (> (u8@ wl.spotvis spot) 0)
+        (or (wl.spotvis-neighbor? spot -1) (wl.spotvis-neighbor? spot 1)
+            (or (wl.spotvis-neighbor? spot -65) (wl.spotvis-neighbor? spot -64)
+                (or (wl.spotvis-neighbor? spot -63) (wl.spotvis-neighbor? spot 65)
+                    (or (wl.spotvis-neighbor? spot 64)
+                        (wl.spotvis-neighbor? spot 63))))))))
+
+(defn wl.transform-actor (actor)
+  (let ((gx (- (wl.actor-x@ actor) (wl.view@ wl.VIEWX)))
+        (gy (- (wl.actor-y@ actor) (wl.view@ wl.VIEWY))))
+    (let ((nx (- (- (fx.by-frac gx (wl.view@ wl.VIEWCOS))
+                       (fx.by-frac gy (wl.view@ wl.VIEWSIN))) 16384))
+          (ny (+ (fx.by-frac gy (wl.view@ wl.VIEWCOS))
+                 (fx.by-frac gx (wl.view@ wl.VIEWSIN)))))
+      (begin (wl.actor-transx! actor nx)
+        (if (>= nx wl.MINDIST)
+            (begin (wl.actor-viewx! actor (+ 159 (/ (* ny wl.scale) nx))) true)
+            false)))))
+
 (defn wl.refresh-actor-visibility ()
-  (begin (wl.calc-view) (wl.refresh-actor-projection 0)))
+  (begin (bytes.fill wl.spotvis 0 4096 0) (wl.calc-view) (wl.asm-refresh)
+         (wl.refresh-actor-projection 0)))
 
 (defn wl.refresh-actor-projection (actor)
   (if (= actor wl.actorcount)
       nil
-      (let ((gx (- (wl.actor-x@ actor) (wl.view@ wl.VIEWX)))
-            (gy (- (wl.actor-y@ actor) (wl.view@ wl.VIEWY))))
-        (let ((nx (- (- (fx.by-frac gx (wl.view@ wl.VIEWCOS))
-                           (fx.by-frac gy (wl.view@ wl.VIEWSIN))) 16384))
-              (ny (+ (fx.by-frac gy (wl.view@ wl.VIEWCOS))
-                     (fx.by-frac gx (wl.view@ wl.VIEWSIN)))))
-          (begin
-            (wl.actor-transx! actor nx)
-            (wl.actor-viewx! actor (if (>= nx wl.MINDIST) (+ 159 (/ (* ny wl.scale) nx)) 1000000))
-            (if (and (>= nx wl.MINDIST)
-                     (and (>= (wl.actor-viewx@ actor) 0)
-                          (and (< (wl.actor-viewx@ actor) 320)
-                               (wl.check-line (wl.player@ wl.PLAYER-X) (wl.player@ wl.PLAYER-Y)
-                                              (wl.actor-x@ actor) (wl.actor-y@ actor)))))
-                (begin
-                  (wl.actor-flags! actor (bit.or (wl.actor-flags@ actor) wl.FL-VISABLE)))
-                (wl.actor-flags! actor
-                  (bit.and (wl.actor-flags@ actor) (- 255 wl.FL-VISABLE))))
-            (wl.refresh-actor-projection (+ actor 1)))))))
+      (begin
+        (if (wl.actor-spot-visible? actor)
+            (begin
+              (wl.actor-active! actor 1)
+              (if (wl.transform-actor actor)
+                  (wl.actor-flags! actor
+                    (bit.or (wl.actor-flags@ actor) wl.FL-VISABLE))
+                  nil))
+            (wl.actor-flags! actor
+              (bit.and (wl.actor-flags@ actor) (- 255 wl.FL-VISABLE))))
+        (wl.refresh-actor-projection (+ actor 1)))))
 
 (defn wl.move-actors () (wl.move-actor-number 0))
 
@@ -577,7 +603,7 @@
     (begin
       (if first (wl.actor-flags! actor (bit.and (wl.actor-flags@ actor) 223)) nil)
       (wl.select-dodge-order actor (if first 8 (wl.opposite-dir (wl.actor-dir@ actor)))
-        (wl.toward-x dx) (wl.toward-y dy) dx dy))))
+        (if (> dx 0) 0 4) (if (> dy 0) 6 2) dx dy))))
 
 (defn wl.select-dodge-order (actor turn xdir ydir dx dy)
   (let ((first (if (> (wl.abs dx) (wl.abs dy)) ydir xdir))
@@ -670,8 +696,9 @@
         (x (wl.actor-tilex@ actor)) (y (wl.actor-tiley@ actor)))
     (wl.try-walk-destination actor dir x y
       (+ x (cond ((or (= dir 0) (= dir 1)) 1)
-                 ((or (= dir 3) (= dir 4)) -1) (true 0)))
-      (+ y (cond ((or (= dir 1) (= dir 2)) -1)
+                 ((or (= dir 3) (= dir 4) (= dir 5)) -1)
+                 ((= dir 7) 1) (true 0)))
+      (+ y (cond ((or (= dir 1) (= dir 2) (= dir 3)) -1)
                  ((or (= dir 5) (= dir 6) (= dir 7)) 1) (true 0))))))
 
 (defn wl.try-walk-destination (actor dir oldx oldy x y)

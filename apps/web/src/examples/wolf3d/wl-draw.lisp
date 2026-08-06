@@ -157,8 +157,9 @@
       (if (wl.door-tile? tilehit)
           (wl.trace-vert-door xtile ytile xintercept yintercept tilehit)
           (wl.hit-vert-wall xtile (bit.shl xtile wl.TILESHIFT) yintercept tilehit))
-      (wl.vert-loop (+ xtile (wl.view@ wl.XTILESTEP)) ytile
-                    xintercept (+ yintercept (wl.view@ wl.YSTEP)))))
+      (begin (wl.spotvis-vert! xtile yintercept)
+        (wl.vert-loop (+ xtile (wl.view@ wl.XTILESTEP)) ytile
+                      xintercept (+ yintercept (wl.view@ wl.YSTEP))))))
 
 (defn wl.horiz-entry (xtile ytile xintercept yintercept)
   (if (wl.off-map? ytile xintercept)
@@ -171,8 +172,9 @@
       (if (wl.door-tile? tilehit)
           (wl.trace-horiz-door xtile ytile xintercept yintercept tilehit)
           (wl.hit-horiz-wall ytile xintercept (bit.shl ytile wl.TILESHIFT) tilehit))
-      (wl.horiz-loop xtile (+ ytile (wl.view@ wl.YTILESTEP))
-                     (+ xintercept (wl.view@ wl.XSTEP)) yintercept)))
+      (begin (wl.spotvis-horiz! ytile xintercept)
+        (wl.horiz-loop xtile (+ ytile (wl.view@ wl.YTILESTEP))
+                       (+ xintercept (wl.view@ wl.XSTEP)) yintercept))))
 
 (defn wl.off-map? (tile intercept)
   (or (or (< tile 0) (>= tile wl.MAPSIZE))
@@ -184,27 +186,54 @@
     (wl.walltexture! (wl.view@ wl.PIXX) 0)
     (u8! wl.wallpic (wl.view@ wl.PIXX) 255)))
 
-(defn wl.trace-vert-door (xtile ytile xintercept yintercept tilehit)
-  (wl.trace-vert-door-at xtile ytile xintercept yintercept tilehit
-                         (+ yintercept (/ (wl.view@ wl.YSTEP) 2))))
+(defn wl.pwall-intercept (intercept step)
+  (+ intercept (bit.shr (* step wl.pwallpos) 6)))
 
-(defn wl.trace-vert-door-at (xtile ytile xintercept yintercept tilehit doorintercept)
-  (if (or (not (= (bit.shr doorintercept wl.TILESHIFT) (bit.shr yintercept wl.TILESHIFT)))
-          (< (bit.and doorintercept 65535) (wl.door-position@ (wl.door-number tilehit))))
-      (wl.vert-loop (+ xtile (wl.view@ wl.XTILESTEP)) ytile
-                    xintercept (+ yintercept (wl.view@ wl.YSTEP)))
-      (wl.hit-vert-door xtile doorintercept (wl.door-number tilehit))))
+(defn wl.pwall-plane (tile step)
+  (+ (bit.shl tile 16)
+     (if (= step -1) (- 0 (bit.shl wl.pwallpos 10)) (bit.shl wl.pwallpos 10))))
 
-(defn wl.trace-horiz-door (xtile ytile xintercept yintercept tilehit)
-  (wl.trace-horiz-door-at xtile ytile xintercept yintercept tilehit
-                          (+ xintercept (/ (wl.view@ wl.XSTEP) 2))))
+(defn wl.trace-vert-door (xtile ytile xi yi tile)
+  (if (> (bit.and tile 64) 0) (wl.trace-vert-pwall xtile ytile xi yi tile)
+      (wl.trace-vert-door-at xtile ytile xi yi tile (+ yi (/ (wl.view@ wl.YSTEP) 2)))))
 
-(defn wl.trace-horiz-door-at (xtile ytile xintercept yintercept tilehit doorintercept)
-  (if (or (not (= (bit.shr doorintercept wl.TILESHIFT) (bit.shr xintercept wl.TILESHIFT)))
-          (< (bit.and doorintercept 65535) (wl.door-position@ (wl.door-number tilehit))))
-      (wl.horiz-loop xtile (+ ytile (wl.view@ wl.YTILESTEP))
-                     (+ xintercept (wl.view@ wl.XSTEP)) yintercept)
-      (wl.hit-horiz-door ytile doorintercept (wl.door-number tilehit))))
+(defn wl.trace-vert-pwall (xtile ytile xi yi tile)
+  (let ((mid (wl.pwall-intercept yi (wl.view@ wl.YSTEP))))
+    (if (not (= (bit.shr mid 16) (bit.shr yi 16)))
+        (begin (wl.spotvis-vert! xtile yi)
+          (wl.vert-loop (+ xtile (wl.view@ wl.XTILESTEP)) ytile xi
+                        (+ yi (wl.view@ wl.YSTEP))))
+        (wl.hit-vert-wall xtile (wl.pwall-plane xtile (wl.view@ wl.XTILESTEP))
+                          mid (bit.and tile 63)))))
+
+(defn wl.trace-vert-door-at (xtile ytile xi yi tile mid)
+  (if (or (not (= (bit.shr mid 16) (bit.shr yi 16)))
+          (< (bit.and mid 65535) (wl.door-position@ (wl.door-number tile))))
+      (begin (wl.spotvis-vert! xtile yi)
+        (wl.vert-loop (+ xtile (wl.view@ wl.XTILESTEP)) ytile xi
+                      (+ yi (wl.view@ wl.YSTEP))))
+      (wl.hit-vert-door xtile mid (wl.door-number tile))))
+
+(defn wl.trace-horiz-door (xtile ytile xi yi tile)
+  (if (> (bit.and tile 64) 0) (wl.trace-horiz-pwall xtile ytile xi yi tile)
+      (wl.trace-horiz-door-at xtile ytile xi yi tile (+ xi (/ (wl.view@ wl.XSTEP) 2)))))
+
+(defn wl.trace-horiz-pwall (xtile ytile xi yi tile)
+  (let ((mid (wl.pwall-intercept xi (wl.view@ wl.XSTEP))))
+    (if (not (= (bit.shr mid 16) (bit.shr xi 16)))
+        (begin (wl.spotvis-horiz! ytile xi)
+          (wl.horiz-loop xtile (+ ytile (wl.view@ wl.YTILESTEP))
+                         (+ xi (wl.view@ wl.XSTEP)) yi))
+        (wl.hit-horiz-wall ytile mid (wl.pwall-plane ytile (wl.view@ wl.YTILESTEP))
+                           (bit.and tile 63)))))
+
+(defn wl.trace-horiz-door-at (xtile ytile xi yi tile mid)
+  (if (or (not (= (bit.shr mid 16) (bit.shr xi 16)))
+          (< (bit.and mid 65535) (wl.door-position@ (wl.door-number tile))))
+      (begin (wl.spotvis-horiz! ytile xi)
+        (wl.horiz-loop xtile (+ ytile (wl.view@ wl.YTILESTEP))
+                       (+ xi (wl.view@ wl.XSTEP)) yi))
+      (wl.hit-horiz-door ytile mid (wl.door-number tile))))
 
 (defn wl.door-picture (door side)
   (+ side
