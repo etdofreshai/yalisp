@@ -7,8 +7,8 @@ import { createSeedSession } from "./seed-session.mjs";
 import {
   fromPublic,
   haveWolf3dOriginals as haveOriginals,
+  loadWolf3d,
   wolf3dSkipReason as skipReason,
-  wolf3dSource as source
 } from "./wolf3d-source.mjs";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/wolf3d-r1-door-prefix-v3.json", import.meta.url), "utf8"));
@@ -46,7 +46,7 @@ const canonicalOmittedFields = [];
 
 async function application() {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   await mountDeclaredAssets(session, fromPublic);
   return session;
 }
@@ -281,7 +281,7 @@ test("the promoted pushwall fields report live PushWall and MovePWalls state", a
 
 test("the promoted initialization fields report nonzero NewGame ownership in canonical order", async () => {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   session.evaluateQuietly("(wl.new-game 3 4)");
   session.evaluateQuietly("(wl.select-map 7)");
   session.evaluateQuietly("(wl.spawn-player 2 3 1)");

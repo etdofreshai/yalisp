@@ -10,8 +10,14 @@ export const wolf3dModules = [
   "wl-main", "wl-game", "wl-agent", "wl-act2", "wl-draw", "app"
 ];
 
-export const wolf3dSource = (await Promise.all(wolf3dModules.map((name) =>
-  readFile(new URL(`../src/examples/wolf3d/${name}.lisp`, import.meta.url), "utf8")))).join("\n");
+export const wolf3dSources = await Promise.all(wolf3dModules.map((name) =>
+  readFile(new URL(`../src/examples/wolf3d/${name}.lisp`, import.meta.url), "utf8")));
+
+export const wolf3dSource = wolf3dSources.join("\n");
+
+export function loadWolf3d(session) {
+  for (const module of wolf3dSources) session.evaluateQuietly(module);
+}
 
 export const wolf3dAssetRoot = new URL("../public/assets/wolf3d/", import.meta.url);
 

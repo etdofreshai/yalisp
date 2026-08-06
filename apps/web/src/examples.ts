@@ -25,10 +25,9 @@ import lispApplicationRuntimeSource from "./examples/runtime/lisp-application?ra
 // definitions header, the fixed-point layer, the caching manager, the page
 // file, the palette, the tables, the level setup, the player, the actor-world
 // prerequisite, the raycaster, and then the program that binds them to this
-// host. Concatenation is the whole
-// of the module system it needs, and the joined text is also what the page
-// displays, so what runs is shown.
-const wolf3dApplicationSource = [
+// host. Each module is evaluated in order in the same resident session; the
+// joined text is display-only, so what runs is still shown.
+const wolf3dApplicationModules = [
   wolf3dDefSource,
   wolf3dFixedSource,
   wolf3dMapSource,
@@ -40,13 +39,14 @@ const wolf3dApplicationSource = [
   wolf3dActorsSource,
   wolf3dDrawSource,
   wolf3dAppSource
-].join("\n");
+];
+const wolf3dApplicationSource = wolf3dApplicationModules.join("\n");
 
 document.querySelectorAll<HTMLElement>('[data-lisp-app="hello-world"]').forEach((root) => { void runApplication(root, helloWorldApplicationSource); });
 document.querySelectorAll<HTMLElement>('[data-lisp-app="pong"]').forEach((root) => { void runApplication(root, pongApplicationSource); });
 document.querySelectorAll<HTMLElement>('[data-lisp-app="breakout"]').forEach((root) => { void runApplication(root, breakoutApplicationSource); });
 document.querySelectorAll<HTMLElement>('[data-lisp-app="asteroids"]').forEach((root) => { void runApplication(root, asteroidsApplicationSource); });
-document.querySelectorAll<HTMLElement>('[data-lisp-app="wolf3d"]').forEach((root) => { void runApplication(root, wolf3dApplicationSource); });
+document.querySelectorAll<HTMLElement>('[data-lisp-app="wolf3d"]').forEach((root) => { void runApplication(root, wolf3dApplicationModules); });
 
 document.querySelectorAll<HTMLElement>("[data-application-source]").forEach((target) => {
   if (target.dataset.applicationSource === "breakout") target.textContent = breakoutApplicationSource;

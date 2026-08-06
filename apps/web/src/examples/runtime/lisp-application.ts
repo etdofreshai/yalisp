@@ -111,7 +111,7 @@ function inputForm(held: ReadonlySet<string>, pressed: ReadonlySet<string>, cont
   return `(${controls.map(({ action }) => `(${action} ${held.has(action) || pressed.has(action) ? 1 : 0})`).join(" ")})`;
 }
 
-export async function runApplication(root: HTMLElement, source: string) {
+export async function runApplication(root: HTMLElement, source: string | readonly string[]) {
   // Applications are long-lived Lisp programs. Reusing one initialized seed
   // preserves their definitions and avoids recompiling the entire source for
   // every simulation frame; the host still owns only input delivery and draw
@@ -123,7 +123,9 @@ export async function runApplication(root: HTMLElement, source: string) {
   // reserves more from its own Lisp source, and exhaustion still surfaces as
   // the evaluator's own truthful diagnostic.
   session.evaluateQuietly("(heap.reserve 33554432)");
-  session.evaluateQuietly(source);
+  for (const module of typeof source === "string" ? [source] : source) {
+    session.evaluateQuietly(module);
+  }
   // A program that reads original data files declares them itself and is
   // handed their handles before it mounts. Retrieval failures are reported to
   // the program rather than raised here: a checkout without the original data

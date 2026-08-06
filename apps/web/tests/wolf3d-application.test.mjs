@@ -7,9 +7,9 @@ import { createSeedSession } from "./seed-session.mjs";
 import {
   fromPublic,
   haveWolf3dOriginals as haveOriginals,
+  loadWolf3d,
   wolf3dAssetRoot as assetRoot,
-  wolf3dSkipReason as skipReason,
-  wolf3dSource as source
+  wolf3dSkipReason as skipReason
 } from "./wolf3d-source.mjs";
 
 // The Wolf3D application driven through the generic contracts, with the
@@ -20,7 +20,7 @@ import {
 
 async function application(fetcher = fromPublic) {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   const result = await mountDeclaredAssets(session, fetcher);
   return { session, ...result };
 }

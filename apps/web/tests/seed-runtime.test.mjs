@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import wabtInit from "wabt";
-import { wolf3dSource } from "./wolf3d-source.mjs";
+import { wolf3dSources } from "./wolf3d-source.mjs";
 
 const wat = await readFile(new URL("../src/seed/bootstrap.wat", import.meta.url), "utf8");
 const bootstrap = await readFile(new URL("../public/yalisp/boot.lisp", import.meta.url), "utf8");
@@ -17,7 +17,7 @@ const asteroidsApplication = await readFile(new URL("../src/examples/asteroids/a
 // order examples.ts uses rather than as a subset: what the application contract
 // reaches is the program's business, and a partial load that happened to be
 // enough would be this test deciding it.
-const wolf3dApplication = wolf3dSource;
+const wolf3dApplication = wolf3dSources;
 const generatedWasm = await readFile(new URL("../public/yalisp/seed.wasm", import.meta.url));
 const uiSource = await readFile(new URL("../src/seed-runtime.ts", import.meta.url), "utf8");
 const wabt = await wabtInit();
@@ -201,7 +201,7 @@ test("Asteroids entities, declared input, hit rules, and draw protocol execute i
 // in a bare bootstrap session, with no assets and no host.
 test("Wolf3D declares a native-resolution indexed surface and reports absent originals", async () => {
   const session = await createSession({ boot: true });
-  session.evaluateQuietly(wolf3dApplication);
+  for (const module of wolf3dApplication) session.evaluateQuietly(module);
   const mount = session.evaluate("(app.mount)");
   assert.match(mount, /^\(mount 320 200 Wolf3D /, "the original's own screen mode is what it mounts");
   assert.match(mount, /\(surface indexed8 \(#[0-9a-f]{6}( #[0-9a-f]{6})*\)\)\)$/, "a paletted byte surface, not draw commands");
@@ -292,6 +292,24 @@ test("fixed input and heap limits fail truthfully instead of crossing WebAssembl
   assert.ok(exhaustion instanceof WebAssembly.RuntimeError, "bounded seed should eventually trap at its heap limit");
   assert.equal(exhaustion.seedDiagnostic, "heap exhausted");
   assert.match(exhaustion.message, /unreachable/);
+});
+
+test("ordered module loads accumulate in one session while preserving the per-input limit", async () => {
+  const first = `(define ordered-base 41)\n;${"a".repeat(70000)}`;
+  const second = `(define ordered-total (+ ordered-base 1))\n;${"b".repeat(70000)}`;
+  const limit = inputEnd - inputPointer;
+  assert.ok(encoder.encode(first).length <= limit);
+  assert.ok(encoder.encode(second).length <= limit);
+  assert.ok(encoder.encode(first).length + encoder.encode(second).length > limit);
+
+  const session = await createSession({ boot: true });
+  session.evaluateQuietly(first);
+  session.evaluateQuietly(second);
+  assert.equal(session.evaluate("ordered-total"), "42");
+
+  const reversed = await createSession({ boot: true });
+  const { diagnostic } = reversed.evaluateTrap(second);
+  assert.equal(diagnostic, "unbound: ordered-base");
 });
 
 test("REPL keeps its interpreter session focused while compiler paths remain separately verified", async () => {

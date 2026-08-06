@@ -8,9 +8,9 @@ import { createSeedSession } from "./seed-session.mjs";
 import {
   fromPublic,
   haveWolf3dOriginals as haveOriginals,
+  loadWolf3d,
   wolf3dAssetRoot as assetRoot,
-  wolf3dSkipReason as skipReason,
-  wolf3dSource as source
+  wolf3dSkipReason as skipReason
 } from "./wolf3d-source.mjs";
 
 // The wall textures: that the bytes arrived, that the Lisp reads the page file
@@ -28,7 +28,7 @@ import {
 
 async function application(fetcher = fromPublic) {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   const result = await mountDeclaredAssets(session, fetcher);
   return { session, ...result };
 }
@@ -40,7 +40,7 @@ const route = JSON.parse(await readFile(new URL("./fixtures/wolf3d-r1-route-v3.j
 
 test("CalcProjection matches the original float-angle table at viewsize 15", async () => {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   session.evaluateQuietly("(wl.calc-projection)");
   const width = number(session, "wl.viewwidth");
   const half = width / 2;
@@ -205,7 +205,7 @@ test("a file that is not the palette object is refused", async (t) => {
 
 async function rendererState() {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   session.evaluateQuietly(`
     (wl.view! wl.PIXX 0)
     (wl.view! wl.VIEWX 0)
@@ -482,7 +482,7 @@ const syntheticPageFile = `
 
 async function scaler() {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   session.evaluateQuietly(syntheticPageFile);
   session.evaluateQuietly("(t.setup)");
   return session;

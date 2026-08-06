@@ -5,8 +5,8 @@ import { createSeedSession } from "./seed-session.mjs";
 import {
   fromPublic,
   haveWolf3dOriginals as haveOriginals,
+  loadWolf3d,
   wolf3dSkipReason as skipReason,
-  wolf3dSource as source,
 } from "./wolf3d-source.mjs";
 
 const STAT_TYPES = Object.freeze([
@@ -20,7 +20,7 @@ const BONUS = 2;
 
 async function application() {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   await mountDeclaredAssets(session, fromPublic);
   return session;
 }
@@ -36,7 +36,7 @@ const staticRow = (session, index) => ({
 
 test("the non-SPEAR statinfo table is exact and rejects non-WL6 slots", async () => {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   assert.deepEqual(
     STAT_TYPES.map((unused, type) => number(session, `(wl.static-info-type ${type})`)),
     STAT_TYPES,

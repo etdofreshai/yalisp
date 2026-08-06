@@ -5,15 +5,15 @@ import { createSeedSession } from "./seed-session.mjs";
 import {
   fromPublic,
   haveWolf3dOriginals as haveOriginals,
+  loadWolf3d,
   wolf3dSkipReason as skipReason,
-  wolf3dSource as source
 } from "./wolf3d-source.mjs";
 
 const number = (session, form) => Number(session.evaluate(form));
 
 async function application() {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   await mountDeclaredAssets(session, fromPublic);
   return session;
 }

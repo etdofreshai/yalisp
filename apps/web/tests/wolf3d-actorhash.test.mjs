@@ -4,8 +4,8 @@ import test from "node:test";
 import { mountDeclaredAssets } from "../src/examples/runtime/asset-mount.ts";
 import { parseLispValue } from "../src/examples/runtime/lisp-value.ts";
 import { createSeedSession } from "./seed-session.mjs";
-import { fromPublic, haveWolf3dOriginals, wolf3dSkipReason,
-  wolf3dSource as source } from "./wolf3d-source.mjs";
+import { fromPublic, haveWolf3dOriginals, loadWolf3d, wolf3dSkipReason,
+  wolf3dSources as sources } from "./wolf3d-source.mjs";
 
 const LIMIT = 130048;
 const mix = (hash, value) => (Math.imul(hash, 33) ^ value) >>> 0;
@@ -15,7 +15,7 @@ const route = JSON.parse(await readFile(
 
 async function session() {
   const value = await createSeedSession();
-  value.evaluateQuietly(source);
+  loadWolf3d(value);
   return value;
 }
 
@@ -54,8 +54,8 @@ function installSyntheticActors(value, firstX = 1, secondX = 2) {
       (wl.actor-aux-zero! 0) (wl.actor-aux-zero! 1)))`);
 }
 
-test("actorhash source fits, evaluates, and derives every reached R1 shape transition", async () => {
-  assert.ok(new TextEncoder().encode(source).length <= LIMIT);
+test("actorhash modules fit, evaluate in order, and derive every reached R1 shape transition", async () => {
+  assert.ok(sources.every((source) => new TextEncoder().encode(source).length <= LIMIT));
   const value = await session();
   assert.equal(Number(value.evaluate("(bytes.length wl.actoraux)")), 900);
   assert.deepEqual(parseLispValue(value.evaluate(`(list

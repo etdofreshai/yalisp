@@ -7,8 +7,8 @@ import { createSeedSession } from "./seed-session.mjs";
 import {
   fromPublic,
   haveWolf3dOriginals as haveOriginals,
+  loadWolf3d,
   wolf3dSkipReason as skipReason,
-  wolf3dSource as source
 } from "./wolf3d-source.mjs";
 
 const route = JSON.parse(await readFile(new URL("./fixtures/wolf3d-r1-route-v3.json", import.meta.url), "utf8"));
@@ -16,7 +16,7 @@ const number = (session, form) => Number(session.evaluate(form));
 
 async function application() {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   await mountDeclaredAssets(session, fromPublic);
   return session;
 }
@@ -27,7 +27,7 @@ function advance(session, record) {
 
 test("NewGame owns campaign, pistol, and attack defaults before a nonzero level selection", async () => {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   session.evaluateQuietly("(set! wl.score 99)");
   session.evaluateQuietly("(set! wl.lives 1)");
   session.evaluateQuietly("(set! wl.weapon 0)");
@@ -62,7 +62,7 @@ test("SpawnPlayer installs s_player and FL_NEVERMARK semantics", async (t) => {
 
 test("ID_US_A table cursor increments before lookup and wraps exactly", async () => {
   const session = await createSeedSession();
-  session.evaluateQuietly(source);
+  loadWolf3d(session);
   session.evaluateQuietly("(set! wl.rndindex 255)");
   const table = Uint8Array.from({ length: 256 }, () => number(session, "(wl.us-rndt)"));
   assert.equal(
