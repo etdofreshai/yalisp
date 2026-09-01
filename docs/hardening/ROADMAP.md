@@ -76,6 +76,17 @@ Exit criteria:
 - malformed input and depth/size/work caps fail deterministically without
   out-of-bounds access or unbounded host recursion.
 
+Current evidence: generator `yalisp-acyclic-data-v1`, seed `0x59414c49`, 256
+cases, and maximum generated depth 4 now pass canonical `read(print(v))` checks.
+Nine fixed string cases and 14 grammar cases cover control escapes, delimiters,
+Unicode, comments, proper/dotted lists, numeric bounds, and symbols; two
+malformed cases have stable diagnostics. The deterministic first failures were
+carriage return and generated case 1 containing byte `0x04`; the seed reader now
+decodes the canonical printer's complete control-escape profile. This is a
+partial M2 slice, not milestone completion: independent macro-expansion hashes,
+persisted shrinking, broader source generation, and explicit reader depth/work
+caps remain.
+
 ## M3 — structured errors and transactional failure boundaries
 
 Goal: replace incidental traps with a minimal inspectable language error record

@@ -749,8 +749,26 @@
       (then (return (call $mkfix (call $parse_int (local.get $start) (local.get $len))))))
     (call $intern (local.get $start) (local.get $len)))
 
+  ;; Canonical DOM strings emit lower-case \u00xx for control bytes. Return a
+  ;; nibble for either hex case, or -1 when the byte is not hexadecimal.
+  (func $hex_value (param $c i32) (result i32)
+    (if (result i32)
+      (i32.and (i32.ge_u (local.get $c) (i32.const 48))
+               (i32.le_u (local.get $c) (i32.const 57)))
+      (then (i32.sub (local.get $c) (i32.const 48)))
+      (else (if (result i32)
+        (i32.and (i32.ge_u (local.get $c) (i32.const 97))
+                 (i32.le_u (local.get $c) (i32.const 102)))
+        (then (i32.sub (local.get $c) (i32.const 87)))
+        (else (if (result i32)
+          (i32.and (i32.ge_u (local.get $c) (i32.const 65))
+                   (i32.le_u (local.get $c) (i32.const 70)))
+          (then (i32.sub (local.get $c) (i32.const 55)))
+          (else (i32.const -1))))))))
+
   (func $read_string (result i32)
     (local $start i32) (local $n i32) (local $c i32) (local $s i32)
+    (local $hi i32) (local $lo i32)
     (global.set $rp (i32.add (global.get $rp) (i32.const 1)))   ;; skip opening "
     (local.set $start (global.get $heap))
     (local.set $n (i32.const 0))
@@ -764,7 +782,26 @@
           (br_if $done (i32.ge_u (global.get $rp) (global.get $rend)))
           (local.set $c (i32.load8_u (global.get $rp)))
           (if (i32.eq (local.get $c) (i32.const 110)) (then (local.set $c (i32.const 10)))      ;; \n
-            (else (if (i32.eq (local.get $c) (i32.const 116)) (then (local.set $c (i32.const 9)))))))) ;; \t
+            (else (if (i32.eq (local.get $c) (i32.const 116)) (then (local.set $c (i32.const 9))) ;; \t
+              (else (if (i32.eq (local.get $c) (i32.const 114)) (then (local.set $c (i32.const 13))) ;; \r
+                (else (if (i32.eq (local.get $c) (i32.const 98)) (then (local.set $c (i32.const 8))) ;; \b
+                  (else (if (i32.eq (local.get $c) (i32.const 102)) (then (local.set $c (i32.const 12))) ;; \f
+                    (else (if (i32.and (i32.eq (local.get $c) (i32.const 117)) ;; \u00xx
+                                           (i32.lt_u (i32.add (global.get $rp) (i32.const 4))
+                                                     (global.get $rend)))
+                      (then
+                        (if (i32.and
+                              (i32.eq (i32.load8_u offset=1 (global.get $rp)) (i32.const 48))
+                              (i32.eq (i32.load8_u offset=2 (global.get $rp)) (i32.const 48)))
+                          (then
+                            (local.set $hi (call $hex_value (i32.load8_u offset=3 (global.get $rp))))
+                            (local.set $lo (call $hex_value (i32.load8_u offset=4 (global.get $rp))))
+                            (if (i32.and (i32.ge_s (local.get $hi) (i32.const 0))
+                                         (i32.ge_s (local.get $lo) (i32.const 0)))
+                              (then
+                                (local.set $c (i32.or (i32.shl (local.get $hi) (i32.const 4))
+                                                      (local.get $lo)))
+                                (global.set $rp (i32.add (global.get $rp) (i32.const 4)))))))))))))))))))))
       (call $ensure_space (i32.add (i32.add (local.get $start) (local.get $n)) (i32.const 1)))
       (i32.store8 (i32.add (local.get $start) (local.get $n)) (local.get $c))
       (local.set $n (i32.add (local.get $n) (i32.const 1)))

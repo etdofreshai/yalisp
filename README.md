@@ -30,6 +30,13 @@ npm test
 npm run build
 ```
 
+## Hardening evidence
+
+The normative semantics, staged bootstrap map, sequential roadmap,
+deterministic harness, and living scorecard are under `docs/hardening/`. The
+current partial M2 reader/printer result is frozen in
+`docs/hardening/baselines/2026-09-01-m2-reader-printer.md`.
+
 ## Development deployment
 
 The root `Dockerfile` runs the Vite development server on port 5173 with live

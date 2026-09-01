@@ -75,9 +75,13 @@ must not be confused, strings must escape control and delimiter bytes, and
 dotted structure must remain dotted. Non-data runtime values use stable opaque
 forms such as `<closure>`; round-trip equality is not claimed for opaque values.
 
-Current state: ordinary printing favors REPL readability, while DOM printing
-escapes machine-readable strings. Comprehensive reader/printer property tests
-and a single canonical serialization profile do not yet exist.
+Current state: ordinary printing favors REPL readability, while DOM printing is
+the canonical data transport. The seed reader decodes that printer's `\\n`,
+`\\t`, `\\r`, `\\b`, `\\f`, and lower-case `\\u00xx` control escapes. A
+versioned, fixed-seed M2 property covers 256 generated acyclic values plus fixed
+string, dotted-pair, comment, numeric, symbol, and Unicode cases. General
+source-form generation, shrinking, and explicit reader depth/work caps remain
+open; opaque runtime values still have no round-trip claim.
 
 ## 4. Evaluation order and calls
 

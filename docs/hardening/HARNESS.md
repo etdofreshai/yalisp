@@ -55,9 +55,10 @@ generated code have authored per-case caps.
 
 ### Reader/printer
 
-- fixed edge corpus for whitespace, comments, quotes, dotted lists, escapes,
-  Unicode, limits, and malformed input;
-- seeded generated acyclic data for `read(print(v))`;
+- fixed edge corpus for comments, quotes, dotted lists, escapes, Unicode,
+  numeric bounds, symbols, and malformed string/list input (implemented);
+- seeded generated acyclic data for `read(print(v))` (implemented as
+  `yalisp-acyclic-data-v1`, seed `0x59414c49`, 256 cases, depth 4);
 - seeded source forms for parse/print/parse canonical idempotence;
 - persisted seed, generator version, case count, and minimal shrunk failure.
 
@@ -208,9 +209,15 @@ npm run typecheck
 npm test
 npm run build
 npm run hardening:golden
+node --test --test-concurrency=1 apps/web/tests/reader-printer-property.test.mjs
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```
+
+The focused reader/property command is deterministic and prints its generator
+configuration into TAP diagnostics. A failing case reports the stable case
+index and source/printed/reparsed triple. Minimal automatic shrinking and the
+broader malformed depth/work corpus are still M2 requirements.
 
 The web test command fixes Node's file concurrency at four workers. This keeps
 the same complete file/case set while bounding concurrent 240 MiB application
