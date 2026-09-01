@@ -10,6 +10,12 @@ import {
   loadWolf3d,
   wolf3dSkipReason as skipReason,
 } from "./wolf3d-source.mjs";
+import {
+  evaluateTransientExport,
+  LONG_REPLAY_CAPACITY_BYTES,
+  prepareLongReplay,
+  replayTraceRecord,
+} from "./wolf3d-replay.mjs";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/wolf3d-r1-door-prefix-v3.json", import.meta.url), "utf8"));
 const routeFixture = JSON.parse(await readFile(new URL("./fixtures/wolf3d-r1-route-v3.json", import.meta.url), "utf8"));
@@ -48,6 +54,8 @@ async function application() {
   const session = await createSeedSession();
   loadWolf3d(session);
   await mountDeclaredAssets(session, fromPublic);
+  prepareLongReplay(session);
+  assert.equal(session.memoryBytes, LONG_REPLAY_CAPACITY_BYTES);
   return session;
 }
 
@@ -60,12 +68,18 @@ async function replay(records) {
   const projected = [];
   const rndindices = [];
   for (const record of records) {
-    projected.push(projectedRecord(session.evaluate(
-      `(app.replay-advance ${record.tics} ${record.controlx} ${record.controly} ${record.buttons})`
-    )));
+    projected.push(projectedRecord(replayTraceRecord(session, record).output));
     rndindices.push(Number(session.evaluate("wl.rndindex")));
   }
   return { session, projected, rndindices };
+}
+
+function traceRecord(session) {
+  return projectedRecord(evaluateTransientExport(session, "(app.trace-record)").output);
+}
+
+function advanceRecord(session, tics, controlx, controly, buttons) {
+  return projectedRecord(replayTraceRecord(session, { tics, controlx, controly, buttons }).output);
 }
 
 function firstDifference(expected, actual, fields = fixture.fields) {
@@ -149,21 +163,19 @@ test("the promoted cursor is emitted at the setup and first-replay boundaries", 
   const session = await application();
   assert.equal(Number(session.evaluate("wl.rndindex")), 6,
     "deterministic E1M1 setup consumes six active-patrol spawn draws");
-  const afterSetup = projectedRecord(session.evaluate("(app.trace-record)"));
+  const afterSetup = traceRecord(session);
   assert.deepEqual(Object.keys(afterSetup), canonicalProjectionFields);
   assert.equal(afterSetup.rndindex, 6, "trace-record reads the live cursor without advancing it");
 
   const input = routeFixture.records[0];
-  const first = projectedRecord(session.evaluate(
-    `(app.replay-advance ${input.tics} ${input.controlx} ${input.controly} ${input.buttons})`
-  ));
+  const first = projectedRecord(replayTraceRecord(session, input).output);
   assert.equal(first.rndindex, 7, "the first retained tic performs the canonical pre-increment draw");
 
   session.evaluateQuietly("(set! wl.rndindex 200)");
   session.evaluateQuietly("(wl.setup-game-level app.wall-plane app.object-plane)");
   assert.equal(Number(session.evaluate("wl.rndindex")), 6,
     "fresh deterministic setup resets before scanning and consuming the six patrol draws");
-  assert.equal(projectedRecord(session.evaluate("(app.trace-record)")).rndindex, 6);
+  assert.equal(traceRecord(session).rndindex, 6);
 });
 
 test("fixture schema validation rejects partial rndindex promotion", () => {
@@ -189,12 +201,12 @@ test("fixture schema validation rejects partial rndindex promotion", () => {
 test("the promoted totals report alternate-level scan ownership through the trace boundary", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
-  assert.deepEqual(totalPromotedFields.map((field) => projectedRecord(session.evaluate("(app.trace-record)"))[field]), [5, 23, 20]);
+  assert.deepEqual(totalPromotedFields.map((field) => traceRecord(session)[field]), [5, 23, 20]);
   session.evaluateQuietly("(wl.new-game 1 1)");
   session.evaluateQuietly("(wl.select-map 1)");
   session.evaluateQuietly("(define test.trace-e2m2 (ca.cache-map app.tinf app.maps 11))");
   session.evaluateQuietly("(wl.setup-game-level (car test.trace-e2m2) (car (cdr test.trace-e2m2)))");
-  const alternate = projectedRecord(session.evaluate("(app.trace-record)"));
+  const alternate = traceRecord(session);
   assert.deepEqual(Object.keys(alternate), canonicalProjectionFields);
   assert.deepEqual(totalPromotedFields.map((field) => alternate[field]), [4, 33, 18]);
   assert.deepEqual([alternate.difficulty, alternate.episode, alternate.map], [1, 1, 1]);
@@ -203,40 +215,40 @@ test("the promoted totals report alternate-level scan ownership through the trac
 test("the promoted treasurecount reports the live runtime counter, not a constant", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
-  assert.equal(projectedRecord(session.evaluate("(app.trace-record)")).treasurecount, 0);
+  assert.equal(traceRecord(session).treasurecount, 0);
 
   const crown = Number(session.evaluate("(wl.spawn-static-item 1 1 wl.BO-CROWN)"));
   assert.equal(session.evaluate(`(wl.get-static ${crown})`), "true");
-  const collected = projectedRecord(session.evaluate("(app.trace-record)"));
+  const collected = traceRecord(session);
   assert.deepEqual(Object.keys(collected), canonicalProjectionFields);
   assert.equal(collected.treasurecount, 1, "the boundary reads wl.treasurecount");
   assert.equal(collected.score, 5000, "the same GetBonus is what moved it");
 
   session.evaluateQuietly("(wl.setup-game-level app.wall-plane app.object-plane)");
-  assert.equal(projectedRecord(session.evaluate("(app.trace-record)")).treasurecount, 0,
+  assert.equal(traceRecord(session).treasurecount, 0,
     "fresh level setup resets what the projection reports");
 });
 
 test("the promoted secretcount reports the live PushWall counter, not a constant", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
-  assert.equal(projectedRecord(session.evaluate("(app.trace-record)")).secretcount, 0);
-  const cachedPlane1 = projectedRecord(session.evaluate("(app.trace-record)")).plane1hash;
+  assert.equal(traceRecord(session).secretcount, 0);
+  const cachedPlane1 = traceRecord(session).plane1hash;
 
   // E1M1 object-plane tile 98 at (18,49); the player stands south of it facing
   // north, which is the only cardinal Cmd_Use can reach it from.
   session.evaluateQuietly("(wl.spawn-player 18 50 wl.NORTH)");
-  const pushed = projectedRecord(session.evaluate("(app.replay-advance 1 0 0 8)"));
+  const pushed = advanceRecord(session, 1, 0, 0, 8);
   assert.deepEqual(Object.keys(pushed), canonicalProjectionFields);
   assert.equal(pushed.secretcount, 1, "the boundary reads wl.secretcount");
   assert.notEqual(pushed.plane1hash, cachedPlane1, "removing the P tile re-fingerprints the object plane");
 
-  const held = projectedRecord(session.evaluate("(app.replay-advance 1 0 0 8)"));
+  const held = advanceRecord(session, 1, 0, 0, 8);
   assert.equal(held.secretcount, 1, "a held use tic still reaches PushWall and pwallstate refuses it");
   assert.equal(held.plane1hash, pushed.plane1hash);
 
   session.evaluateQuietly("(wl.setup-game-level app.wall-plane app.object-plane)");
-  assert.equal(projectedRecord(session.evaluate("(app.trace-record)")).secretcount, 0,
+  assert.equal(traceRecord(session).secretcount, 0,
     "fresh level setup resets what the projection reports");
 });
 
@@ -248,13 +260,13 @@ test("the promoted pushwall fields report live PushWall and MovePWalls state", a
   if (!(await haveOriginals())) return t.skip(skipReason);
   const session = await application();
   const pwall = (record) => pwallPromotedFields.map((field) => record[field]);
-  const resting = projectedRecord(session.evaluate("(app.trace-record)"));
+  const resting = traceRecord(session);
   assert.deepEqual(pwall(resting), [0, 0, 0, 0, 0]);
   const startingPlane0 = resting.plane0hash;
 
   // (18,50) is the floor south of the object-plane PUSHABLETILE at (18,49).
   session.evaluateQuietly("(wl.spawn-player 18 50 wl.NORTH)");
-  const activated = projectedRecord(session.evaluate("(app.replay-advance 1 0 0 8)"));
+  const activated = advanceRecord(session, 1, 0, 0, 8);
   assert.deepEqual(Object.keys(activated), canonicalProjectionFields);
   assert.deepEqual(pwall(activated), [1, 0, 18, 49, 0], "PushWall's own five assignments");
   assert.equal(activated.plane0hash, startingPlane0, "activation writes only the object plane");
@@ -263,7 +275,7 @@ test("the promoted pushwall fields report live PushWall and MovePWalls state", a
   // step that reaches 133, and 259 is the first value past 256.
   const records = [];
   for (let step = 0; step < 43; step += 1) {
-    records.push(projectedRecord(session.evaluate("(app.replay-advance 6 0 0 0)")));
+    records.push(advanceRecord(session, 6, 0, 0, 0));
   }
   assert.deepEqual(pwall(records[0]), [7, 3, 18, 49, 0], "pwallpos is (pwallstate/2)&63");
   assert.deepEqual(pwall(records[20]), [127, 63, 18, 49, 0], "the last record before the crossing");
@@ -285,7 +297,7 @@ test("the promoted initialization fields report nonzero NewGame ownership in can
   session.evaluateQuietly("(wl.new-game 3 4)");
   session.evaluateQuietly("(wl.select-map 7)");
   session.evaluateQuietly("(wl.spawn-player 2 3 1)");
-  const record = projectedRecord(session.evaluate("(app.trace-record)"));
+  const record = traceRecord(session);
   assert.deepEqual(Object.keys(record), fixture.fields);
   assert.deepEqual(Object.fromEntries(newlyPromotedFields.map((field) => [field, record[field]])), {
     score: 0, lives: 3, map: 7, episode: 4, bestweapon: 1,

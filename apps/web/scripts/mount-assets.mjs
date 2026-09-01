@@ -25,7 +25,7 @@
 // entirely. Which is which is the application's knowledge, declared per file.
 
 import { createHash } from "node:crypto";
-import { copyFile, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -82,16 +82,53 @@ async function locate(declaration, file, declarationPath) {
   return { root: undefined, roots };
 }
 
-async function mount({ example, path, declaration }) {
-  const target = declaration.target ?? example;
+function safeTarget(value) {
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-][A-Za-z0-9._-]*$/.test(value) || value === "." || value === "..") {
+    throw new Error("Asset target must be one safe path segment.");
+  }
+  return value;
+}
+
+async function preserveAppleDouble(source, destination) {
+  if (!await exists(source)) return;
+  for (const entry of await readdir(source, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.startsWith("._")) await copyFile(join(source, entry.name), join(destination, entry.name));
+  }
+}
+
+async function replaceDirectory(destination, staging) {
+  // Delete the prior payload before publishing the completed staging tree.
+  // If the final rename fails the mount is absent, never stale or partial.
+  await rm(destination, { recursive: true, force: true });
+  try {
+    await rename(staging, destination);
+  } catch (error) {
+    await rm(staging, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+export async function mountAssetDeclaration({ example, path, declaration }, {
+  root = webRoot,
+  assetsRoot = publicAssetsRoot,
+} = {}) {
+  const target = safeTarget(declaration.target ?? example);
   const found = [];
   const absent = [];
   for (const file of declaration.files) {
-    const { root, roots } = await locate(declaration, file, path);
-    if (root) found.push({ file, root });
-    else absent.push({ name: file.source ?? file.name, searched: roots.map((candidate) => relative(webRoot, candidate)) });
+    safeTarget(file.name);
+    if (file.source) safeTarget(file.source);
+    const { root: locatedRoot, roots } = await locate(declaration, file, path);
+    if (locatedRoot) found.push({ file, root: locatedRoot });
+    else absent.push({ name: file.source ?? file.name, searched: roots.map((candidate) => relative(root, candidate)) });
   }
+  const destination = join(assetsRoot, target);
+  const staging = `${destination}.mount-${process.pid}-${Date.now()}`;
+  await rm(staging, { recursive: true, force: true });
+  await mkdir(staging, { recursive: true });
+  await preserveAppleDouble(destination, staging);
   if (!found.length) {
+    await replaceDirectory(destination, staging);
     return {
       target,
       mounted: false,
@@ -99,13 +136,11 @@ async function mount({ example, path, declaration }) {
       absent
     };
   }
-  const destination = join(publicAssetsRoot, target);
-  await mkdir(destination, { recursive: true });
   const files = [];
   for (const { file, root } of found) {
     const source = join(root, file.source ?? file.name);
     const bytes = await readFile(source);
-    await copyFile(source, join(destination, file.name));
+    await copyFile(source, join(staging, file.name));
     files.push({ name: file.name, bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex"), source: root });
   }
   const manifest = {
@@ -115,35 +150,39 @@ async function mount({ example, path, declaration }) {
     files,
     absent: absent.map(({ name }) => name)
   };
-  await writeFile(join(destination, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-  return { target, mounted: true, destination: relative(webRoot, destination), files, absent };
+  await writeFile(join(staging, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  await replaceDirectory(destination, staging);
+  return { target, mounted: true, destination: relative(root, destination), files, absent };
 }
 
-const requested = process.argv.slice(2);
-const all = await declarations();
-const selected = requested.length ? all.filter(({ example, declaration }) => requested.includes(declaration.target ?? example)) : all;
-if (requested.length && selected.length !== requested.length) {
-  const known = all.map(({ example, declaration }) => declaration.target ?? example);
-  throw new Error(`No asset declaration for ${requested.filter((name) => !known.includes(name)).join(", ")}. Known: ${known.join(", ") || "none"}.`);
+export async function runAssetMount(requested = process.argv.slice(2)) {
+  const all = await declarations();
+  const selected = requested.length ? all.filter(({ example, declaration }) => requested.includes(declaration.target ?? example)) : all;
+  if (requested.length && selected.length !== requested.length) {
+    const known = all.map(({ example, declaration }) => declaration.target ?? example);
+    throw new Error(`No asset declaration for ${requested.filter((name) => !known.includes(name)).join(", ")}. Known: ${known.join(", ") || "none"}.`);
+  }
+
+  const results = [];
+  for (const declaration of selected) results.push(await mountAssetDeclaration(declaration));
+  for (const result of results) {
+    if (result.mounted) {
+      const total = result.files.reduce((sum, file) => sum + file.bytes, 0);
+      console.log(`mounted ${result.target}: ${result.files.length} files, ${total} bytes -> ${result.destination}`);
+      for (const file of result.files) console.log(`  ${file.name}  ${file.bytes} bytes  sha256:${file.sha256.slice(0, 16)}…`);
+    } else {
+      // Most checkouts have no commercial originals. The exact replacement
+      // above still clears any stale prior payload before this clean skip.
+      console.log(`skipped ${result.target}: ${result.reason}`);
+    }
+    for (const file of result.absent ?? []) {
+      console.log(`  absent ${file.name}`);
+      for (const path of file.searched) console.log(`    looked in ${path}`);
+    }
+  }
+  return results;
 }
 
-const results = [];
-for (const declaration of selected) results.push(await mount(declaration));
-for (const result of results) {
-  if (result.mounted) {
-    const total = result.files.reduce((sum, file) => sum + file.bytes, 0);
-    console.log(`mounted ${result.target}: ${result.files.length} files, ${total} bytes -> ${result.destination}`);
-    for (const file of result.files) console.log(`  ${file.name}  ${file.bytes} bytes  sha256:${file.sha256.slice(0, 16)}…`);
-  } else {
-    // Not an error. Most checkouts will not have the originals, and everything
-    // that does not need them still has to build.
-    console.log(`skipped ${result.target}: ${result.reason}`);
-  }
-  // Said the same way whether or not anything was mounted, because a file that
-  // was not found is the same fact either way and the program is the thing
-  // that decides whether it can do without it.
-  for (const file of result.absent ?? []) {
-    console.log(`  absent ${file.name}`);
-    for (const path of file.searched) console.log(`    looked in ${path}`);
-  }
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await runAssetMount();
 }

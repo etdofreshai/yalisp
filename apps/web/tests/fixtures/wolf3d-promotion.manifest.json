@@ -1,0 +1,36 @@
+{
+  "kind": "wolf3d-yalisp-source-promotion-v1",
+  "sourceManifestSha256": "31181c032aaf435482121c07647751428eaf5919e5b2077d00188c6b1f34d371",
+  "modules": [
+    { "name": "wl-def", "bytes": 1499, "sha256": "cdd84b1b27929292310dda6ee6702d2d894a76aa41517a2bec1bfbeb69394ef0" },
+    { "name": "wl-fixed", "bytes": 5018, "sha256": "4d369adaa76adef451a6c7929a1a60d848e3ce2d37dbb8ebe707587c5d07da1e" },
+    { "name": "id-ca", "bytes": 16879, "sha256": "d09967cc45c5707a8800db65a6f60d87ca142d1cbd10eb01566acb0011e67295", "sourceBlobSha1": "6ad8c55d3f4870acf7541c6bb0457c2c974c0ed8" },
+    { "name": "id-pm", "bytes": 3181, "sha256": "66350211d54a7ab9d5110e117b9c5b7205f592a51eebfd49a477f79542a4a16e" },
+    { "name": "id-vl", "bytes": 10597, "sha256": "0d8ec71f006c5c7955c3c4ac807073c5af7e987d7eda81a953d0e358c4f74b76" },
+    { "name": "id-vh", "bytes": 14136, "sha256": "88e17ae956842288908a0f54f21f57a986daa3fc569ce979c7d1742f323f35a6" },
+    { "name": "wl-main", "bytes": 3740, "sha256": "c16351dfbc68b6676e64cd74a412be723daed3122c9744013552af13210975c3" },
+    { "name": "wl-game", "bytes": 47679, "sha256": "8c699d1f027bcbed6dffe77a1b98c24cc5140194c47d97ba92056be8fecbf1e1", "sourceBlobSha1": "a3c60810ae0c59ec4e59180d64e45c43ca300521" },
+    { "name": "wl-agent", "bytes": 26921, "sha256": "9b633e0c314dc06a9ef0cc4731d1683800b27aab783c6b1eb8a33241d764c0d3" },
+    { "name": "wl-act2", "bytes": 85431, "sha256": "6ac724b388f0358d24ce31c61c3124f3dd10b599b5efeffedb15d1b3767011d2" },
+    { "name": "wl-state", "bytes": 1080, "sha256": "e9ef537c86488b1d1619421839014dcdc0cb741cc5177ec40659acc5a533c481" },
+    { "name": "wl-act1", "bytes": 1309, "sha256": "98c9ef4a38f571acbc210ef6256150e6f95686050404821876956d312a70c900" },
+    { "name": "wl-play", "bytes": 12213, "sha256": "3141bedd0c386f80035c2960c29daa2361bfad3b3f3e74c6b74a374a9a5df9f6" },
+    { "name": "wl-audio", "bytes": 8467, "sha256": "e85c4a44f2f0d0ddefe49b7388169ceb555c5e20eee8d1392e1805cd519be9a8" },
+    { "name": "wl-sound", "bytes": 55553, "sha256": "508afe6fce4ecc3277764fd850c16395a5ee9922856b4d581b0360fccdd8a9cf", "sourceBlobSha1": "35047bec5acba19242a1aacf60d1ee73e6a52c7f" },
+    { "name": "wl-text", "bytes": 51342, "sha256": "3bd6f855641dc1dc40e05ff180f2bf1ce9cf11ce50391827f68d2edab7d62ecb" },
+    { "name": "wl-inter", "bytes": 24398, "sha256": "c175cd0d9b7863dba324158cc7decb18c48c532c636d322d2baefa5d9f68a423" },
+    { "name": "wl-menu", "bytes": 52501, "sha256": "ea7510e4401a25e2ba57be11a6d21cc7cf70b683d3d8fd3684941bd00130b2d4" },
+    { "name": "wl-config", "bytes": 7185, "sha256": "78b9bbf633472704f010c7f6838fd019ca6da56122694d6dcba89ccece3e6b6d" },
+    { "name": "wl-save", "bytes": 13031, "sha256": "2d43d3aef0b097e3c8400ed25043f06cdcab45553e16f0c535a15278551b8da2" },
+    { "name": "wl-draw", "bytes": 24736, "sha256": "1eabde7b905c472c40c31e4d6da534cb560c572da0e3ef1d560ee65008b172d6" },
+    { "name": "wl-scale", "bytes": 17059, "sha256": "74c2210e51cc5762b395e3fa1065e2625eee84c8e1703a023ed14b0606e0e355" },
+    { "name": "app", "bytes": 124047, "sha256": "c9855c4f1c00013f02cefc0713479794402a0633176088d6abc6d28f85504b65", "sourceBlobSha1": "619c486cf0a9822e351287e932451bfab175a6ba" }
+  ],
+  "oplHostSha256": "b268204bd3e5a52f69c8bd4a56b3a53a7dcfe264bbcf745a8e2777d78d12ed2c",
+  "normalizedAudioHostSha256": "1c1de373e64c5bbcefe90fb38d489144ad30e5fb06f599d1fd25752405c62a70",
+  "canonicalNormalizedAudioHostSha256": "492a8fad8d6e9585bfba2b7c3167fdab568a4300325d6e88a0b886706dde1367",
+  "requiredAssets": [
+    "MAPHEAD.WL6", "GAMEMAPS.WL6", "VSWAP.WL6", "VGAHEAD.WL6",
+    "VGAGRAPH.WL6", "VGADICT.WL6", "AUDIOHED.WL6", "AUDIOT.WL6", "GAMEPAL.OBJ"
+  ]
+}

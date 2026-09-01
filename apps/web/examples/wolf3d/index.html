@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101310" />
-    <meta name="description" content="Decode the original Wolfenstein 3D map data in YALISP" />
+    <meta name="description" content="Run the source-faithful Wolfenstein 3D YALISP port" />
     <title>Wolf3D · YALISP Examples</title>
     <style data-theme-bootstrap>html{background:#101310;color-scheme:dark}html[data-theme="light"]{background:#f0eeea;color-scheme:light}</style>
     <script src="/theme-init.js"></script>
@@ -18,14 +18,14 @@
         <p class="eyebrow"><a href="/examples/">Examples</a> / Wolf3D</p>
         <section>
           <p class="section-number">05 / Original data</p>
-          <h1>Wolf3D map data,<br /><em>decoded in Lisp.</em></h1>
-          <p class="lede">The application declares the original <code>MAPHEAD.WL6</code> and <code>GAMEMAPS.WL6</code>, the host hands over their bytes, and Lisp does the rest: <code>ID_CA.C</code>’s map header structures, then Carmack and RLEW expansion of both planes of the first level. What you see is that decode drawn one tile per block — a readout of the original bytes, not a rendered level.</p>
-          <div class="example-meta"><span class="example-badge">Original Steam data files</span><span class="example-badge">Native 320×200 canvas</span><span class="example-badge">ID_CA.C ported to Lisp</span></div>
-          <div class="game-frame" data-lisp-app="wolf3d">Loading the YALISP Wolf3D map decoder…</div>
-          <p class="game-instructions">Arrow keys step one tile along the original’s <code>dirtype</code> facing, refusing solid tiles by <code>SetupGameLevel</code>’s own rule. The originals are commercial data files and are not part of this repository: without them mounted, the page says so instead of showing something invented. The next gate is <code>VSWAP</code> and <code>VGAGRAPH</code>, which carry the real palette and wall textures, and then the raycaster.</p>
+          <h1>Wolf3D,<br /><em>running in YALISP.</em></h1>
+          <p class="lede">Twenty-three source-shaped Lisp modules own the game loop, actors, rendering, menus, intermission, saves, and original audio timing. The generic browser host mounts the nine declared original inputs, forwards controls, presents the indexed framebuffer, and plays the Lisp-exported PCM and OPL register streams.</p>
+          <div class="example-meta"><span class="example-badge">Original Steam data files</span><span class="example-badge">Native 320×200 canvas</span><span class="example-badge">23 YALISP modules</span></div>
+          <div class="game-frame" data-lisp-app="wolf3d">Loading the YALISP Wolf3D runtime…</div>
+          <p class="game-instructions">Use the arrow keys or WASD to move, Space or E to use, and Control to attack. The commercial originals are never committed or shipped in the production bundle: run <code>npm run mount:assets --workspace @yalisp/web -- wolf3d</code> for local development. If any required input or the OPL host is unavailable, the application reports that boundary instead of substituting invented content or silence.</p>
           <div class="application-package">
-            <p><strong>Authenticity boundary.</strong> TypeScript fetches the two declared files, hands their bytes to the evaluator, forwards declared input, and puts a returned framebuffer on a canvas. Every offset, tag, expander, and tile rule below is Lisp, ported from the original C.</p>
-            <article class="application-source"><header><span>src/examples/wolf3d/id-ca.lisp + app.lisp</span><a href="https://github.com/ETdoFreshAI/yalisp/blob/main/apps/web/src/examples/wolf3d/app.lisp">Source ↗</a></header><pre><code data-lisp-application-source="wolf3d">Loading executed YALISP source…</code></pre></article>
+            <p><strong>Authenticity boundary.</strong> TypeScript moves declared bytes, input, framebuffer pixels, and audio output across the host boundary. Game rules, decoding, simulation, presentation state, and audio events remain Lisp-owned.</p>
+            <article class="application-source"><header><span>src/examples/wolf3d/ — executed 23-module package</span><a href="https://github.com/ETdoFreshAI/yalisp/tree/main/apps/web/src/examples/wolf3d">Source ↗</a></header><pre><code data-lisp-application-source="wolf3d">Loading executed YALISP source…</code></pre></article>
           </div>
         </section>
       </main>

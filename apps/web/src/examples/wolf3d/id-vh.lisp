@@ -22,6 +22,19 @@
 (define vh.STRUCTPIC-BYTES (* vh.NUMPICS 4))
 (define vh.STATUSBAR-BYTES (* vh.STATUSBAR-WIDTH vh.STATUSBAR-HEIGHT))
 (define vh.DRAW-BLOCK-PIXELS 64)
+(define vh.FIZZLE-PIXELS 64000)
+(define vh.FIZZLE-LFSR-XOR 73728)       ;; 0x00012000
+(define vh.FIZZLE-BLOCK-PIXELS 64)
+(define vh.FIZZLE-STATE-BYTES 24)
+(define vh.FIZZLE-RND 0)
+(define vh.FIZZLE-FRAME 4)
+(define vh.FIZZLE-PIXELS-PER-FRAME 8)
+(define vh.FIZZLE-WIDTH 12)
+(define vh.FIZZLE-HEIGHT 14)
+(define vh.FIZZLE-DONE 16)
+(define vh.FIZZLE-ABORTED 17)
+(define vh.FIZZLE-ABORTABLE 18)
+(define vh.FIZZLE-REMAINING 20)
 
 (defn vh.picture-entry (chunk)
   (* (- chunk vh.STARTPICS) 4))
@@ -173,3 +186,137 @@
                        (+ left (* top vh.STATUSBAR-WIDTH)) vh.STATUSBAR-WIDTH)
       (heap.release mark)
       frame)))
+
+;;; ID_VH.C's FizzleFade walks a maximal 17-bit LFSR beginning at one. The
+;;; released source derives x/y before advancing the register, checks abort
+;;; once per outer frame, advances even rejected coordinates, uses inclusive
+;;; width/height comparisons, copies the pixel, and only then tests rndval==1.
+;;; A browser must not busy-wait on TimeCount, so one fizzle-step is exactly one
+;;; source outer-frame iteration; the host schedules the next call.
+(defn vh.fizzle-next (rnd)
+  (if (= (bit.and rnd 1) 0)
+      (bit.shr rnd 1)
+      (bit.xor (bit.shr rnd 1) vh.FIZZLE-LFSR-XOR)))
+
+(defn vh.fizzle-x (rnd)
+  (+ (bit.and (bit.shr rnd 8) 255)
+     (bit.shl (bit.and (bit.shr rnd 16) 255) 8)))
+
+(defn vh.fizzle-y (rnd) (bit.and (- (bit.and rnd 255) 1) 255))
+
+(defn vh.fizzle-begin (width height frames abortable)
+  (if (<= frames 0)
+      (ca.graphics-reject (bytes.alloc 0))
+      (let ((state (bytes.alloc vh.FIZZLE-STATE-BYTES)))
+        (vh.fizzle-reset state width height frames abortable))))
+
+(defn vh.fizzle-reset (state width height frames abortable)
+  (if (<= frames 0)
+      (ca.graphics-reject state)
+      (begin
+        (u32! state vh.FIZZLE-RND 1)
+        (u32! state vh.FIZZLE-FRAME 0)
+        (u32! state vh.FIZZLE-PIXELS-PER-FRAME (/ vh.FIZZLE-PIXELS frames))
+        (u16! state vh.FIZZLE-WIDTH width)
+        (u16! state vh.FIZZLE-HEIGHT height)
+        (u8! state vh.FIZZLE-DONE 0)
+        (u8! state vh.FIZZLE-ABORTED 0)
+        (u8! state vh.FIZZLE-ABORTABLE (if abortable 1 0))
+        (u32! state vh.FIZZLE-REMAINING 0)
+        state)))
+
+(defn vh.fizzle-status (state)
+  (if (= (u8@ state vh.FIZZLE-ABORTED) 1)
+      'aborted
+      (if (= (u8@ state vh.FIZZLE-DONE) 1) 'complete 'running)))
+
+(defn vh.fizzle-running? (state)
+  (and (not (nil? state)) (eq? (vh.fizzle-status state) 'running)))
+
+(defn vh.fizzle-step (source source-at dest dest-at stride state acknowledged)
+  (vh.fizzle-step-marked source source-at dest dest-at stride state acknowledged
+                          (heap.used)))
+
+(defn vh.fizzle-step-marked (source source-at dest dest-at stride state acknowledged mark)
+  (let ((status
+          (vh.fizzle-step-run source source-at dest dest-at stride state acknowledged)))
+    (begin (heap.release mark) status)))
+
+(defn vh.fizzle-step-run (source source-at dest dest-at stride state acknowledged)
+  (if (not (vh.fizzle-running? state))
+      (vh.fizzle-status state)
+      (if (and (= (u8@ state vh.FIZZLE-ABORTABLE) 1) acknowledged)
+          (begin
+            (u8! state vh.FIZZLE-ABORTED 1)
+            (u8! state vh.FIZZLE-DONE 1)
+            'aborted)
+          (begin
+            (u32! state vh.FIZZLE-REMAINING
+                  (u32@ state vh.FIZZLE-PIXELS-PER-FRAME))
+            (vh.fizzle-blocks source source-at dest dest-at stride state)
+            (if (= (u8@ state vh.FIZZLE-DONE) 0)
+                (u32! state vh.FIZZLE-FRAME
+                      (+ (u32@ state vh.FIZZLE-FRAME) 1))
+                nil)
+            (vh.fizzle-status state)))))
+
+(defn vh.fizzle-blocks (source source-at dest dest-at stride state)
+  (if (or (= (u32@ state vh.FIZZLE-REMAINING) 0)
+          (= (u8@ state vh.FIZZLE-DONE) 1))
+      state
+      (vh.fizzle-block-marked source source-at dest dest-at stride state
+                               (heap.used))))
+
+(defn vh.fizzle-block-marked (source source-at dest dest-at stride state mark)
+  (begin
+    (vh.fizzle-block source source-at dest dest-at stride state
+                     vh.FIZZLE-BLOCK-PIXELS)
+    (heap.release mark)
+    (vh.fizzle-blocks source source-at dest dest-at stride state)))
+
+(defn vh.fizzle-block (source source-at dest dest-at stride state count)
+  (if (or (= count 0)
+          (or (= (u32@ state vh.FIZZLE-REMAINING) 0)
+              (= (u8@ state vh.FIZZLE-DONE) 1)))
+      state
+      (begin
+        (vh.fizzle-pixel source source-at dest dest-at stride state)
+        (vh.fizzle-block source source-at dest dest-at stride state (- count 1)))))
+
+(defn vh.fizzle-pixel (source source-at dest dest-at stride state)
+  (let ((rnd (u32@ state vh.FIZZLE-RND)))
+    (let ((x (vh.fizzle-x rnd)) (y (vh.fizzle-y rnd))
+          (next (vh.fizzle-next rnd)))
+      (begin
+        (u32! state vh.FIZZLE-RND next)
+        (u32! state vh.FIZZLE-REMAINING
+              (- (u32@ state vh.FIZZLE-REMAINING) 1))
+        (if (and (<= x (u16@ state vh.FIZZLE-WIDTH))
+                 (<= y (u16@ state vh.FIZZLE-HEIGHT)))
+            (vh.fizzle-copy source (+ source-at (+ (* y stride) x))
+                            dest (+ dest-at (+ (* y stride) x)))
+            nil)
+        (if (= next 1) (u8! state vh.FIZZLE-DONE 1) nil)
+        state))))
+
+;;; VGA pages have spare address space beyond the visible 320x200 raster. A
+;;; bounded host byte array simply omits writes outside the supplied page; the
+;;; inclusive coordinate decision and LFSR advance above are still preserved.
+(defn vh.fizzle-copy (source from dest to)
+  (if (and (>= from 0)
+           (and (< from (bytes.length source))
+                (and (>= to 0) (< to (bytes.length dest)))))
+      (u8! dest to (u8@ source from))
+      nil))
+
+(defn vh.fizzle-fade (source source-at dest dest-at stride
+                       width height frames abortable acknowledged)
+  (vh.fizzle-fade-state source source-at dest dest-at stride
+                         (vh.fizzle-begin width height frames abortable)
+                         acknowledged))
+
+(defn vh.fizzle-fade-state (source source-at dest dest-at stride state acknowledged)
+  (let ((status (vh.fizzle-step source source-at dest dest-at stride state acknowledged)))
+    (if (eq? status 'running)
+        (vh.fizzle-fade-state source source-at dest dest-at stride state acknowledged)
+        (eq? status 'aborted))))

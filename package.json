@@ -10,6 +10,7 @@
   "scripts": {
     "build": "npm run build --workspace @yalisp/site-content && npm run build --workspace @yalisp/web",
     "dev": "npm run build --workspace @yalisp/site-content && npm run dev --workspace @yalisp/web",
+    "hardening:conformance": "node scripts/hardening/conformance-runner.mjs",
     "test": "npm run build --workspace @yalisp/site-content && npm test --workspaces --if-present",
     "typecheck": "npm run build --workspace @yalisp/site-content && npm run typecheck --workspaces --if-present"
   },

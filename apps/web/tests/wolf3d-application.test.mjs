@@ -5,6 +5,7 @@ import { createApplicationDriver } from "../src/examples/runtime/application-dri
 import { assetRequests, mountDeclaredAssets, mountedForm } from "../src/examples/runtime/asset-mount.ts";
 import { directive, directives, parseLispValue } from "../src/examples/runtime/lisp-value.ts";
 import { createSeedSession } from "./seed-session.mjs";
+import { observeCleanHeapUsed } from "./wolf3d-replay.mjs";
 import {
   fromPublic,
   haveWolf3dOriginals as haveOriginals,
@@ -390,12 +391,26 @@ test("the player never walks into a wall over a long deterministic circuit", asy
   driver.attach();
   const tilemap = session.evaluateBytes("wl.tilemap");
   const size = number(session, "wl.PLAYERSIZE");
+  const initialUsed = observeCleanHeapUsed(session, "long circuit initial heap");
+  let previousUsed = initialUsed;
+  let maximumStepGrowth = 0;
 
   let moved = 0;
   let blocked = 0;
   for (let step = 0; step < 120; step += 1) {
     const [, , , x, y] = parseLispValue(driver.stateText()).map(Number);
-    driver.tick(step % 5 === 4 ? inputForm("turn-right") : inputForm("forward"));
+    try {
+      driver.tick(step % 5 === 4 ? inputForm("turn-right") : inputForm("forward"));
+    } catch (error) {
+      const diagnostic = error instanceof Error && "diagnostic" in error ? error.diagnostic : String(error);
+      throw new Error(
+        `long circuit failed at step ${step + 1}; clean heap before step ${previousUsed}; `
+        + `initial heap ${initialUsed}; retained ${previousUsed - initialUsed}; `
+        + `maximum step growth ${maximumStepGrowth}; memory ${session.memoryBytes}; `
+        + `diagnostic ${diagnostic}`,
+        { cause: error },
+      );
+    }
     const [tilex, tiley, , nx, ny] = parseLispValue(driver.stateText()).map(Number);
     if (nx === x && ny === y) blocked += 1;
     else moved += 1;
@@ -407,7 +422,23 @@ test("the player never walks into a wall over a long deterministic circuit", asy
         assert.equal(tilemap[tx * 64 + ty], 0, `the player's box covers solid tile ${tx},${ty}`);
       }
     }
+    const currentUsed = observeCleanHeapUsed(session, `long circuit step ${step + 1} heap`);
+    maximumStepGrowth = Math.max(maximumStepGrowth, currentUsed - previousUsed);
+    previousUsed = currentUsed;
   }
+  t.diagnostic(JSON.stringify({
+    workload: "wolf3d-live-circuit-120",
+    steps: 120,
+    memoryBytes: session.memoryBytes,
+    initialUsed,
+    finalUsed: previousUsed,
+    retainedBytes: previousUsed - initialUsed,
+    maximumStepGrowth,
+  }));
+  assert.ok(maximumStepGrowth < 2048,
+    `a live circuit step retained ${maximumStepGrowth} bytes, expected less than 2048`);
+  assert.ok(previousUsed - initialUsed < 120 * 2048,
+    `the live circuit retained ${previousUsed - initialUsed} bytes across 120 steps`);
   assert.ok(moved > 0, "the circuit should have moved at least once");
   assert.ok(blocked > 0, "the circuit should have been refused at least once");
 });
@@ -430,7 +461,7 @@ test("the frame is a 320x200 indexed surface with the view above the status bar"
   // the frame is in, and that follows from what was mounted. The status rows
   // are the separately cached original picture and are not cleared per frame.
   const textured = session.evaluate("(wl.textured?)") === "true";
-  const ceiling = number(session, textured ? "wl.VGACEILING" : "wl.CEILING");
+  const ceiling = number(session, textured ? "(wl.vga-ceiling-color)" : "wl.CEILING");
   const floor = number(session, textured ? "wl.VGAFLOOR" : "wl.FLOOR");
   const statusAt = (screenHeight - statusLines) * screenWidth;
   assert.equal(createHash("sha256").update(pixels.subarray(statusAt)).digest("hex"),
@@ -519,11 +550,19 @@ test("a frame's allocation is handed back, so the program can render indefinitel
   const driver = createApplicationDriver(session);
   driver.attach();
   session.evaluate("(app.frame-bytes)");
-  const settled = number(session, "(heap.used)");
+  const settled = observeCleanHeapUsed(session, "frame loop settled heap");
   for (let tick = 0; tick < 12; tick += 1) {
     driver.tick(tick % 3 === 0 ? inputForm("turn-right") : inputForm("forward"));
     session.evaluate("(app.frame-bytes)");
   }
-  const after = number(session, "(heap.used)");
+  const after = observeCleanHeapUsed(session, "frame loop final heap");
+  t.diagnostic(JSON.stringify({
+    workload: "wolf3d-live-render-12",
+    frames: 12,
+    memoryBytes: session.memoryBytes,
+    settledUsed: settled,
+    finalUsed: after,
+    retainedBytes: after - settled,
+  }));
   assert.ok(after - settled < 65536, `twelve frames retained ${after - settled} bytes`);
 });

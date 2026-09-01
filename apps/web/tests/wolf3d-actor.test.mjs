@@ -10,6 +10,11 @@ import {
   loadWolf3d,
   wolf3dSkipReason as skipReason,
 } from "./wolf3d-source.mjs";
+import {
+  LONG_REPLAY_CAPACITY_BYTES,
+  prepareLongReplay,
+  replayTickPersistent,
+} from "./wolf3d-replay.mjs";
 
 const route = JSON.parse(await readFile(new URL("./fixtures/wolf3d-r1-route-v3.json", import.meta.url), "utf8"));
 const number = (session, form) => Number(session.evaluate(form));
@@ -21,8 +26,15 @@ async function application() {
   return session;
 }
 
+async function longReplayApplication() {
+  const session = await application();
+  prepareLongReplay(session);
+  assert.equal(session.memoryBytes, LONG_REPLAY_CAPACITY_BYTES);
+  return session;
+}
+
 function advance(session, record) {
-  session.evaluateQuietly(`(app.replay-advance ${record.tics} ${record.controlx} ${record.controly} ${record.buttons})`);
+  replayTickPersistent(session, record);
 }
 
 test("NewGame owns campaign, pistol, and attack defaults before a nonzero level selection", async () => {
@@ -131,7 +143,7 @@ test("loaded-map scans own source kill, treasure, and secret totals", async (t) 
 
 test("the real patrol path opens off-route door 8 at record 148", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
-  const session = await application();
+  const session = await longReplayApplication();
   const actor = 10;
 
   for (const record of route.records.slice(0, 147)) advance(session, record);
@@ -154,7 +166,7 @@ test("the real patrol path opens off-route door 8 at record 148", async (t) => {
 
 test("patrol diagonals update both reserved destination coordinates", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
-  const session = await application();
+  const session = await longReplayApplication();
   const dog = 13;
 
   for (const record of route.records.slice(0, 102)) advance(session, record);
@@ -191,7 +203,7 @@ test("patrol diagonals update both reserved destination coordinates", async (t) 
 
 test("GunAttack misses honestly and SightPlayer advances the cursor at record 215", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
-  const session = await application();
+  const session = await longReplayApplication();
   for (const [index, record] of route.records.slice(0, 214).entries()) {
     advance(session, record);
     assert.equal(number(session, "wl.rndindex"), record.rndindex, `record ${index + 1}`);
@@ -336,7 +348,7 @@ test("general statics apply each source treasure bonus once", async (t) => {
 
 test("T_Chase consumes source draws, moves west, and selects the guard shoot state", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
-  const session = await application();
+  const session = await longReplayApplication();
   for (const record of route.records.slice(0, 293)) advance(session, record);
   assert.equal(number(session, "wl.rndindex"), 55);
   assert.equal(number(session, "(wl.actor-phase@ 20)"), 103);
@@ -382,7 +394,7 @@ test("guard T_Shoot honors area and line gates and preserves zero damage", async
 
 test("guard shoot cadence resolves record 348 and the cursor remains exact through R1", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
-  const session = await application();
+  const session = await longReplayApplication();
   for (const [index, record] of route.records.entries()) {
     advance(session, record);
     const cursor = number(session, "wl.rndindex");
@@ -402,7 +414,7 @@ test("guard shoot cadence resolves record 348 and the cursor remains exact throu
 
 test("the retained bo_clip is picked up once at the source TransformTile boundary", async (t) => {
   if (!(await haveOriginals())) return t.skip(skipReason);
-  const session = await application();
+  const session = await longReplayApplication();
   const clip = number(session, "(wl.static-at 40 61 0)");
   assert.ok(clip >= 0);
   assert.equal(number(session, `(u8@ wl.staticitem ${clip})`), number(session, "wl.BO-CLIP"));

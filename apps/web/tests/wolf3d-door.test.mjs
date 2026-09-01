@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { mountDeclaredAssets } from "../src/examples/runtime/asset-mount.ts";
+import { parseLispValue } from "../src/examples/runtime/lisp-value.ts";
 import { createSeedSession } from "./seed-session.mjs";
 import {
   fromPublic,
@@ -117,6 +118,33 @@ test("use drives the source door action, tic, collision, and hold-edge semantics
       (wl.player! wl.PLAYER-ANGLE ${angle}))
   `);
 
+  let advances = 0;
+  let lastOwnership = {
+    released: number(session, "app.advance-release-count"),
+    retained: number(session, "app.advance-retain-count"),
+    mask: number(session, "app.advance-last-retain-mask"),
+    sdEvents: number(session, "sd.audio-event-count"),
+    wlEvents: number(session, "wl.audio-event-count"),
+  };
+  const advance = () => {
+    try {
+      session.evaluateQuietly("(app.advance '((use 1)))");
+    } catch (error) {
+      throw new Error(
+        `door live advance ${advances + 1} failed after ownership ${JSON.stringify(lastOwnership)}`,
+        { cause: error },
+      );
+    }
+    advances += 1;
+    lastOwnership = {
+      released: number(session, "app.advance-release-count"),
+      retained: number(session, "app.advance-retain-count"),
+      mask: number(session, "app.advance-last-retain-mask"),
+      sdEvents: number(session, "sd.audio-event-count"),
+      wlEvents: number(session, "wl.audio-event-count"),
+    };
+  };
+
   assert.equal(number(session, `(wl.door-action@ ${door})`), 1, "dr_closed");
   assert.equal(number(session, `(wl.door-ticcount@ ${door})`), 0);
   assert.equal(number(session, `(wl.door-position@ ${door})`), 0);
@@ -124,14 +152,14 @@ test("use drives the source door action, tic, collision, and hold-edge semantics
 
   // PlayLoop moves doors before T_Player calls Cmd_Use: the use tick changes
   // action, while the following 6-tic host advance first changes position.
-  session.evaluateQuietly("(app.advance '((use 1)))");
+  advance();
   assert.equal(number(session, `(wl.door-action@ ${door})`), 2, "dr_opening");
   assert.equal(number(session, `(wl.door-position@ ${door})`), 0);
-  session.evaluateQuietly("(app.advance '((use 1)))");
+  advance();
   assert.equal(number(session, `(wl.door-position@ ${door})`), 6 << 10);
   assert.equal(number(session, `(wl.door-action@ ${door})`), 2, "held use must not reverse the door");
 
-  for (let tick = 0; tick < 10; tick += 1) session.evaluateQuietly("(app.advance '((use 1)))");
+  for (let tick = 0; tick < 10; tick += 1) advance();
   assert.equal(number(session, `(wl.door-position@ ${door})`), 0xffff, "opening saturates at a word");
   assert.equal(number(session, `(wl.door-action@ ${door})`), 0, "dr_open");
   assert.equal(number(session, `(wl.door-ticcount@ ${door})`), 0);
@@ -140,11 +168,11 @@ test("use drives the source door action, tic, collision, and hold-edge semantics
   // OPENTICS is 300, so 50 six-tic advances begin closing without moving the
   // panel until the following advance. A continuously held key still cannot
   // toggle it manually.
-  for (let tick = 0; tick < 50; tick += 1) session.evaluateQuietly("(app.advance '((use 1)))");
+  for (let tick = 0; tick < 50; tick += 1) advance();
   assert.equal(number(session, `(wl.door-ticcount@ ${door})`), 300);
   assert.equal(number(session, `(wl.door-action@ ${door})`), 3, "dr_closing");
   assert.equal(number(session, `(wl.door-position@ ${door})`), 0xffff);
-  session.evaluateQuietly("(app.advance '((use 1)))");
+  advance();
   assert.equal(number(session, `(wl.door-position@ ${door})`), 0xffff - (6 << 10));
 
   // Once the player occupies the center, DoorClosing takes OpenDoor's source
@@ -158,4 +186,26 @@ test("use drives the source door action, tic, collision, and hold-edge semantics
       (wl.move-doors))
   `);
   assert.equal(number(session, `(wl.door-action@ ${door})`), 2, "obstruction reopens the door");
+  assert.equal(lastOwnership.released, advances, "every scalar/packed live advance releases its call frames");
+  assert.equal(lastOwnership.retained, 0, "no heap-owned aggregate escapes this door lifecycle");
+  assert.equal(lastOwnership.mask, 0);
+  assert.equal(lastOwnership.sdEvents, lastOwnership.wlEvents,
+    "manager and game decision logs retain the same accepted calls");
+  assert.ok(lastOwnership.wlEvents >= advances,
+    "held-use fallbacks plus door movement should retain at least one source decision per advance");
+
+  const gameEvents = parseLispValue(session.evaluate("(wl.audio-event-log)"));
+  const hostEvents = parseLispValue(session.evaluate("(sd.audio-host-event-log)"));
+  const legacyEvents = parseLispValue(session.evaluate("(sd.audio-event-log)"));
+  assert.equal(gameEvents.length, lastOwnership.wlEvents);
+  assert.equal(hostEvents.length, lastOwnership.sdEvents);
+  assert.equal(legacyEvents.length, lastOwnership.sdEvents);
+  assert.deepEqual(hostEvents.map((row) => [row[0], row[1], row[9]]), gameEvents,
+    "packed SD and game rows preserve tick, sound, callsite, and order");
+  assert.deepEqual(legacyEvents, hostEvents.map((row) =>
+    [row[0], row[1], row[2], row[4], row[5], row[6], row[7], row[9]]),
+  "the established eight-field export remains an exact packed-row projection");
+  assert.ok(gameEvents.some((row) => row[2] === "Cmd_Use"));
+  assert.ok(gameEvents.some((row) => row[2] === "PlaySoundLocGlobal"));
+  t.diagnostic(JSON.stringify({ workload: "wolf3d-live-door-use", advances, ...lastOwnership }));
 });

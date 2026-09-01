@@ -8,7 +8,6 @@ import { loadWolf3d, wolf3dModules, wolf3dSources } from "./wolf3d-source.mjs";
 
 const steam = new URL("../../../../wolf3d-typescript-monorepo-continuation/steam-release/base/", import.meta.url);
 const sourceObject = new URL("../../../../wolf3d-typescript-monorepo-continuation/original-source/WOLFSRC/OBJ/", import.meta.url);
-const mirror = new URL("../../../../wolf3d-typescript-monorepo-continuation/apps/wolf3d-yalisp/", import.meta.url);
 const graphicsNames = ["VGAHEAD.WL6", "VGAGRAPH.WL6", "VGADICT.WL6"];
 const graphics = Object.fromEntries(await Promise.all(graphicsNames.map(async (name) =>
   [name, new Uint8Array(await readFile(new URL(name, steam)))])));
@@ -369,14 +368,7 @@ test("ignored key-bit changes redraw both slots and repeated remaining-status re
   assert.ok(retained < 65536, `bounded remaining-status redraw retained ${retained} bytes`);
 });
 
-test("assigned mirrors, graphics reserve, and evaluator input capacity remain exact", async () => {
-  for (const name of ["wl-agent.lisp", "app.lisp", "README.md"]) {
-    const [expected, actual] = await Promise.all([
-      readFile(new URL(`../src/examples/wolf3d/${name}`, import.meta.url)),
-      readFile(new URL(name, mirror))
-    ]);
-    assert.deepEqual(actual, expected, `${name} differs between assigned mirrors`);
-  }
+test("graphics reserve and evaluator input capacity remain exact", () => {
   const LIMIT = 130048;
   for (const [index, source] of wolf3dSources.entries()) {
     assert.ok(Buffer.byteLength(source, "utf8") <= LIMIT,

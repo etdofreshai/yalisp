@@ -182,7 +182,11 @@ function palette(bytes) {
   while (at < bytes.length && bytes[at] !== 0xa0) at += 3 + (bytes[at + 1] | (bytes[at + 2] << 8));
   assert.ok(at < bytes.length, "GAMEPAL.OBJ should carry an LEDATA record");
   const base = at + 6;
-  const channel = (index) => (bytes[index] << 2).toString(16).padStart(2, "0");
+  const channel = (index) => {
+    const dac = bytes[index];
+    assert.ok(dac <= 63, `GAMEPAL channel ${index - base} should fit the six-bit VGA DAC`);
+    return ((dac << 2) | (dac >> 4)).toString(16).padStart(2, "0");
+  };
   return Array.from({ length: 256 }, (unused, index) =>
     `#${channel(base + index * 3)}${channel(base + index * 3 + 1)}${channel(base + index * 3 + 2)}`);
 }
@@ -259,17 +263,21 @@ test("the surface palette is GAMEPAL's own 256 colours", async (t) => {
   const colours = parseLispValue(session.evaluate("(app.palette)")).map(String);
   assert.equal(colours.length, 256, "a VGA palette is 256 colours");
   assert.deepEqual(colours, expected, "the decoded palette should be the object file's");
-  // The two facts that make it a VGA palette rather than any 768 bytes: it
-  // opens on black, and every channel is a six-bit value shifted up by two.
+  // The facts that make this a VGA palette rather than any 768 bytes: the
+  // source channels all fit six bits (checked by palette()), it opens on
+  // black, and high-bit replication expands DAC white through the full host
+  // range rather than stopping at 252.
   assert.equal(colours[0], "#000000");
+  assert.equal(colours[15], "#ffffff");
+  let populatedLowBits = false;
   for (const colour of colours) {
     assert.match(colour, /^#[0-9a-f]{6}$/);
     for (let channel = 1; channel < 7; channel += 2) {
       const value = Number.parseInt(colour.slice(channel, channel + 2), 16);
-      assert.equal(value % 4, 0, `${colour} should be a six-bit channel shifted up by two`);
-      assert.ok(value <= 252);
+      if (value % 4 !== 0) populatedLowBits = true;
     }
   }
+  assert.equal(populatedLowBits, true, "six-bit expansion should replicate high bits into the host low bits");
 
   // It is the palette the host is handed, not something computed beside it.
   const mount = parseLispValue(session.evaluate("(app.mount)"));

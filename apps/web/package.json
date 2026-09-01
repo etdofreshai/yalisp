@@ -14,10 +14,11 @@
     "example:hello": "node examples/hello-world/cli.mjs",
     "measure:wolf3d-feasibility": "node scripts/measure-wolf3d-feasibility.mjs",
     "mount:assets": "node scripts/mount-assets.mjs",
-    "test": "node --test tests/*.test.mjs",
+    "test": "node --test --test-concurrency=4 tests/*.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@malvineous/opl": "^1.0.0",
     "@yalisp/site-content": "*"
   },
   "devDependencies": {

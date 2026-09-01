@@ -4,3 +4,9 @@ node_modules
 .DS_Store
 *.log
 
+# Finder metadata can occur at any depth on macOS/exFAT and is never runtime input.
+**/._*
+
+# Local Wolf3D originals are commercial inputs for the development mount only.
+# They must never enter a Docker build context, even before the dist pruner runs.
+apps/web/public/assets/wolf3d

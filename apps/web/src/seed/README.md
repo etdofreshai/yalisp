@@ -38,9 +38,9 @@ The seed implements:
   program can declare capacity for host-supplied bytes and address them.
 
 Memory past the initial sixteen pages is never taken implicitly. `heap.reserve`
-grows it on request up to a ceiling of 1024 pages; exceeding that ceiling
+grows it on request up to a ceiling of 4096 pages; exceeding that ceiling
 writes a diagnostic and traps rather than allocating without limit. Because the
-underlying memory is 1024 pages in total and the heap begins at 131072, the
+underlying memory is 4096 pages (256 MiB) in total and the heap begins at 131072, the
 largest satisfiable `heap.reserve` is the ceiling less the bytes already used.
 
 ## Fixed-width access and block operations
@@ -79,8 +79,10 @@ both checked before any of it moves.
 
 The allocator is a bump pointer and does not collect. That is fine for a program
 that builds a structure once, and fatal for one that recomputes something every
-frame: the intermediates are spent for good and the 64MB ceiling arrives. So
-`heap.used` has an inverse. `heap.release` takes a value `heap.used` returned
+frame: the intermediates are spent for good and the declared session ceiling
+arrives. The seed starts at 16 pages and has a type-level maximum of 4096 pages;
+programs still grow only through explicit `heap.reserve`. So `heap.used` has an
+inverse. `heap.release` takes a value `heap.used` returned
 earlier and winds the bump pointer back to it, which turns a computation into an
 arena.
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createSeedSession } from "./seed-session.mjs";
+import { observeCleanHeapUsed } from "./wolf3d-replay.mjs";
 
 // The Wolf3D map path, tested against the original file format rather than
 // against a snapshot of its own output.
@@ -464,6 +465,26 @@ test("both planes of the first map expand to the original 64x64 tile arrays", as
     }
   }
   assert.ok(doors > 0, "the first map should have doors");
+});
+
+test("CA_CacheMap retains decoded planes without retaining decompression scratch", async (t) => {
+  const original = await originals();
+  if (!original) return t.skip(skipReason);
+  const session = await mapSession();
+  ingest(session, "map.tinf", original["MAPHEAD.WL6"]);
+  ingest(session, "map.maps", original["GAMEMAPS.WL6"]);
+
+  const before = observeCleanHeapUsed(session, "CA_CacheMap ownership before");
+  session.evaluateQuietly("(define map.owned-planes (ca.cache-map map.tinf map.maps 0))");
+  const after = observeCleanHeapUsed(session, "CA_CacheMap ownership after");
+  const retainedBytes = after - before;
+
+  assert.equal(session.evaluateBytes("(car map.owned-planes)").length, 8192);
+  assert.equal(session.evaluateBytes("(car (cdr map.owned-planes))").length, 8192);
+  assert.ok(retainedBytes >= 16384, `two retained planes require at least 16384 bytes, got ${retainedBytes}`);
+  assert.ok(retainedBytes <= 32768,
+    `decoded planes retained ${retainedBytes} bytes, including decompression scratch or call frames`);
+  t.diagnostic(JSON.stringify({ workload: "wolf3d-cache-map-ownership", before, after, retainedBytes }));
 });
 
 test("the mounted originals are the bytes the bridge recorded", async (t) => {

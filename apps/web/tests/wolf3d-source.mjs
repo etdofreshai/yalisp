@@ -9,7 +9,9 @@ import { fileURLToPath } from "node:url";
 
 export const wolf3dModules = [
   "wl-def", "wl-fixed", "id-ca", "id-pm", "id-vl", "id-vh",
-  "wl-main", "wl-game", "wl-agent", "wl-act2", "wl-draw", "wl-scale", "app"
+  "wl-main", "wl-game", "wl-agent", "wl-act2", "wl-state", "wl-act1",
+  "wl-play", "wl-audio", "wl-sound", "wl-text", "wl-inter", "wl-menu",
+  "wl-config", "wl-save", "wl-draw", "wl-scale", "app"
 ];
 
 export const wolf3dSources = await Promise.all(wolf3dModules.map((name) =>

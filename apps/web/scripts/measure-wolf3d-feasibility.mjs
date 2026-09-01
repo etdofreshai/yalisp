@@ -185,8 +185,8 @@ for (let tick = 0; tick < 500; tick += 1) budgetSession.invoke("eval_all", "(set
 const budgetPerTick = (Number(budgetSession.invoke("eval_print", "(heap.used)")) - budgetBefore) / 500;
 result.heapBudget = {
   bytesPerMinimalTick: Math.round(budgetPerTick),
-  ceilingBytes: 1024 * 65536,
-  secondsAtSeventyHzWithNoCollector: Math.round((1024 * 65536) / (budgetPerTick * 70)),
+  ceilingBytes: 4096 * 65536,
+  secondsAtSeventyHzWithNoCollector: Math.round((4096 * 65536) / (budgetPerTick * 70)),
   reason: "There is no collector yet, so a long-lived session's lifetime is its declared ceiling divided by this rate."
 };
 

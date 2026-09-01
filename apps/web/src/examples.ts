@@ -15,6 +15,16 @@ import wolf3dTablesSource from "./examples/wolf3d/wl-main.lisp?raw";
 import wolf3dGameSource from "./examples/wolf3d/wl-game.lisp?raw";
 import wolf3dAgentSource from "./examples/wolf3d/wl-agent.lisp?raw";
 import wolf3dActorsSource from "./examples/wolf3d/wl-act2.lisp?raw";
+import wolf3dStateSource from "./examples/wolf3d/wl-state.lisp?raw";
+import wolf3dAct1Source from "./examples/wolf3d/wl-act1.lisp?raw";
+import wolf3dPlaySource from "./examples/wolf3d/wl-play.lisp?raw";
+import wolf3dAudioSource from "./examples/wolf3d/wl-audio.lisp?raw";
+import wolf3dSoundSource from "./examples/wolf3d/wl-sound.lisp?raw";
+import wolf3dTextSource from "./examples/wolf3d/wl-text.lisp?raw";
+import wolf3dInterSource from "./examples/wolf3d/wl-inter.lisp?raw";
+import wolf3dMenuSource from "./examples/wolf3d/wl-menu.lisp?raw";
+import wolf3dConfigSource from "./examples/wolf3d/wl-config.lisp?raw";
+import wolf3dSaveSource from "./examples/wolf3d/wl-save.lisp?raw";
 import wolf3dDrawSource from "./examples/wolf3d/wl-draw.lisp?raw";
 import wolf3dScaleSource from "./examples/wolf3d/wl-scale.lisp?raw";
 import wolf3dAppSource from "./examples/wolf3d/app.lisp?raw";
@@ -40,6 +50,16 @@ const wolf3dApplicationModules = [
   wolf3dGameSource,
   wolf3dAgentSource,
   wolf3dActorsSource,
+  wolf3dStateSource,
+  wolf3dAct1Source,
+  wolf3dPlaySource,
+  wolf3dAudioSource,
+  wolf3dSoundSource,
+  wolf3dTextSource,
+  wolf3dInterSource,
+  wolf3dMenuSource,
+  wolf3dConfigSource,
+  wolf3dSaveSource,
   wolf3dDrawSource,
   wolf3dScaleSource,
   wolf3dAppSource

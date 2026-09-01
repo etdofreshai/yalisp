@@ -6,8 +6,16 @@ import { parseLispValue } from "../src/examples/runtime/lisp-value.ts";
 import { createSeedSession } from "./seed-session.mjs";
 import { fromPublic, haveWolf3dOriginals, loadWolf3d, wolf3dSkipReason,
   wolf3dSources as sources } from "./wolf3d-source.mjs";
+import {
+  LONG_REPLAY_CAPACITY_BYTES,
+  LONG_REPLAY_HEAP_BASE_BYTES,
+  observeCleanHeapUsed,
+  prepareLongReplay,
+  replayTraceRecord,
+} from "./wolf3d-replay.mjs";
 
 const LIMIT = 130048;
+const MIN_HEADROOM_BYTES = 64 * 1024 * 1024;
 const mix = (hash, value) => (Math.imul(hash, 33) ^ value) >>> 0;
 const hashValues = (values) => values.reduce(mix, 5381) >>> 0;
 const route = JSON.parse(await readFile(
@@ -22,7 +30,8 @@ async function session() {
 async function application() {
   const value = await session();
   await mountDeclaredAssets(value, fromPublic);
-  return value;
+  const reserve = prepareLongReplay(value);
+  return { value, reserve };
 }
 
 const player = (x = 0x12345678) =>
@@ -138,14 +147,34 @@ test("actorhash refresh is heap-bounded", async () => {
 
 test("all 401 canonical R1 actorhash records match and a changed hash fails closed", async (t) => {
   if (!(await haveWolf3dOriginals())) return t.skip(wolf3dSkipReason);
-  const value = await application();
+  const { value, reserve } = await application();
+  assert.equal(reserve.memoryBytes, LONG_REPLAY_CAPACITY_BYTES);
+  const initialUsed = observeCleanHeapUsed(value, "R1 actorhash initial heap");
+  let maxTransientUsed = initialUsed;
   const actual = [];
   for (const record of route.records) {
-    const projected = Object.fromEntries(parseLispValue(value.evaluate(
-      `(app.replay-advance ${record.tics} ${record.controlx} ${record.controly} ${record.buttons})`
-    )).map(([name, field]) => [String(name), Number(field)]));
+    const exported = replayTraceRecord(value, record);
+    maxTransientUsed = Math.max(maxTransientUsed, exported.peak);
+    const projected = Object.fromEntries(parseLispValue(
+      exported.output,
+    ).map(([name, field]) => [String(name), Number(field)]));
     actual.push(projected.actorhash);
   }
+  const finalUsed = observeCleanHeapUsed(value, "R1 actorhash final heap");
+  assert.ok(finalUsed >= initialUsed, "persistent replay ownership is monotonic");
+  const minHeadroom = LONG_REPLAY_CAPACITY_BYTES - LONG_REPLAY_HEAP_BASE_BYTES
+    - Math.max(finalUsed, maxTransientUsed);
+  assert.ok(minHeadroom >= MIN_HEADROOM_BYTES,
+    `R1 replay retained only ${minHeadroom} bytes of minimum headroom`);
+  t.diagnostic(JSON.stringify({
+    workload: "wolf3d-r1-actorhash-401",
+    rows: route.records.length,
+    memoryBytes: value.memoryBytes,
+    initialUsed,
+    finalUsed,
+    maxTransientUsed,
+    minHeadroom,
+  }));
   const expected = route.records.map((record) => record.actorhash);
   assert.deepEqual(actual, expected);
   const changed = [...expected];

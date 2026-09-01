@@ -71,12 +71,19 @@
       i
       (wl.build-sintable-at i (bit.shr (fx.sin (* i fx.DEGREE)) 12))))
 
-;;; GLOBAL1*sin(angle) is a double truncated into a long, so the working value
-;;; is shifted from 2^28 down to 2^16 rather than rounded.
+;;; GLOBAL1*sin(angle) is truncated into a long, so the working value is shifted
+;;; from 2^28 down to 2^16 rather than rounded. WL_MAIN.C's angle and anglestep
+;;; are float, however: its ninety accumulated float additions differ from the
+;;; host-free fixed transcendental at exactly base indices 30 and 47. Preserve
+;;; those two executable low words before the source's symmetric stores.
 (defn wl.build-sintable-at (i value)
-  (wl.build-sintable-value i (if (= value wl.GLOBAL1) (- wl.GLOBAL1 1) value)))
+  (wl.build-sintable-value i
+    (cond ((= i 30) 32767)
+          ((= i 47) 47930)
+          ((= value wl.GLOBAL1) (- wl.GLOBAL1 1))
+          (true value))))
 
-;;; BuildTables accumulates its double angle in ninety additions. At the
+;;; BuildTables accumulates its float angle in ninety additions. At the
 ;;; quarter turn the published executable truncates a value just below 65536
 ;;; to 65535; the fixed transcendental lands on exactly 65536, so preserve the
 ;;; source table endpoint explicitly.

@@ -158,6 +158,9 @@ test("initial placement and repeated ThreeDRefresh preserve the source status by
     "rows 0..159 remain unchanged by the statusbar slice");
 
   const draw = wolf3dSources[wolf3dModules.indexOf("wl-draw")];
-  assert.ok(draw.indexOf("(wl.draw-r1-inert-actors frame)") < draw.indexOf("(wl.draw-r1-ready-pistol frame)"),
-    "ThreeDRefresh keeps actors before the ready pistol");
+  const scaleds = draw.indexOf("(wl.draw-scaleds frame)");
+  const playerWeapon = draw.indexOf("(wl.draw-player-weapon frame)");
+  assert.notEqual(scaleds, -1, "ThreeDRefresh should draw world-scaled objects");
+  assert.notEqual(playerWeapon, -1, "ThreeDRefresh should draw the player weapon");
+  assert.ok(scaleds < playerWeapon, "ThreeDRefresh keeps world-scaled objects before the player weapon");
 });

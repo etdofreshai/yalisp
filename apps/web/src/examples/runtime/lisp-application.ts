@@ -2,6 +2,8 @@ import { createSeedSession } from "../../seed-runtime";
 import { expandIndexedSurface } from "./indexed-surface";
 import { createApplicationDriver } from "./application-driver";
 import { mountDeclaredAssets } from "./asset-mount";
+import { createYalispBrowserAudioHost } from "./browser-opl";
+import { createWolf3dAudioRuntime } from "./wolf3d-audio-runtime";
 import { atomText, directive, directives, displayText, isList, listAt, numberAt, parseLispValue, printLispValue, textAt, type LispList, type LispValue } from "./lisp-value";
 
 // The DOM Lisp host reads and prints values through this same binding.
@@ -191,8 +193,8 @@ export async function runApplication(root: HTMLElement, source: string | readonl
       button.addEventListener("pointerleave", end);
     }
   });
-  window.addEventListener("keydown", (event) => {
-    const control = byKey.get(event.key.toLowerCase());
+  const handleKeyDown = (event: KeyboardEvent) => {
+    const control = byKey.get(event.key.toLowerCase()) ?? byKey.get(event.code.toLowerCase());
     if (!control) return;
     event.preventDefault();
     if (control.mode === "press") {
@@ -202,17 +204,56 @@ export async function runApplication(root: HTMLElement, source: string | readonl
       }
     }
     else held.add(control.action);
-  });
-  window.addEventListener("keyup", (event) => {
-    const control = byKey.get(event.key.toLowerCase());
+  };
+  const handleKeyUp = (event: KeyboardEvent) => {
+    const control = byKey.get(event.key.toLowerCase()) ?? byKey.get(event.code.toLowerCase());
     if (control?.mode === "hold") held.delete(control.action);
-  });
+  };
+  const clearHeldInputs = () => {
+    held.clear();
+    controls.querySelectorAll(".active").forEach((button) => button.classList.remove("active"));
+  };
 
   driver.attach();
+  const audio = createWolf3dAudioRuntime(session, createYalispBrowserAudioHost());
   let running = false;
   let busy = false;
+  let closed = false;
   let lastStep = 0;
   let displayedResult: string | undefined;
+  const canShutdown = session.evaluate("(bound? 'app.shutdown)") === "true";
+  const closeApplication = async () => {
+    if (closed) return;
+    closed = true;
+    running = false;
+    clearHeldInputs();
+    pressed.clear();
+    window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("keyup", handleKeyUp);
+    window.removeEventListener("blur", clearHeldInputs);
+    window.removeEventListener("pagehide", handlePageHide);
+    let failure: unknown;
+    try {
+      if (canShutdown) session.evaluateQuietly("(app.shutdown)");
+    } catch (error) {
+      failure = error;
+    }
+    try {
+      await audio.close();
+    } catch (error) {
+      failure ??= error;
+    }
+    if (failure !== undefined) throw failure;
+  };
+  const handlePageHide = () => {
+    void closeApplication().catch((error) => {
+      console.error("YALISP application shutdown failed", error);
+    });
+  };
+  window.addEventListener("keydown", handleKeyDown);
+  window.addEventListener("keyup", handleKeyUp);
+  window.addEventListener("blur", clearHeldInputs);
+  window.addEventListener("pagehide", handlePageHide, { once: true });
   const render = async (value: LispValue, active: boolean, resultText?: string) => {
     const values = directives(value);
     const draw = directive(values, "draw");
@@ -229,13 +270,28 @@ export async function runApplication(root: HTMLElement, source: string | readonl
     status.textContent = resultText ?? (summary ? `${summary.slice(1).map(atomText).join(" · ")} · ${active ? "playing" : "paused"}` : active ? "playing" : "paused");
   };
   await render(driver.present(), false);
-  toggle.addEventListener("click", () => {
+  toggle.addEventListener("click", async () => {
+    if (!running && audio.available && !audio.started) {
+      toggle.disabled = true;
+      status.textContent = "starting audio";
+      try {
+        await audio.start();
+      } catch (error) {
+        status.textContent = `Interpreter stopped: ${error instanceof Error ? error.message : String(error)}`;
+        toggle.textContent = `Play ${spec.title}`;
+        toggle.setAttribute("aria-pressed", "false");
+        return;
+      } finally {
+        toggle.disabled = false;
+      }
+    }
     running = !running;
     lastStep = 0;
     toggle.textContent = `${running ? "Pause" : "Play"} ${spec.title}`;
     toggle.setAttribute("aria-pressed", String(running));
   });
   const frame = async (time: number) => {
+    if (closed) return;
     if (running && !busy) {
       busy = true;
       try {
@@ -249,6 +305,7 @@ export async function runApplication(root: HTMLElement, source: string | readonl
         while (time - lastStep >= frameIntervalMs) {
           if (budget === 0) { lastStep = time; break; }
           requested = driver.tick(inputForm(held, pressed, spec.controls)).resultRequested || requested;
+          if (audio.available) await audio.advance(timing.ticksPerAdvance);
           pressed.clear();
           lastStep += frameIntervalMs;
           budget -= 1;
@@ -268,7 +325,7 @@ export async function runApplication(root: HTMLElement, source: string | readonl
         busy = false;
       }
     }
-    requestAnimationFrame(frame);
+    if (!closed) requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
 }

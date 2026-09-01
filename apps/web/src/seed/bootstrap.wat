@@ -41,13 +41,13 @@
 
   ;; Sixteen pages leave the fixed input region intact and provide enough
   ;; bounded bump-heap space for the complete Assembly reference DOM tree.
-  (memory (export "memory") 16)
+  (memory (export "memory") 16 4096)
 
   ;; Memory past the initial sixteen pages is never taken implicitly. A program
   ;; asks for it with (heap.reserve n), so exhaustion stays a declared limit
   ;; instead of silent unbounded growth, and small sessions keep their small
   ;; footprint. The ceiling is generic capacity, not any application's budget.
-  (global $max_pages i32 (i32.const 1024))
+  (global $max_pages i32 (i32.const 4096))
 
   (global $heap    (mut i32) (i32.const 131072))
   (global $nil     (mut i32) (i32.const 0))
@@ -212,9 +212,10 @@
   (data (i32.const 974) "bytes.fill-stride")        ;; 974 len 17
   (data (i32.const 991) "heap mark out of range")   ;; 991 len 22
 
-  ;; Fail before a write crosses the fixed eight-page memory boundary. Use the
+  ;; Fail before a write crosses the current declared memory boundary. Use the
   ;; host import directly because $write may itself be buffering into the full
-  ;; heap for to-string.
+  ;; heap for to-string. Explicit growth remains capped at 4096 pages by both
+  ;; the memory type and $max_pages.
   (func $ensure_space (param $end i32)
     (if (i32.gt_u (local.get $end) (i32.shl (memory.size) (i32.const 16)))
       (then
@@ -1370,8 +1371,8 @@
     ;; (heap.release used) winds the bump pointer back to where (heap.used)
     ;; read `used`, which is how a program reclaims a region it has finished
     ;; with. The allocator here never collects, so without this a computation
-    ;; that runs every frame spends the whole 64MB and stops; with it, a frame
-    ;; is an arena.
+    ;; that runs every frame spends the declared session ceiling and stops;
+    ;; with it, a frame is an arena.
     ;;
     ;; This is a truthful primitive and a sharp one. Everything allocated after
     ;; the mark is gone, so a release is only sound when nothing allocated

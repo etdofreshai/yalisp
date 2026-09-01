@@ -58,12 +58,50 @@
 (define wl.wallheight (bytes.alloc 1280))
 (define wl.wallpic (bytes.alloc 320))
 (define wl.walltexture (bytes.alloc 640))
+(define wl.FIZZLE-FRAMES 20)
+(define wl.fizzlein 0)
+(define wl.fizzle-target nil)
+(define wl.fizzle-state nil)
 
 (defn wl.wallheight@ (i) (i32@ wl.wallheight (* i 4)))
 (defn wl.wallheight! (i v) (u32! wl.wallheight (* i 4) v))
 
 (defn wl.walltexture@ (i) (u16@ wl.walltexture (* i 2)))
 (defn wl.walltexture! (i v) (u16! wl.walltexture (* i 2) v))
+
+;;; NewViewSize changes the projection and the centered play window together.
+;;; The DOS renderer stores byte offsets into planar VGA pages; this port keeps
+;;; the equivalent row-major byte offset into the native 320x200 indexed page.
+(defn wl.new-view-size (width height)
+  (let ((view-width (bit.and width -16))
+        (view-height (bit.and height -2)))
+    (if (and (>= view-width 64) (and (<= view-width wl.SCREENWIDTH)
+            (and (>= view-height 40)
+                 (<= view-height (- wl.SCREENHEIGHT wl.STATUSLINES)))))
+        (begin
+          (set! wl.viewwidth view-width)
+          (set! wl.viewheight view-height)
+          (set! wl.viewleft (/ (- wl.SCREENWIDTH view-width) 2))
+          (set! wl.viewtop (/ (- (- wl.SCREENHEIGHT wl.STATUSLINES) view-height) 2))
+          (set! wl.viewofs (+ wl.viewleft (* wl.viewtop wl.SCREENWIDTH)))
+          (set! wl.halfview (/ view-width 2))
+          (set! wl.centerx (- wl.halfview 1))
+          (set! wl.shootdelta (/ view-width 10))
+          (set! wl.scale (/ (* wl.halfview wl.facedist) (/ wl.VIEWGLOBAL 2)))
+          (set! wl.heightnumerator (bit.shr (* wl.TILEGLOBAL wl.scale) 6))
+          (wl.calc-projection)
+          true)
+        false)))
+
+;;; CP_ChangeView uses source units 4..19. The full-screen case is 19; the
+;;; remaining choices preserve the original 16-pixel width / 8-pixel height
+;;; progression and centered viewport.
+(defn wl.new-view-size-units (view)
+  (if (or (< view 4) (> view 19))
+      false
+      (if (= view 19)
+          (wl.new-view-size 320 160)
+          (wl.new-view-size (* view 16) (* view 8)))))
 
 (defn wl.calc-view ()
   (wl.calc-view-at (wl.player@ wl.PLAYER-ANGLE)))
@@ -313,6 +351,30 @@
 (defn wl.calc-height-z (z)
   (/ wl.heightnumerator (bit.shr (if (< z wl.MINDIST) wl.MINDIST z) 8)))
 
+;;; TransformTile is the static-object counterpart of TransformActor. Its
+;;; 0x2000 focal adjustment and asymmetric pickup box are intentional source
+;;; behavior and are observable before DrawScaleds chooses a sprite.
+(defn wl.transform-tile (tilex tiley)
+  (let ((gx (- (+ (bit.shl tilex wl.TILESHIFT) (/ wl.TILEGLOBAL 2))
+               (wl.view@ wl.VIEWX)))
+        (gy (- (+ (bit.shl tiley wl.TILESHIFT) (/ wl.TILEGLOBAL 2))
+               (wl.view@ wl.VIEWY))))
+    (let ((nx (- (- (fx.by-frac gx (wl.view@ wl.VIEWCOS))
+                       (fx.by-frac gy (wl.view@ wl.VIEWSIN))) 8192))
+          (ny (+ (fx.by-frac gy (wl.view@ wl.VIEWCOS))
+                 (fx.by-frac gx (wl.view@ wl.VIEWSIN)))))
+      (if (< nx wl.MINDIST)
+          '(0 0 false)
+          (list (+ wl.centerx (/ (* ny wl.scale) nx))
+                (/ wl.heightnumerator (bit.shr nx 8))
+                (and (< nx wl.TILEGLOBAL)
+                     (and (> ny (- 0 (/ wl.TILEGLOBAL 2)))
+                          (< ny (/ wl.TILEGLOBAL 2)))))))))
+
+(defn wl.static-spot-visible? (index)
+  (> (u8@ wl.spotvis (+ (bit.shl (u8@ wl.staticx index) wl.MAPSHIFT)
+                         (u8@ wl.staticy index))) 0))
+
 (define wl.textured 0)
 
 (defn wl.set-textured (on) (set! wl.textured on))
@@ -325,10 +387,49 @@
 (define wl.WALL-SHADES 8)
 (define wl.STATUS 11)
 
-(define wl.VGACEILING 29)
 (define wl.VGAFLOOR 25)
 (define wl.VGASTATUS 0)
 (define wl.VGANOPIC 0)
+
+;;; VGAClearScreen indexes the non-SPEAR compile-time table with
+;;; gamestate.episode*10+mapon. The repeated source words hold one VGA palette
+;;; byte twice for stosw, so the indexed framebuffer retains their low bytes.
+(define wl.vga-ceiling-wl6 (bytes.alloc 60))
+
+(defn wl.load-vga-ceiling-wl6 (values index)
+  (if (= index 60)
+      index
+      (begin
+        (u8! wl.vga-ceiling-wl6 index (car values))
+        (wl.load-vga-ceiling-wl6 (cdr values) (+ index 1)))))
+
+(wl.load-vga-ceiling-wl6
+  '(29 29 29 29 29 29 29 29 29 191
+    78 78 78 29 141 78 29 45 29 141
+    29 29 29 29 29 45 221 29 29 152
+    29 157 45 221 221 157 45 77 29 221
+    125 29 45 45 221 215 29 29 29 45
+    29 29 29 29 221 221 125 221 221 221)
+  0)
+
+;;; The original demo byte may carry a global WL6 map ordinal while episode is
+;;; zero. Normal campaign state uses episode 0..5 and map 0..9. Any address
+;;; outside the 60-entry WL6 table traps through its exact upper bound; Spear's
+;;; separate 21-entry compile-time table is intentionally unavailable here.
+(defn wl.vga-ceiling-index-wl6 (episode map)
+  (if (> map 9)
+      (if (= episode 0) map 60)
+      (if (and (>= episode 0) (and (< episode 6) (>= map 0)))
+          (+ (* episode 10) map)
+          60)))
+
+(defn wl.vga-ceiling-color-for (variant episode map)
+  (if (eq? variant 'wolf3d)
+      (u8@ wl.vga-ceiling-wl6 (wl.vga-ceiling-index-wl6 episode map))
+      (u8@ wl.vga-ceiling-wl6 60)))
+
+(defn wl.vga-ceiling-color ()
+  (wl.vga-ceiling-color-for 'wolf3d wl.episode wl.map))
 
 (defn wl.post-colour (pic)
   (+ wl.WALL-FIRST (mod pic wl.WALL-SHADES)))
@@ -409,7 +510,7 @@
 
 (defn wl.clear-screen (frame)
   (if (wl.textured?)
-      (wl.clear-screen-with frame wl.VGACEILING wl.VGAFLOOR)
+      (wl.clear-screen-with frame (wl.vga-ceiling-color) wl.VGAFLOOR)
       (wl.clear-screen-with frame wl.CEILING wl.FLOOR)))
 
 (defn wl.clear-screen-with (frame ceiling floor)
@@ -427,14 +528,24 @@
         (wl.fill-view frame (+ row 1) stop colour))))
 
 (defn wl.draw-play-border (frame)
-  (begin
-    (bytes.fill frame 6119 242 0)
-    (bytes.fill frame 44839 242 125)
-    (bytes.fill-stride frame 6119 122 wl.SCREENWIDTH 0)
-    (bytes.fill-stride frame 6360 122 wl.SCREENWIDTH 125)
-    (u8! frame 44839 124)))
+  (if (and (= wl.viewwidth wl.SCREENWIDTH)
+           (= wl.viewheight (- wl.SCREENHEIGHT wl.STATUSLINES)))
+      frame
+      (let ((left (- wl.viewleft 1)) (top (- wl.viewtop 1))
+            (right (+ wl.viewleft wl.viewwidth))
+            (bottom (+ wl.viewtop wl.viewheight)))
+        (begin
+          (bytes.fill frame (+ (* top wl.SCREENWIDTH) left)
+                      (+ (- right left) 1) 0)
+          (bytes.fill frame (+ (* bottom wl.SCREENWIDTH) left)
+                      (+ (- right left) 1) 125)
+          (bytes.fill-stride frame (+ (* top wl.SCREENWIDTH) left)
+                             (+ (- bottom top) 1) wl.SCREENWIDTH 0)
+          (bytes.fill-stride frame (+ (* top wl.SCREENWIDTH) right)
+                             (+ (- bottom top) 1) wl.SCREENWIDTH 125)
+          (u8! frame (+ (* bottom wl.SCREENWIDTH) left) 124)))))
 
-(defn wl.three-d-refresh (frame)
+(defn wl.render-three-d (frame)
   (begin
     (wl.clear-screen frame)
     (wl.draw-play-border frame)
@@ -443,9 +554,59 @@
     (wl.asm-refresh)
     (wl.scale-walls frame 0)
     (wl.refresh-actor-projection 0)
-    (wl.draw-r1-inert-actors frame)
-    (wl.draw-r1-ready-pistol frame)
+    (wl.draw-scaleds frame)
+    (wl.draw-player-weapon frame)
     frame))
+
+;;; ThreeDRefresh passes 20 and false to FizzleFade, clears fizzlein only after
+;;; the LFSR cycle completes, then resets the DOS frame timer. The browser has
+;;; one visible page and cannot block its event loop, so the newly rendered page
+;;; is retained and one source FizzleFade outer frame is copied per refresh.
+;;; Host scheduling owns the corresponding timer-baseline reset.
+(defn wl.request-fizzle-in ()
+  (begin
+    ;; Allocate retained pages/state before app.render's transient heap mark.
+    (wl.ensure-fizzle-target)
+    (if (nil? wl.fizzle-state)
+        (set! wl.fizzle-state
+              (vh.fizzle-begin wl.viewwidth wl.viewheight wl.FIZZLE-FRAMES false))
+        (vh.fizzle-reset wl.fizzle-state wl.viewwidth wl.viewheight
+                         wl.FIZZLE-FRAMES false))
+    (set! wl.fizzlein 1)
+    true))
+
+(defn wl.fizzle-running? () (vh.fizzle-running? wl.fizzle-state))
+
+(defn wl.ensure-fizzle-target ()
+  (if (nil? wl.fizzle-target)
+      (set! wl.fizzle-target (bytes.alloc (* wl.SCREENWIDTH wl.SCREENHEIGHT)))
+      wl.fizzle-target))
+
+(defn wl.begin-render-fizzle (frame)
+  (begin
+    (wl.ensure-fizzle-target)
+    (bytes.copy wl.fizzle-target 0 frame 0 (* wl.SCREENWIDTH wl.SCREENHEIGHT))
+    (wl.render-three-d wl.fizzle-target)
+    (vh.fizzle-reset wl.fizzle-state wl.viewwidth wl.viewheight
+                     wl.FIZZLE-FRAMES false)
+    (wl.fizzle-refresh-step frame false)))
+
+(defn wl.fizzle-refresh-step (frame acknowledged)
+  (let ((status
+          (vh.fizzle-step wl.fizzle-target wl.viewofs
+                          frame wl.viewofs wl.SCREENWIDTH
+                          wl.fizzle-state acknowledged)))
+    (begin
+      (if (or (eq? status 'complete) (eq? status 'aborted))
+          (set! wl.fizzlein 0) nil)
+      frame)))
+
+(defn wl.three-d-refresh (frame)
+  (if (wl.fizzle-running?)
+      (wl.fizzle-refresh-step frame false)
+      (if (= wl.fizzlein 1)
+          (wl.begin-render-fizzle frame)
+          (wl.render-three-d frame))))
 
 (defn wl.scale-walls (frame postx)
   (if (= postx wl.viewwidth)

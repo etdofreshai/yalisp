@@ -218,7 +218,15 @@
 ;;; This is the CARMACIZED path, which is the one GAMEMAPS.ext takes.
 
 (defn ca.cache-plane (maps start rlewtag)
-  (ca.cache-plane-into maps start rlewtag (bytes.alloc (u16@ maps start)) (bytes.alloc ca.MAPSIZE)))
+  ;; The decoded plane escapes to the caller; the Carmack buffer and recursive
+  ;; expander frames do not. Allocate the retained destination before the mark
+  ;; so releasing the scratch region cannot invalidate the returned block.
+  (let ((dest (bytes.alloc ca.MAPSIZE)))
+    (let ((mark (heap.used)))
+      (begin
+        (ca.cache-plane-into maps start rlewtag (bytes.alloc (u16@ maps start)) dest)
+        (heap.release mark)
+        dest))))
 
 (defn ca.cache-plane-into (maps start rlewtag buffer2 dest)
   (begin
