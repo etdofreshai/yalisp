@@ -93,6 +93,6 @@ test("one immutable module creates independent sessions without a mutable cache"
   assert.equal(before.sessionInstantiations < after.sessionInstantiations, true,
     "an earlier metrics snapshot must not be a live mutable cache view");
   assert.deepEqual(Object.keys(intact), [
-    "meter", "memoryBytes", "evaluate", "evaluateQuietly", "evaluateBytes", "ingestBytes",
+    "meter", "memoryBytes", "evaluate", "evaluateCanonical", "evaluateQuietly", "evaluateBytes", "ingestBytes",
   ]);
 });

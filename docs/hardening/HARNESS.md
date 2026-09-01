@@ -1,7 +1,7 @@
 # Deterministic conformance and benchmark harness
 
-Status: protocol v2; sequential conformance control plane implemented, golden
-cross-stage observations staged by M1 and property/GC metrics by M2/M6.
+Status: protocol v2; sequential conformance and M1 golden cross-stage
+observations implemented, with property/GC metrics staged by M2/M6.
 
 The implemented M0 runner discovers test files lexicographically and executes
 one fresh Node process at a time. Its external manifest pins the complete
@@ -43,6 +43,13 @@ stops its headline at the earliest differing tuple:
 
 It still retains the complete report for diagnosis. Unsupported stages are
 `not-applicable`, never silently counted as passes.
+
+The implemented M1 corpus is
+`apps/web/tests/fixtures/golden-observations-v1.json`; the runner is
+`scripts/hardening/golden-differential.mjs`. Probe hashes use four-byte
+big-endian byte lengths followed by UTF-8 name and canonical value bytes.
+Normal execution never writes the fixture. Source, output, linear memory, and
+generated code have authored per-case caps.
 
 ## 2. Conformance suites
 
@@ -200,6 +207,7 @@ Current repository checks:
 npm run typecheck
 npm test
 npm run build
+npm run hardening:golden
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```
@@ -212,6 +220,6 @@ resource cap; the result still reports every test individually.
 
 The current feasibility script is useful evidence but is single-shot and does
 not satisfy this protocol's warmup, percentile, raw-sample, quiet-host, or
-variance requirements. M1 will add one top-level hardening command that runs
-the corpus/differential report; later milestones will add benchmark, memory,
-and soak subcommands while keeping schemas versioned.
+variance requirements. `hardening:golden` now writes a versioned external JSON
+report and concise result; later milestones will add benchmark, memory, and
+soak subcommands while keeping schemas versioned.

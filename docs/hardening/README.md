@@ -22,7 +22,8 @@ The controlling artifacts are:
 
 The non-green discovery run remains in
 `baselines/2026-09-01-m0-candidate.md`; the fully green M0 exit is recorded in
-`baselines/2026-09-01-m0-promotion.md`. M1 is the active milestone.
+`baselines/2026-09-01-m0-promotion.md`. M1's golden differential is recorded in
+`baselines/2026-09-01-m1-golden.md`; M2 is the active milestone.
 
 ## Operating invariant
 

@@ -1,6 +1,6 @@
 # YaLisp living hardening scorecard
 
-Updated: 2026-09-01 M0 complete, active M1. Scale: 0 absent, 1 prototype, 2 bounded and
+Updated: 2026-09-01 M1 complete, active M2. Scale: 0 absent, 1 prototype, 2 bounded and
 partly evidenced, 3 broadly conformant, 4 production-hardened, 5 independently
 reproduced across supported targets. Scores are independent; speed cannot raise
 a correctness score and a small binary cannot raise bootstrap purity if work is
@@ -8,8 +8,8 @@ hidden in the host.
 
 | Axis | Score | Current evidence | Next exit gate |
 | --- | ---: | --- | --- |
-| Semantic correctness | 2 | Frozen M0 promotion accounts for 301/301 cases over 35/35 shards with no skip/cancellation; no full normative cross-stage corpus | M1 golden observations plus M2 reader/macro properties |
-| Interpreter/compiler parity | 1 | Differential checks cover three arithmetic expressions and six inputs within a one-parameter subset | Corpus-driven stage runner and earliest-divergence report |
+| Semantic correctness | 2 | M0 is 301/301; M1 adds 15 reviewed cases/17 events with values, output, effects, errors, probes/hashes and no divergence over declared stages | M2 reader/macro properties and broader profiles |
+| Interpreter/compiler parity | 2 | One corpus drives seed/bootstrap plus three compiler-subset cases; all match and unsupported stages are explicit | General IR/compiler and shared-state corpus expansion |
 | Bootstrap purity | 2 | Checked-in WAT seed and YaLisp bootstrap with provenance and reproducible binary | Separate core IR/evaluator policy, then reduce audited seed with ledger |
 | Performance | 1 | Cold precompiled setup diagnostic and single-shot feasibility measurements exist | Quiet-host warmups, raw samples, p50/p95/p99, variance/confidence gates |
 | Memory / GC | 0 | Bump allocation and explicit arenas; exact 240 MiB replay plus live circuit/render gates and a 20,808-byte two-plane cache ownership gate are measured, but no collector exists | Automatic managed memory, root-map proofs, pause/throughput/leak/soak evidence |
@@ -23,8 +23,8 @@ hidden in the host.
 
 | Metric family | Current status | Controlling evidence |
 | --- | --- | --- |
-| Values/effects/errors/output/state hash by stage | Partial values only; no general state hash | M1 |
-| Earliest divergence | Not implemented | M1 |
+| Values/effects/errors/output/state hash by stage | Implemented for 15-case/17-event M1 corpus and 30 applicable stage observations | Expand with each milestone |
+| Earliest divergence | Implemented to case/event/channel/byte; deliberate perturbation localized | Preserve and extend |
 | Reader/printer round trip | Fixed examples only | M2 |
 | Macro expansion determinism | Indirect behavior tests only | M2 |
 | IR/decompile invariants | No IR | M4 |
@@ -43,8 +43,8 @@ hidden in the host.
 
 ## Current first gap
 
-M0 is complete. Frozen identity `bc3b6bb4...` passed all 301 hierarchical cases
-and 35 shards with no skip, cancellation, retry, abnormal process, or policy
-violation. The earliest cross-cutting gap is now the absence of a runner capable
-of observing and localizing semantic divergence across stages; M1 is active,
-not a compiler rewrite or speculative optimization.
+M1 is complete. Corpus `e50cfe93...` records 15 cases, 17 events, 30 applicable
+stage observations, 15 explicit not-applicable stages, and no expected or
+cross-stage divergence. The earliest gap is now deterministic code-as-data
+boundaries: reader/printer round trips, independent macro-expansion hashes,
+seeded properties, shrinking, and malformed-input caps. M2 is active.

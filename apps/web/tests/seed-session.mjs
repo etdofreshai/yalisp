@@ -151,6 +151,7 @@ export async function createSeedSession({ boot = true } = {}) {
     meter,
     get memoryBytes() { return memory.buffer.byteLength; },
     evaluate(source) { return invoke("eval_print", source); },
+    evaluateCanonical(source) { return invoke("eval_dom_print", source); },
     evaluateQuietly(source) { invoke("eval_all", source); },
     evaluateBytes(source) {
       binaryOutput = undefined;

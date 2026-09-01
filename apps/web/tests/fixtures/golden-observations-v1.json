@@ -1,0 +1,246 @@
+{
+  "schema": "yalisp-golden-observations-v1",
+  "corpusVersion": 1,
+  "stageOrder": ["seed", "bootstrap", "compiler"],
+  "defaultCaps": {
+    "maxSourceBytes": 4096,
+    "maxOutputBytes": 4096,
+    "maxMemoryBytes": 2097152,
+    "maxGeneratedCodeBytes": 1024
+  },
+  "cases": [
+    {
+      "id": "literal-data",
+      "tags": ["literal", "data", "printer"],
+      "stages": ["seed", "bootstrap"],
+      "setup": [],
+      "events": [{
+        "id": "evaluate",
+        "kind": "value",
+        "source": "'(1 \"x\" true false nil (2 . 3))",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": "(1 \"x\" true false nil (2 . 3))", "printedOutput": "(1 \"x\" true false nil (2 . 3))", "effects": [], "error": null, "probes": []}
+      }]
+    },
+    {
+      "id": "lexical-scope",
+      "tags": ["scope", "closure"],
+      "stages": ["seed", "bootstrap"],
+      "setup": [],
+      "events": [{
+        "id": "evaluate",
+        "kind": "value",
+        "source": "(((lambda (x) (lambda (y) (+ x y))) 19) 23)",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": "42", "printedOutput": "42", "effects": [], "error": null, "probes": []}
+      }]
+    },
+    {
+      "id": "mutation-session",
+      "tags": ["mutation", "state"],
+      "stages": ["seed", "bootstrap"],
+      "setup": ["(define counter 1)"],
+      "events": [
+        {
+          "id": "mutate",
+          "kind": "value",
+          "source": "(set! counter (+ counter 4))",
+          "probes": [{"name": "counter", "source": "counter"}],
+          "effectProbes": [{"channel": "mutation", "name": "counter", "source": "counter"}],
+          "expected": {"value": "5", "printedOutput": "5", "effects": [{"channel": "mutation", "name": "counter", "value": "5"}], "error": null, "probes": [{"name": "counter", "value": "5"}]}
+        },
+        {
+          "id": "observe",
+          "kind": "value",
+          "source": "counter",
+          "probes": [{"name": "counter", "source": "counter"}],
+          "effectProbes": [],
+          "expected": {"value": "5", "printedOutput": "5", "effects": [], "error": null, "probes": [{"name": "counter", "value": "5"}]}
+        }
+      ]
+    },
+    {
+      "id": "closure-capture",
+      "tags": ["closure", "mutation", "scope"],
+      "stages": ["seed", "bootstrap"],
+      "setup": ["(define base 10)", "(define add-base (lambda (x) (+ base x)))"],
+      "events": [
+        {
+          "id": "rebind",
+          "kind": "value",
+          "source": "(set! base 20)",
+          "probes": [{"name": "base", "source": "base"}],
+          "effectProbes": [{"channel": "mutation", "name": "base", "source": "base"}],
+          "expected": {"value": "20", "printedOutput": "20", "effects": [{"channel": "mutation", "name": "base", "value": "20"}], "error": null, "probes": [{"name": "base", "value": "20"}]}
+        },
+        {
+          "id": "call",
+          "kind": "value",
+          "source": "(add-base 22)",
+          "probes": [{"name": "base", "source": "base"}],
+          "effectProbes": [],
+          "expected": {"value": "42", "printedOutput": "42", "effects": [], "error": null, "probes": [{"name": "base", "value": "20"}]}
+        }
+      ]
+    },
+    {
+      "id": "left-to-right-effects",
+      "tags": ["evaluation-order", "effects", "mutation"],
+      "stages": ["seed", "bootstrap"],
+      "setup": ["(define order 0)", "(define mark (lambda (x) (begin (set! order (+ (* order 10) x)) x)))"],
+      "events": [{
+        "id": "evaluate",
+        "kind": "value",
+        "source": "(+ (mark 1) (mark 2))",
+        "probes": [{"name": "order", "source": "order"}],
+        "effectProbes": [{"channel": "mutation-order", "name": "order", "source": "order"}],
+        "expected": {"value": "3", "printedOutput": "3", "effects": [{"channel": "mutation-order", "name": "order", "value": "12"}], "error": null, "probes": [{"name": "order", "value": "12"}]}
+      }]
+    },
+    {
+      "id": "quasiquote-splice",
+      "tags": ["quasiquote", "data"],
+      "stages": ["seed", "bootstrap"],
+      "setup": [],
+      "events": [{
+        "id": "evaluate",
+        "kind": "value",
+        "source": "`(alpha ,(+ 1 2) ,@(list 4 5) omega)",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": "(alpha 3 4 5 omega)", "printedOutput": "(alpha 3 4 5 omega)", "effects": [], "error": null, "probes": []}
+      }]
+    },
+    {
+      "id": "bootstrap-macro",
+      "tags": ["macro", "bootstrap"],
+      "stages": ["bootstrap"],
+      "setup": [],
+      "events": [{
+        "id": "evaluate",
+        "kind": "value",
+        "source": "(let ((x 19) (y 23)) (+ x y))",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": "42", "printedOutput": "42", "effects": [], "error": null, "probes": []}
+      }]
+    },
+    {
+      "id": "tail-recursion",
+      "tags": ["tail-call", "bootstrap"],
+      "stages": ["bootstrap"],
+      "setup": [],
+      "events": [{
+        "id": "evaluate",
+        "kind": "value",
+        "source": "(begin (defn sum-to (n acc) (if (= n 0) acc (sum-to (- n 1) (+ acc n)))) (sum-to 2000 0))",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": "2001000", "printedOutput": "2001000", "effects": [], "error": null, "probes": []}
+      }]
+    },
+    {
+      "id": "unbound-error",
+      "tags": ["error", "scope"],
+      "stages": ["seed", "bootstrap"],
+      "setup": [],
+      "events": [{
+        "id": "evaluate",
+        "kind": "value",
+        "source": "missing-name",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": null, "printedOutput": "unbound: missing-name", "effects": [{"channel": "diagnostic", "value": "unbound: missing-name"}], "error": {"category": "unbound-name", "diagnostic": "unbound: missing-name", "recoverable": false}, "probes": []}
+      }]
+    },
+    {
+      "id": "byte-effect",
+      "tags": ["bytes", "effects", "state"],
+      "stages": ["bootstrap"],
+      "setup": [],
+      "events": [{
+        "id": "emit",
+        "kind": "bytes",
+        "source": "(begin (define b (bytes.alloc 4)) (u8! b 0 0) (u8! b 1 1) (u8! b 2 127) (u8! b 3 255) b)",
+        "probes": [{"name": "length", "source": "(bytes.length b)"}, {"name": "last", "source": "(u8@ b 3)"}],
+        "effectProbes": [],
+        "expected": {"value": "#bytes:00017fff", "printedOutput": "", "effects": [{"channel": "bytes", "value": "00017fff"}], "error": null, "probes": [{"name": "length", "value": "4"}, {"name": "last", "value": "255"}]}
+      }]
+    },
+    {
+      "id": "resource-reserve",
+      "tags": ["resource-cap", "heap"],
+      "stages": ["seed", "bootstrap"],
+      "setup": [],
+      "events": [{
+        "id": "reserve",
+        "kind": "value",
+        "source": "(begin (heap.reserve 65536) 42)",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": "42", "printedOutput": "42", "effects": [], "error": null, "probes": []}
+      }]
+    },
+    {
+      "id": "resource-exhaustion",
+      "tags": ["resource-cap", "error", "heap"],
+      "stages": ["seed", "bootstrap"],
+      "setup": [],
+      "events": [{
+        "id": "reserve",
+        "kind": "value",
+        "source": "(heap.reserve 1073741824)",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": null, "printedOutput": "memory limit reached", "effects": [{"channel": "diagnostic", "value": "memory limit reached"}], "error": {"category": "resource-exhausted", "diagnostic": "memory limit reached", "recoverable": false}, "probes": []}
+      }]
+    },
+    {
+      "id": "compiler-square",
+      "tags": ["compiler", "arithmetic"],
+      "stages": ["seed", "bootstrap", "compiler"],
+      "setup": [],
+      "compiler": {"parameter": "x", "body": "(+ (* x x) 1)", "argument": 21},
+      "events": [{
+        "id": "evaluate",
+        "kind": "value",
+        "source": "((lambda (x) (+ (* x x) 1)) 21)",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": "442", "printedOutput": "442", "effects": [], "error": null, "probes": []}
+      }]
+    },
+    {
+      "id": "compiler-negative",
+      "tags": ["compiler", "arithmetic"],
+      "stages": ["seed", "bootstrap", "compiler"],
+      "setup": [],
+      "compiler": {"parameter": "x", "body": "(- (* x 3) 4)", "argument": -7},
+      "events": [{
+        "id": "evaluate",
+        "kind": "value",
+        "source": "((lambda (x) (- (* x 3) 4)) -7)",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": "-25", "printedOutput": "-25", "effects": [], "error": null, "probes": []}
+      }]
+    },
+    {
+      "id": "compiler-nested",
+      "tags": ["compiler", "arithmetic"],
+      "stages": ["seed", "bootstrap", "compiler"],
+      "setup": [],
+      "compiler": {"parameter": "x", "body": "(+ -7 (* x 2))", "argument": 100},
+      "events": [{
+        "id": "evaluate",
+        "kind": "value",
+        "source": "((lambda (x) (+ -7 (* x 2))) 100)",
+        "probes": [],
+        "effectProbes": [],
+        "expected": {"value": "193", "printedOutput": "193", "effects": [], "error": null, "probes": []}
+      }]
+    }
+  ]
+}

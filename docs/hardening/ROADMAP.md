@@ -33,7 +33,7 @@ and 301 hierarchical cases with 301 passes and zero failures, skips,
 cancellations, abnormal processes, or policy violations. The durable result is
 `baselines/2026-09-01-m0-promotion.md`.
 
-## M1 — golden observation corpus and earliest-divergence runner (active)
+## M1 — golden observation corpus and earliest-divergence runner (complete)
 
 Goal: replace hand-selected equality checks with a machine-readable corpus and
 a runner that compares every applicable execution stage.
@@ -54,7 +54,13 @@ Exit criteria:
 - at least one deliberately perturbed stage proves the runner detects and
   localizes a divergence.
 
-## M2 — reader/printer, expansion, and malformed-input properties
+Exit evidence: 15 reviewed cases and 17 events produced 30 applicable stage
+observations with no expected or cross-stage divergence; 15 unsupported stage
+slots were explicit `not-applicable`. A deliberate `442` -> `443` bootstrap
+perturbation localized to case 12, event 0, `value`, byte 3. See
+`baselines/2026-09-01-m1-golden.md`.
+
+## M2 — reader/printer, expansion, and malformed-input properties (active)
 
 Goal: make code-as-data boundaries deterministic and resource-bounded.
 

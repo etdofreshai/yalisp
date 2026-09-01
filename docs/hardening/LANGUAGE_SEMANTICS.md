@@ -27,7 +27,9 @@ faster route is not conformant if any of these observations differ.
 Current state: seed and bootstrap interpretation exist. Compilation supports
 only one-parameter integer expressions using binary `+`, `-`, and `*`; it has no
 shared session state or hot-switch mechanism. Equivalence is therefore proven
-only for the explicitly bounded compiler corpus.
+only for the explicitly bounded compiler corpus. M1 records 15 reviewed cases,
+17 events, and 30 applicable stage observations with no divergence; three cases
+are in the compiler intersection and all unsupported stage slots are explicit.
 
 ## 2. Values and representation
 
