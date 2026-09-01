@@ -64,9 +64,12 @@ generated code have authored per-case caps.
 
 ### Macro/IR/compiler
 
-- repeated expansion in fresh and warmed sessions;
+- named outer expansion is independently observable and does not evaluate the
+  produced user form (implemented by `expand_dom_print`);
+- eight authored boot expansions repeat in four fresh sessions and 16 rounds
+  in one warmed session at pinned canonical hash `34214d55...` (implemented);
 - capture-sensitive lexical fixtures and nested quasiquote/unquote depth;
-- canonical expansion and IR hashes;
+- canonical expansion hashes (implemented for M2); IR hashes await M4;
 - IR validation plus serialize/decompile round trips when those paths exist;
 - interpreted, reference-IR, incrementally compiled, deoptimized, and AOT
   observation comparison over their declared support intersection.
@@ -210,6 +213,7 @@ npm test
 npm run build
 npm run hardening:golden
 node --test --test-concurrency=1 apps/web/tests/reader-printer-property.test.mjs
+node --test --test-concurrency=1 apps/web/tests/macro-expansion-determinism.test.mjs
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```

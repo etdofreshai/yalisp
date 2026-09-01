@@ -34,8 +34,8 @@ npm run build
 
 The normative semantics, staged bootstrap map, sequential roadmap,
 deterministic harness, and living scorecard are under `docs/hardening/`. The
-current partial M2 reader/printer result is frozen in
-`docs/hardening/baselines/2026-09-01-m2-reader-printer.md`.
+current partial M2 evidence is frozen in the reader/printer and macro-expansion
+baselines under `docs/hardening/baselines/`.
 
 ## Development deployment
 

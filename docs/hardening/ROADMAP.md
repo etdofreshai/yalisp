@@ -82,10 +82,16 @@ Nine fixed string cases and 14 grammar cases cover control escapes, delimiters,
 Unicode, comments, proper/dotted lists, numeric bounds, and symbols; two
 malformed cases have stable diagnostics. The deterministic first failures were
 carriage return and generated case 1 containing byte `0x04`; the seed reader now
-decodes the canonical printer's complete control-escape profile. This is a
-partial M2 slice, not milestone completion: independent macro-expansion hashes,
-persisted shrinking, broader source generation, and explicit reader depth/work
-caps remain.
+decodes the canonical printer's complete control-escape profile.
+
+Independent named outer-macro inspection is also implemented. Eight authored
+boot expansions have pinned canonical hash `34214d55...` across four fresh
+sessions and 16 rounds in one long-lived session. A two-macro expansion chain
+produces a mutation form 16 times at hash `45787172...` while its counter remains
+zero, proving the inspection path does not evaluate produced user code. This is
+still partial M2 evidence: persisted shrinking, broader source generation, nested
+quasiquote/splice cases, and explicit reader/expansion depth and work caps
+remain.
 
 ## M3 — structured errors and transactional failure boundaries
 

@@ -1001,6 +1001,30 @@
     (call $eval_seq (i32.load offset=8 (local.get $fn))
                     (call $bind_params (local.get $fn) (local.get $args))))
 
+  ;; Expand named macros at the outermost position until the head is no longer
+  ;; a macro. Unlike evaluation, this inspection path never evaluates a
+  ;; computed operator or the form produced by a macro. Macro bodies still run
+  ;; through the same closure application used by $eval, including their
+  ;; captured lexical environment.
+  (func $macroexpand_outer (param $expr i32) (param $env i32) (result i32)
+    (local $head i32) (local $entry i32) (local $fn i32)
+    (loop $again
+      (if (i32.eqz (call $is_pair (local.get $expr)))
+        (then (return (local.get $expr))))
+      (local.set $head (i32.load offset=4 (local.get $expr)))
+      (if (i32.eqz (call $is_symbol (local.get $head)))
+        (then (return (local.get $expr))))
+      (local.set $entry (call $lookup_cell (local.get $env) (local.get $head)))
+      (if (i32.eqz (local.get $entry))
+        (then (return (local.get $expr))))
+      (local.set $fn (i32.load offset=8 (local.get $entry)))
+      (if (i32.eqz (call $is_macro (local.get $fn)))
+        (then (return (local.get $expr))))
+      (local.set $expr
+        (call $apply_user (local.get $fn) (i32.load offset=8 (local.get $expr))))
+      (br $again))
+    (unreachable))
+
   ;; kernel-level append: elements of list a, then b (b may be any value)
   (func $lappend (param $a i32) (param $b i32) (result i32)
     (if (result i32) (call $is_pair (local.get $a))
@@ -1646,6 +1670,20 @@
       (local.set $v (call $read1))
       (br_if $done (i32.eq (local.get $v) (global.get $eof)))
       (call $print_dom (call $eval (local.get $v) (global.get $genv)))
+      (call $write (i32.const 104) (i32.const 1))
+      (br $l))))
+
+  ;; Read source forms and print their repeated outer named-macro expansion
+  ;; without evaluating the expanded forms. This is the independent code-as-
+  ;; data observation boundary used by the deterministic M2 harness.
+  (func (export "expand_dom_print") (param $ptr i32) (param $len i32)
+    (local $v i32)
+    (global.set $rp (local.get $ptr))
+    (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
+    (block $done (loop $l
+      (local.set $v (call $read1))
+      (br_if $done (i32.eq (local.get $v) (global.get $eof)))
+      (call $print_dom (call $macroexpand_outer (local.get $v) (global.get $genv)))
       (call $write (i32.const 104) (i32.const 1))
       (br $l))))
 

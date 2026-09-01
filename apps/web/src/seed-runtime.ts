@@ -6,6 +6,7 @@ interface SeedExports extends WebAssembly.Exports {
   eval_all(pointer: number, length: number): void;
   eval_print(pointer: number, length: number): void;
   eval_dom_print(pointer: number, length: number): void;
+  expand_dom_print(pointer: number, length: number): void;
   eval_bytes(pointer: number, length: number): void;
   asset_begin(length: number): number;
   asset_commit(): number;
@@ -166,6 +167,9 @@ export async function createSeedSession(stage: SeedStage) {
     },
     evaluateDom(source: string) {
       return run(() => exports.eval_dom_print(inputPointer, load(source)));
+    },
+    expandCanonical(source: string) {
+      return run(() => exports.expand_dom_print(inputPointer, load(source)));
     },
     evaluateQuietly(source: string) {
       run(() => exports.eval_all(inputPointer, load(source)));

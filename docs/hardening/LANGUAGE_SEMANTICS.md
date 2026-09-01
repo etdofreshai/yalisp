@@ -138,6 +138,16 @@ construction, as the bootstrapped `or` does. If hygienic identifiers are added,
 their marks/scopes must remain inspectable data rather than becoming an opaque
 host-only mechanism.
 
+Current inspection boundary: `expand_dom_print` reads forms, repeatedly expands
+only a macro bound to a named outer head in the global environment, and prints
+the resulting data canonically. It does not evaluate a computed operator or the
+form produced by the macro. Macro bodies use the same closure application and
+captured definition environment as evaluator-driven expansion. Eight authored
+boot expansions hash to `34214d55...` in four fresh sessions and 16 repetitions
+in one long-lived session; a stateful produced form is proven not to execute.
+Computed-head expansion, nested quasiquote depth, malformed splice behavior,
+and explicit expansion work/depth caps remain unspecified or unproved.
+
 ## 7. Equality
 
 `eq?` is value equality for fixnums and identity equality for interned/singleton

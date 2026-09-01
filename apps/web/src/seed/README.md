@@ -12,8 +12,14 @@ The checked-in `bootstrap.wat` imports `host.write(ptr, len)` for text and
 `host.bytes_write(ptr, len)` for raw byte buffers. The build assembles it into
 the generated, ignored `public/yalisp/seed.wasm`, which exports a sixteen-page
 WebAssembly memory plus `init`, `eval_all`, `eval_print`, `eval_dom_print`,
-`eval_bytes`, `asset_begin`, and `asset_commit`. Source is copied into the
-fixed input range `[1024, 131072)` before evaluation.
+`expand_dom_print`, `eval_bytes`, `asset_begin`, and `asset_commit`. Source is
+copied into the fixed input range `[1024, 131072)` before evaluation.
+
+`expand_dom_print` is an inspection boundary, not a second evaluator. It reads
+forms, repeatedly applies only macros bound to a named outer head in the global
+environment, and prints the resulting data canonically. It does not evaluate a
+computed operator or the produced user form. Macro bodies run through the same
+captured closure application as ordinary evaluation.
 
 The seed implements:
 

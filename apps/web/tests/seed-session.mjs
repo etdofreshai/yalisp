@@ -7,12 +7,12 @@ import { performance } from "node:perf_hooks";
 
 export const SEED_ARTIFACT_PINS = Object.freeze({
   wat: Object.freeze({
-    bytes: 96_029,
-    sha256: "0a760e92fc6cabfd41d7652c374b918aa82452ad4f3ab72324f97d7473120e74",
+    bytes: 97_928,
+    sha256: "0f7b3a87fadfcfa5ca203f959b6cd55e95ccda8a23e65e038093e02f6ef8eefc",
   }),
   wasm: Object.freeze({
-    bytes: 9_935,
-    sha256: "7946e1ecefd3f9c90987e8d02d48fce3f706e74b3dcc213ba3a4cc55b6df20d7",
+    bytes: 10_093,
+    sha256: "ab767a39785bd249b73fe3cbfa14739b9a92cbd178d94eb0863d24c5ac917edb",
   }),
   boot: Object.freeze({
     bytes: 4_486,
@@ -152,6 +152,7 @@ export async function createSeedSession({ boot = true } = {}) {
     get memoryBytes() { return memory.buffer.byteLength; },
     evaluate(source) { return invoke("eval_print", source); },
     evaluateCanonical(source) { return invoke("eval_dom_print", source); },
+    expandCanonical(source) { return invoke("expand_dom_print", source); },
     evaluateQuietly(source) { invoke("eval_all", source); },
     evaluateBytes(source) {
       binaryOutput = undefined;
