@@ -226,6 +226,7 @@ node --test --test-concurrency=1 apps/web/tests/quasiquote-depth.test.mjs
 node --test --test-concurrency=1 apps/web/tests/source-form-idempotence.test.mjs
 node --test --test-concurrency=1 apps/web/tests/structured-error-boundary.test.mjs
 node --test --test-concurrency=1 apps/web/tests/arithmetic-errors.test.mjs
+node --test --test-concurrency=1 apps/web/tests/error-transactionality.test.mjs
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```
@@ -247,6 +248,11 @@ independent fresh invocations.
 The arithmetic-error command proves both zero-divisor diagnostics and the
 minimum-fixnum divided by `-1` representation edge while retaining an ordinary
 negative division control.
+
+The transactional-error command intentionally reuses trapped instances only as
+an inspection instrument. It records post-failure bindings and destination
+bytes for operator/argument order, `set!`/`define`, and the three atomic block
+operations. This does not authorize production session reuse.
 
 The resource-cap property command prints its accounting versions and persisted
 minimal witnesses. `binary-min-depth-v1` refuses to classify an incidental host

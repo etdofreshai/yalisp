@@ -190,6 +190,16 @@ They have a stable category, diagnostic payload, source location when known,
 and ordered prior effects. Evaluation stops at the failing operation; no later
 argument, branch, mutation, or output may occur.
 
+"Failing operation" is observed after ordinary eager argument evaluation. If an
+operator fails, no arguments run. If an argument fails, earlier argument effects
+remain and later arguments do not run. If the primitive itself fails, every
+argument has already run left-to-right. A failing `set!` or `define` value does
+not commit its binding change. `bytes.fill`, `bytes.copy`, and
+`bytes.fill-stride` validate their complete destination/source ranges before
+the first write; bounds failure leaves the destination byte-for-byte unchanged.
+These post-failure facts are inspected only by the conformance harness; normal
+hosts discard the trapped instance.
+
 Current seed failures write a diagnostic and trap. A trapped instance is not a
 recoverable language session and callers should discard it. The M3 seed-owned
 category table is:

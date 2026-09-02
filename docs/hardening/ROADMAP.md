@@ -142,8 +142,18 @@ session state. A real out-of-bounds Wasm access retains
 typed metadata exclusively and contains no diagnostic-string category inference.
 Division and modulo by zero now produce deliberate category-6 diagnostics, and
 division rejects a result outside the 31-bit fixnum representation. Complete
-category payload data, prior-effect order, atomic mutation, host recoverability,
-and compiler equivalence remain open.
+category payload data, host recoverability, and compiler equivalence remain
+open.
+
+The transactional observation harness reuses a trapped instance only for
+low-level inspection; production hosts still discard it. Operator failure
+commits the operator's earlier mutation and evaluates no argument. A failing
+second argument preserves the first argument's effect and skips the third.
+Primitive division failure occurs only after all argument expressions have run,
+so their left-to-right mutations are retained. Failed `set!` and `define` keep
+the old binding. Out-of-range `bytes.fill`, `bytes.copy`, and
+`bytes.fill-stride` leave every destination byte unchanged. This satisfies the
+M3 prior-effect-order and documented atomic-operation exit criteria.
 
 ## M4 — explicit core IR and semantic reference path
 

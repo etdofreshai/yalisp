@@ -1,6 +1,6 @@
 # YaLisp living hardening scorecard
 
-Updated: 2026-09-01 M2 complete; active M3 arithmetic-error slice green. Scale: 0
+Updated: 2026-09-01 M2 complete; active M3 transactional-error slice green. Scale: 0
 absent, 1 prototype, 2 bounded and partly evidenced, 3 broadly conformant, 4 production-hardened, 5 independently
 reproduced across supported targets. Scores are independent; speed cannot raise
 a correctness score and a small binary cannot raise bootstrap purity if work is
@@ -55,5 +55,7 @@ covers every declared syntax category with no canonical idempotence failure. M2
 is complete. M3 distinguishes ten typed language-error categories from raw Wasm
 faults, resets metadata at every host entry, and removes diagnostic-string
 category inference from the golden runner. Zero divisors and division overflow
-are deliberate arithmetic errors. The earliest gap is useful category payload
-data, followed by ordered prior effects and atomic mutation failure fixtures.
+are deliberate arithmetic errors. Post-trap inspection proves operator/argument
+effect order, binding commit timing, and fail-before-write behavior for fill,
+copy, and strided fill. The earliest gap is useful category payload data, then
+host recoverability and interpreter/compiler error parity.
