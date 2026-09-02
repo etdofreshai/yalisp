@@ -37,6 +37,7 @@ test("every fixed primitive rejects missing and extra operands", async () => {
         assert.ok(error instanceof SeedLanguageError, `${name}/${count}`);
         assert.equal(error.category, "arity", `${name}/${count}`);
         assert.equal(error.diagnostic, `${name} expected`, `${name}/${count}`);
+        assert.equal(error.data, name, `${name}/${count}`);
         assert.equal(error.recoverable, true);
         return true;
       });
@@ -68,6 +69,7 @@ test("ranged primitives accept only their documented interval", async () => {
         assert.ok(error instanceof SeedLanguageError);
         assert.equal(error.category, "arity");
         assert.equal(error.diagnostic, `${name} expected`);
+        assert.equal(error.data, name);
         return true;
       });
     }

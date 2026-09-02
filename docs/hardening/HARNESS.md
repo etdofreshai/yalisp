@@ -243,9 +243,10 @@ failures cannot masquerade as reader diagnostics.
 
 The structured-error boundary command asserts all ten stable seed category
 codes and both sides of the M3 distinction: classified failures have typed host
-records, while an actual out-of-bounds Wasm access has category zero and remains
-a native runtime fault. It also covers metadata reset at host entries through
-independent fresh invocations. Its recovery case retains a definition after a
+records with category-specific UTF-8 `data`, while an actual out-of-bounds Wasm
+access has category zero, empty data, and remains a native runtime fault. It
+also covers metadata reset at host entries through independent fresh
+invocations. Its recovery case retains a definition after a
 recoverable unbound error, then proves resource exhaustion invalidates the
 wrapper and rejects the next call.
 

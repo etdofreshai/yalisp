@@ -9,6 +9,7 @@ async function expectArity(source, diagnostic) {
     assert.ok(error instanceof SeedLanguageError, source);
     assert.equal(error.category, "arity", source);
     assert.equal(error.diagnostic, diagnostic, source);
+    assert.equal(error.data, diagnostic.replace(/ expected$/, ""), source);
     assert.equal(error.recoverable, true, source);
     return true;
   });

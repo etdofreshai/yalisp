@@ -35,6 +35,8 @@ Primitive arity is recorded in
 `baselines/2026-09-02-m3-primitive-arity.md`.
 Special-form and user-call arity is recorded in
 `baselines/2026-09-02-m3-user-arity.md`.
+Structured category payloads are recorded in
+`baselines/2026-09-02-m3-error-payloads.md`.
 
 ## Operating invariant
 

@@ -141,8 +141,13 @@ session state. A real out-of-bounds Wasm access retains
 `WebAssembly.RuntimeError` identity with category zero. The golden runner uses
 typed metadata exclusively and contains no diagnostic-string category inference.
 Division and modulo by zero now produce deliberate category-6 diagnostics, and
-division rejects a result outside the 31-bit fixnum representation. Complete
-category payload data and compiler equivalence remain open.
+division rejects a result outside the 31-bit fixnum representation.
+
+Each classified trap now also exports a seed-owned UTF-8 data span. Dynamic
+unbound/called names, cap dimensions, and fixed diagnostic tokens are decoded
+identically by the Node and browser hosts and exposed as `SeedLanguageError.data`.
+The golden error observations review this field; raw traps prove category zero
+and an empty span after entry reset. Compiler equivalence remains open.
 
 The transactional observation harness first reused a trapped instance only for
 low-level inspection; production hosts now retain only the categories proved
@@ -160,7 +165,7 @@ codes 1–7 and 9. Resource exhaustion, host-contract errors, and raw Wasm fault
 invalidate the wrapper; subsequent calls fail as `SeedSessionDiscardedError`.
 The browser REPL preserves definitions only after a recoverable typed error.
 The reviewed unbound golden observation now records `recoverable: true` at
-corpus hash `8aa06e80...`. This satisfies the host-distinction exit criterion.
+corpus hash `d6a57946...`. This satisfies the host-distinction exit criterion.
 
 Every primitive and alias now has an explicit fixed, ranged, or variadic arity
 policy checked before dispatch. Exhaustive fixtures reject both sides of every
@@ -175,8 +180,9 @@ special-form shapes are checked before field access; proper parameter lists are
 exact, bare symbols capture the full argument list, and dotted symbol tails
 capture the remainder. Fixed closures/macros reject missing and extra values
 before body entry, including malformed parameter identifiers. The focused set
-is 59/59. Structured payload fields and explicit compiler error-intersection
-evidence remain open.
+is 59/59. The payload slice remains 59/59 with golden corpus hash
+`d6a57946...`, and leaves explicit compiler error-intersection evidence as the
+only open M3 exit.
 
 ## M4 — explicit core IR and semantic reference path
 

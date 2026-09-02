@@ -7,12 +7,12 @@ import { performance } from "node:perf_hooks";
 
 export const SEED_ARTIFACT_PINS = Object.freeze({
   wat: Object.freeze({
-    bytes: 114_987,
-    sha256: "e071f4182bf3289f60e3fbd4e35a7cddda32a95138642d8ee30d62364069c712",
+    bytes: 116_403,
+    sha256: "a2192105e7edb6af1b78eb85a09deaf3c06f010876526894ecb158e2702d9af8",
   }),
   wasm: Object.freeze({
-    bytes: 11_850,
-    sha256: "8aa5a795b829c8dcb13adecb5645df7a4bb1aec37654d743d2da8d0168531c79",
+    bytes: 12_028,
+    sha256: "504083c9a42e3ad5dee2f2a9feba50ffd00a35a13fb3b8369ef01768db2671e7",
   }),
   boot: Object.freeze({
     bytes: 4_486,
@@ -49,20 +49,21 @@ export class SeedSessionDiscardedError extends Error {
 }
 
 export class SeedLanguageError extends Error {
-  constructor(categoryCode, category, diagnostic, cause) {
+  constructor(categoryCode, category, diagnostic, data, cause) {
     super(diagnostic, { cause });
     this.name = "SeedLanguageError";
     this.categoryCode = categoryCode;
     this.category = category;
     this.diagnostic = diagnostic;
+    this.data = data;
     this.recoverable = RECOVERABLE_SEED_ERROR_CODES.has(categoryCode);
     this.sessionDiscarded = !this.recoverable;
   }
 }
 
-export function classifySeedTrap(error, categoryCode, diagnostic) {
+export function classifySeedTrap(error, categoryCode, diagnostic, data = "") {
   const category = SEED_ERROR_CATEGORIES[categoryCode];
-  if (category) return new SeedLanguageError(categoryCode, category, diagnostic, error);
+  if (category) return new SeedLanguageError(categoryCode, category, diagnostic, data, error);
   if (error instanceof Error && diagnostic) error.diagnostic = diagnostic;
   return error;
 }
@@ -169,6 +170,14 @@ export async function createSeedSession({ boot = true } = {}) {
     meter.outputBytes += total;
     return decoder.decode(bytes).trimEnd();
   };
+  const errorData = () => {
+    const pointer = instance.exports.error_data_pointer();
+    const length = instance.exports.error_data_length();
+    if (pointer < 0 || length < 0 || pointer + length > memory.buffer.byteLength) {
+      throw new RangeError("seed returned an invalid error-data span");
+    }
+    return decoder.decode(new Uint8Array(memory.buffer, pointer, length));
+  };
   // A classified kernel path writes its diagnostic, records a stable category,
   // and traps. Unclassified Wasm faults retain their native error identity.
   const invoke = (method, source) => {
@@ -178,7 +187,7 @@ export async function createSeedSession({ boot = true } = {}) {
     try {
       instance.exports[method](inputPointer, length);
     } catch (error) {
-      const classified = classifySeedTrap(error, instance.exports.error_kind(), text());
+      const classified = classifySeedTrap(error, instance.exports.error_kind(), text(), errorData());
       if (!(classified instanceof SeedLanguageError) || classified.sessionDiscarded) discarded = true;
       throw classified;
     }
@@ -218,7 +227,7 @@ export async function createSeedSession({ boot = true } = {}) {
         new Uint8Array(memory.buffer).set(bytes, pointer);
         return instance.exports.asset_commit();
       } catch (error) {
-        const classified = classifySeedTrap(error, instance.exports.error_kind(), text());
+        const classified = classifySeedTrap(error, instance.exports.error_kind(), text(), errorData());
         if (!(classified instanceof SeedLanguageError) || classified.sessionDiscarded) discarded = true;
         throw classified;
       }

@@ -99,10 +99,12 @@
   ;; output redirect: if $out_buf != 0, $write appends to it instead of the host
   (global $out_buf (mut i32) (i32.const 0))
   (global $out_len (mut i32) (i32.const 0))
-  ;; Seed-owned failure metadata. Zero means that a host-observed Wasm trap was
-  ;; not raised through a classified language-error path. M3 introduces codes
-  ;; incrementally; code 1 is an unbound-name language error.
+  ;; Seed-owned failure metadata. A zero kind and empty data span mean that a
+  ;; host-observed Wasm trap was not raised through a classified language-error
+  ;; path. The span is valid until the next exported operation resets it.
   (global $error_kind (mut i32) (i32.const 0))
+  (global $error_data_ptr (mut i32) (i32.const 0))
+  (global $error_data_len (mut i32) (i32.const 0))
 
   ;; --- constant strings, region [64, 1024) ---
   (data (i32.const 32)  "division by zero") ;; 32 len 16
@@ -241,6 +243,8 @@
     (if (i32.gt_u (local.get $end) (i32.shl (memory.size) (i32.const 16)))
       (then
         (global.set $error_kind (i32.const 8))
+        (global.set $error_data_ptr (i32.const 448))
+        (global.set $error_data_len (i32.const 14))
         (call $host_write (i32.const 448) (i32.const 14))
         (call $host_write (i32.const 104) (i32.const 1))
         (unreachable))))
@@ -469,7 +473,12 @@
 
   ;; --- errors (write message, then trap) ---
   (func $error_reset
-    (global.set $error_kind (i32.const 0)))
+    (global.set $error_kind (i32.const 0))
+    (global.set $error_data_ptr (i32.const 0))
+    (global.set $error_data_len (i32.const 0)))
+  (func $error_data_set (param $ptr i32) (param $len i32)
+    (global.set $error_data_ptr (local.get $ptr))
+    (global.set $error_data_len (local.get $len)))
   ;; Compact category table for fixed diagnostics. The pointer names a static
   ;; seed-owned diagnostic, so it is also a stable, auditable dispatch key.
   (func $classify_static_error (param $ptr i32)
@@ -506,34 +515,42 @@
   )
   (func $err_unbound (param $sym i32)
     (global.set $error_kind (i32.const 1))
+    (call $error_data_set
+      (i32.load offset=4 (local.get $sym))
+      (i32.load offset=8 (local.get $sym)))
     (call $write (i32.const 184) (i32.const 9))
     (call $write (i32.load offset=4 (local.get $sym)) (i32.load offset=8 (local.get $sym)))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_apply
     (global.set $error_kind (i32.const 5))
+    (call $error_data_set (i32.const 193) (i32.const 12))
     (call $write (i32.const 193) (i32.const 12))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_static (param $ptr i32) (param $len i32)
     (call $classify_static_error (local.get $ptr))
+    (call $error_data_set (local.get $ptr) (local.get $len))
     (call $write (local.get $ptr) (local.get $len))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_depth_cap
     (global.set $error_kind (i32.const 8))
+    (call $error_data_set (i32.const 105) (i32.const 5))
     (call $write (i32.const 105) (i32.const 5))
     (call $write (i32.const 123) (i32.const 4))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_work_cap
     (global.set $error_kind (i32.const 8))
+    (call $error_data_set (i32.const 110) (i32.const 4))
     (call $write (i32.const 110) (i32.const 4))
     (call $write (i32.const 123) (i32.const 4))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_macro_expansion_cap
     (global.set $error_kind (i32.const 8))
+    (call $error_data_set (i32.const 114) (i32.const 9))
     (call $write (i32.const 163) (i32.const 5))
     (call $write (i32.const 73) (i32.const 1))
     (call $write (i32.const 114) (i32.const 9))
@@ -542,6 +559,7 @@
     (unreachable))
   (func $err_unquote_expected
     (global.set $error_kind (i32.const 3))
+    (call $error_data_set (i32.const 219) (i32.const 7))
     (call $write (i32.const 219) (i32.const 7))
     (call $write (i32.const 73) (i32.const 1))
     (call $write (i32.const 469) (i32.const 8))
@@ -549,6 +567,7 @@
     (unreachable))
   (func $err_unquote_splicing_expected
     (global.set $error_kind (i32.const 3))
+    (call $error_data_set (i32.const 226) (i32.const 16))
     (call $write (i32.const 226) (i32.const 16))
     (call $write (i32.const 73) (i32.const 1))
     (call $write (i32.const 469) (i32.const 8))
@@ -556,6 +575,7 @@
     (unreachable))
   (func $err_list_expected
     (global.set $error_kind (i32.const 4))
+    (call $error_data_set (i32.const 205) (i32.const 4))
     (call $write (i32.const 205) (i32.const 4))
     (call $write (i32.const 73) (i32.const 1))
     (call $write (i32.const 469) (i32.const 8))
@@ -564,9 +584,15 @@
   (func $err_named_expected (param $name i32)
     (global.set $error_kind (i32.const 3))
     (if (call $is_symbol (local.get $name))
-      (then (call $write (i32.load offset=4 (local.get $name))
-                         (i32.load offset=8 (local.get $name))))
-      (else (call $write (i32.const 93) (i32.const 11))))
+      (then
+        (call $error_data_set
+          (i32.load offset=4 (local.get $name))
+          (i32.load offset=8 (local.get $name)))
+        (call $write (i32.load offset=4 (local.get $name))
+                     (i32.load offset=8 (local.get $name))))
+      (else
+        (call $error_data_set (i32.const 93) (i32.const 11))
+        (call $write (i32.const 93) (i32.const 11))))
     (call $write (i32.const 73) (i32.const 1))
     (call $write (i32.const 469) (i32.const 8))
     (call $write (i32.const 104) (i32.const 1))
@@ -1941,6 +1967,10 @@
   ;; did not pass through a classified language-error helper.
   (func (export "error_kind") (result i32)
     (global.get $error_kind))
+  (func (export "error_data_pointer") (result i32)
+    (global.get $error_data_ptr))
+  (func (export "error_data_length") (result i32)
+    (global.get $error_data_len))
 
   ;; eval every form, discard results (used to load boot.lisp)
   (func (export "eval_all") (param $ptr i32) (param $len i32)

@@ -57,6 +57,11 @@ test("reader frame cap has a persisted minimal nested-list witness", async (t) =
   assert.equal(failing, 512);
   assert.equal(await depthDiagnostic(passing), null);
   assert.equal(await depthDiagnostic(failing), "depth cap");
+  const payload = await createSeedSession({ boot: false });
+  assert.throws(() => payload.evaluateQuietly(quotedNestedLists(failing)), (error) => {
+    assert.equal(error.data, "depth");
+    return true;
+  });
   t.diagnostic(JSON.stringify({ shrinker: "binary-min-depth-v1", passingDepth: passing, minimalFailingDepth: failing, diagnostic: "depth cap" }));
 });
 
@@ -68,6 +73,7 @@ test("reader work cap accepts 32768 empty forms and rejects the next", async (t)
   const over = await createSeedSession({ boot: false });
   assert.throws(() => over.evaluateQuietly("()".repeat(passingForms + 1)), (error) => {
     assert.equal(diagnostic(error), "work cap");
+    assert.equal(error.data, "work");
     return true;
   });
   t.diagnostic(JSON.stringify({ workAccounting: "read-form-plus-list-spine-v1", passingForms, minimalFailingForms: passingForms + 1, diagnostic: "work cap" }));
@@ -90,6 +96,7 @@ test("named macro expansion accepts 1024 steps and stops a self-reproducing step
   over.evaluateQuietly("(define expand.forever (macro args '(expand.forever)))");
   assert.throws(() => over.expandCanonical("(expand.forever)"), (error) => {
     assert.equal(diagnostic(error), "macro expansion cap");
+    assert.equal(error.data, "expansion");
     return true;
   });
   t.diagnostic(JSON.stringify({ expansionAccounting: "outer-named-macro-step-v1", maxSteps: CAPS.expansionSteps, minimalWitness: "(expand.forever)", diagnostic: "macro expansion cap" }));

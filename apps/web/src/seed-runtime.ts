@@ -36,10 +36,11 @@ export class SeedLanguageError extends Error {
   readonly categoryCode: number;
   readonly category: SeedErrorCategory;
   readonly diagnostic: string;
+  readonly data: string;
   readonly recoverable: boolean;
   readonly sessionDiscarded: boolean;
 
-  constructor(categoryCode: number, category: SeedErrorCategory, diagnostic: string, cause: unknown) {
+  constructor(categoryCode: number, category: SeedErrorCategory, diagnostic: string, data: string, cause: unknown) {
     const recoverable = recoverableSeedErrorCodes.has(categoryCode);
     super(recoverable
       ? `${diagnostic} · Language error; the session was retained.`
@@ -48,6 +49,7 @@ export class SeedLanguageError extends Error {
     this.categoryCode = categoryCode;
     this.category = category;
     this.diagnostic = diagnostic;
+    this.data = data;
     this.recoverable = recoverable;
     this.sessionDiscarded = !recoverable;
   }
@@ -64,6 +66,8 @@ interface SeedExports extends WebAssembly.Exports {
   asset_begin(length: number): number;
   asset_commit(): number;
   error_kind(): number;
+  error_data_pointer(): number;
+  error_data_length(): number;
 }
 
 interface SeedExample {
@@ -195,6 +199,14 @@ export async function createSeedSession(stage: SeedStage) {
     }
     return decoder.decode(bytes).replace(/\r\n/g, "\n").trimEnd();
   };
+  const errorData = () => {
+    const pointer = exports.error_data_pointer();
+    const length = exports.error_data_length();
+    if (pointer < 0 || length < 0 || pointer + length > exports.memory.buffer.byteLength) {
+      throw new RangeError("seed returned an invalid error-data span");
+    }
+    return decoder.decode(new Uint8Array(exports.memory.buffer, pointer, length));
+  };
 
   const run = (operation: () => void) => {
     if (discarded) throw new SeedSessionDiscardedError();
@@ -206,7 +218,7 @@ export async function createSeedSession(stage: SeedStage) {
       const categoryCode = exports.error_kind();
       const category = seedErrorCategories[categoryCode];
       if (category) {
-        const classified = new SeedLanguageError(categoryCode, category, diagnostic, error);
+        const classified = new SeedLanguageError(categoryCode, category, diagnostic, errorData(), error);
         if (classified.sessionDiscarded) discarded = true;
         throw classified;
       }

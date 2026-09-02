@@ -232,8 +232,14 @@ table is:
 | 10 | host contract |
 
 Metadata resets at every host entry. Node and browser hosts expose classified
-failures with category code/name, diagnostic, native cause, `recoverable`, and
-`sessionDiscarded` as a typed `SeedLanguageError`. Codes 1–7 and 9 are
+failures with category code/name, diagnostic, seed-owned UTF-8 `data`, native
+cause, `recoverable`, and `sessionDiscarded` as a typed `SeedLanguageError`.
+The data is the offending unbound/called symbol when available, a stable cap
+dimension (`depth`, `work`, or `expansion`) for composed cap messages, or the
+exact fixed diagnostic token. The `(pointer, length)` span is valid until the
+next exported operation; every host entry resets it to the empty span. An
+unclassified runtime fault therefore has both category zero and empty data.
+Codes 1–7 and 9 are
 recoverable because their transactional boundaries are evidenced; the same
 instance and its definitions remain available. Codes 8 and 10 invalidate the
 session, as does an unclassified native `WebAssembly.RuntimeError`; subsequent

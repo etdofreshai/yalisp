@@ -60,17 +60,19 @@ Measured evidence at the audited working tree:
 
 | Artifact | Bytes | SHA-256 |
 | --- | ---: | --- |
-| `bootstrap.wat` | 114,987 | `e071f4182bf3289f60e3fbd4e35a7cddda32a95138642d8ee30d62364069c712` |
-| generated `seed.wasm` | 11,850 | `8aa5a795b829c8dcb13adecb5645df7a4bb1aec37654d743d2da8d0168531c79` |
+| `bootstrap.wat` | 116,403 | `a2192105e7edb6af1b78eb85a09deaf3c06f010876526894ecb158e2702d9af8` |
+| generated `seed.wasm` | 12,028 | `504083c9a42e3ad5dee2f2a9feba50ffd00a35a13fb3b8369ef01768db2671e7` |
 
-The binary contains 103 defined functions plus two function imports and ten
+The binary contains 106 defined functions plus two function imports and twelve
 functional exports (memory is also exported). WABT's unfolded disassembly has
-4,991 static instruction lines under the harness counting rule: numeric,
+5,042 static instruction lines under the harness counting rule: numeric,
 local/global, memory, call, branch, control, return/drop, and trap operators,
 including structural `else`/`end`. This is a reproducible static code-size
 metric, not a dynamic instruction count.
 
-Current purity gaps: the source is WAT rather than a documented target-specific
+The three read-only error exports expose category plus a seed-owned UTF-8 data
+span and add no host policy to classification. Current purity gaps: the source
+is WAT rather than a documented target-specific
 assembly seed; reader, printer, allocator, a broad primitive set, and host asset
 policy all live in the same binary; there is no collector; errors trap; the host
 still assembles and instantiates the module.

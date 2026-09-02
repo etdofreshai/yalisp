@@ -82,11 +82,12 @@ function normalizeError(error) {
     return {
       category: error.category,
       diagnostic: error.diagnostic,
+      data: error.data,
       recoverable: error.recoverable,
     };
   }
   const diagnostic = typeof error?.diagnostic === "string" ? error.diagnostic : String(error?.message ?? error);
-  return { category: "runtime-trap", diagnostic, recoverable: false };
+  return { category: "runtime-trap", diagnostic, data: null, recoverable: false };
 }
 
 async function observeProbes(session, declarations) {

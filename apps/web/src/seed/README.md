@@ -13,7 +13,8 @@ The checked-in `bootstrap.wat` imports `host.write(ptr, len)` for text and
 the generated, ignored `public/yalisp/seed.wasm`, which exports a sixteen-page
 WebAssembly memory plus `init`, `eval_all`, `eval_print`, `eval_dom_print`,
 `expand_dom_print`, `eval_bytes`, `asset_begin`, `asset_commit`, and the
-read-only `error_kind` failure-metadata export. Source is
+read-only `error_kind`, `error_data_pointer`, and `error_data_length` failure-
+metadata exports. Source is
 copied into the fixed input range `[1024, 131072)` before evaluation.
 
 `expand_dom_print` is an inspection boundary, not a second evaluator. It reads
@@ -176,8 +177,8 @@ for the life of that session. `heap.used` reports the running total, and
 `npm run measure:wolf3d-feasibility --workspace @yalisp/web` reports the
 per-tick allocation rate that this implies for a long-lived application.
 
-This intentionally does not claim garbage collection, language-level
-recoverable errors, modules, or filesystem or DOM access. The separate
+This intentionally does not claim garbage collection, language-level handlers
+or exceptions, modules, or filesystem or DOM access. The separate
 Lisp-written M1 compiler supports only the documented one-parameter integer
 arithmetic subset; it is not part of the seed itself.
 Curated web examples use a fresh instance so the seed's fixed bump-allocated
@@ -192,8 +193,11 @@ trap. The seed records stable codes for unbound name (1), reader (2), arity (3),
 type (4), apply (5), arithmetic range (6), bounds (7), resource exhaustion (8),
 mutation (9), and host contract (10) before writing the diagnostic and trapping.
 Metadata resets at every host entry. Node and browser hosts expose classified
-paths as typed `SeedLanguageError` values; an unclassified Wasm fault keeps its
-native runtime-error identity and `error_kind` remains zero. Transactionally
+paths as typed `SeedLanguageError` values. Each record includes a seed-owned
+UTF-8 data span: the offending symbol or called name where available, the cap
+dimension for composed cap diagnostics, and the exact diagnostic token for
+fixed failures. An unclassified Wasm fault keeps its native runtime-error
+identity while `error_kind` and the data length remain zero. Transactionally
 proven categories 1–7 and 9 retain the session; resource exhaustion, host-
 contract failure, and raw faults invalidate it. Division and modulo by zero are
 deliberate category-6 errors (`division by zero` and `modulo by zero`), and division uses
