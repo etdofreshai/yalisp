@@ -98,6 +98,10 @@
   ;; output redirect: if $out_buf != 0, $write appends to it instead of the host
   (global $out_buf (mut i32) (i32.const 0))
   (global $out_len (mut i32) (i32.const 0))
+  ;; Seed-owned failure metadata. Zero means that a host-observed Wasm trap was
+  ;; not raised through a classified language-error path. M3 introduces codes
+  ;; incrementally; code 1 is an unbound-name language error.
+  (global $error_kind (mut i32) (i32.const 0))
 
   ;; --- constant strings, region [64, 1024) ---
   (data (i32.const 64)  "nil")          ;; 64  len 3
@@ -461,6 +465,7 @@
 
   ;; --- errors (write message, then trap) ---
   (func $err_unbound (param $sym i32)
+    (global.set $error_kind (i32.const 1))
     (call $write (i32.const 184) (i32.const 9))
     (call $write (i32.load offset=4 (local.get $sym)) (i32.load offset=8 (local.get $sym)))
     (call $write (i32.const 104) (i32.const 1))
@@ -1780,6 +1785,11 @@
       (br_if $done (i32.eq (local.get $v) (global.get $eof)))
       (call $println (local.get $v))
       (br $l))))
+
+  ;; The host reads this only after a trap. A zero value proves that the trap
+  ;; did not pass through a classified language-error helper.
+  (func (export "error_kind") (result i32)
+    (global.get $error_kind))
 
   ;; eval every form, discard results (used to load boot.lisp)
   (func (export "eval_all") (param $ptr i32) (param $len i32)

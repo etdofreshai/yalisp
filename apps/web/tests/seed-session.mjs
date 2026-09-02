@@ -7,12 +7,12 @@ import { performance } from "node:perf_hooks";
 
 export const SEED_ARTIFACT_PINS = Object.freeze({
   wat: Object.freeze({
-    bytes: 104_737,
-    sha256: "5ef3dfc21db4212815ace283ffeb62741382f98c351009c367dc83869550f406",
+    bytes: 105_261,
+    sha256: "95deb4180b7fa8ebfdd33f81b637b5a03bdceb11b2c1d236ade7c2c0011fc371",
   }),
   wasm: Object.freeze({
-    bytes: 10_746,
-    sha256: "0cf39513da003aa4f56e28a71fd624286a6b2c426093f8a0d9866b104f300e09",
+    bytes: 10_774,
+    sha256: "ae8dc34690587b178f0930a79eac87361a0ea142f87cb3cc4ef7c8b0ead7f386",
   }),
   boot: Object.freeze({
     bytes: 4_486,
@@ -26,6 +26,29 @@ const artifactUrls = Object.freeze({
   boot: new URL("../public/yalisp/boot.lisp", import.meta.url),
 });
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+
+export const SEED_ERROR_CATEGORIES = Object.freeze({
+  1: "unbound-name",
+});
+
+export class SeedLanguageError extends Error {
+  constructor(categoryCode, category, diagnostic, cause) {
+    super(diagnostic, { cause });
+    this.name = "SeedLanguageError";
+    this.categoryCode = categoryCode;
+    this.category = category;
+    this.diagnostic = diagnostic;
+    this.recoverable = false;
+    this.sessionDiscarded = true;
+  }
+}
+
+export function classifySeedTrap(error, categoryCode, diagnostic) {
+  const category = SEED_ERROR_CATEGORIES[categoryCode];
+  if (category) return new SeedLanguageError(categoryCode, category, diagnostic, error);
+  if (error instanceof Error && diagnostic) error.diagnostic = diagnostic;
+  return error;
+}
 
 export function verifyPinnedSeedArtifacts(artifacts) {
   const verified = {};
@@ -128,18 +151,14 @@ export async function createSeedSession({ boot = true } = {}) {
     meter.outputBytes += total;
     return decoder.decode(bytes).trimEnd();
   };
-  // The kernel writes a truthful diagnostic through the ordinary text sink and
-  // only then traps, so the message is recoverable even though the instance is
-  // not. It is attached to the error rather than folded into its message, so
-  // a test can assert on the diagnostic without changing what a trap looks
-  // like to everything already matching on it.
+  // A classified kernel path writes its diagnostic, records a stable category,
+  // and traps. Unclassified Wasm faults retain their native error identity.
   const invoke = (method, source) => {
     outputBytes = [];
     try {
       instance.exports[method](inputPointer, load(source));
     } catch (error) {
-      if (error instanceof Error) error.diagnostic = text();
-      throw error;
+      throw classifySeedTrap(error, instance.exports.error_kind(), text());
     }
     return text();
   };

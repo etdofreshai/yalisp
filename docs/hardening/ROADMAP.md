@@ -132,6 +132,16 @@ Exit criteria:
   exhausted runtime;
 - interpreter/compiler errors are equivalent for every jointly supported case.
 
+Current evidence: the first M3 slice adds a seed-owned `error_kind` metadata
+export and category `1` for unbound names. Both Node and browser hosts surface a
+typed `SeedLanguageError` containing category code/name, diagnostic, native
+cause, recoverability, and discarded-session state. A real out-of-bounds Wasm
+access retains `WebAssembly.RuntimeError` identity with category zero. The
+golden runner now consumes the typed unbound category rather than parsing the
+diagnostic string. The remaining reader, arity, type, apply, arithmetic, bounds,
+resource, mutation, and host categories plus transactional behavior are still
+open.
+
 ## M4 — explicit core IR and semantic reference path
 
 Goal: establish one inspectable representation shared by expansion,

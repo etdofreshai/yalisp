@@ -24,7 +24,8 @@ The non-green discovery run remains in
 `baselines/2026-09-01-m0-candidate.md`; the fully green M0 exit is recorded in
 `baselines/2026-09-01-m0-promotion.md`. M1's golden differential is recorded in
 `baselines/2026-09-01-m1-golden.md`; M2's six atomic slices end at
-`baselines/2026-09-01-m2-source-forms.md`. M3 is the active milestone.
+`baselines/2026-09-01-m2-source-forms.md`. M3 is active; its first typed-error
+slice is `baselines/2026-09-01-m3-typed-unbound-error.md`.
 
 ## Operating invariant
 

@@ -3,7 +3,11 @@ import { readFile } from "node:fs/promises";
 import { arch, cpus, hostname, platform, release, totalmem } from "node:os";
 import wabtInit from "wabt";
 
-import { SEED_ARTIFACT_PINS, createSeedSession } from "../../apps/web/tests/seed-session.mjs";
+import {
+  SEED_ARTIFACT_PINS,
+  SeedLanguageError,
+  createSeedSession,
+} from "../../apps/web/tests/seed-session.mjs";
 
 export const GOLDEN_SCHEMA = "yalisp-golden-differential-v1";
 export const defaultCorpusUrl = new URL(
@@ -74,10 +78,16 @@ export async function loadGoldenCorpus(url = defaultCorpusUrl) {
 }
 
 function normalizeError(error) {
+  if (error instanceof SeedLanguageError) {
+    return {
+      category: error.category,
+      diagnostic: error.diagnostic,
+      recoverable: error.recoverable,
+    };
+  }
   const diagnostic = typeof error?.diagnostic === "string" ? error.diagnostic : String(error?.message ?? error);
   let category = "runtime-trap";
-  if (diagnostic.startsWith("unbound: ")) category = "unbound-name";
-  else if (diagnostic === "heap exhausted" || diagnostic === "memory limit reached") category = "resource-exhausted";
+  if (diagnostic === "heap exhausted" || diagnostic === "memory limit reached") category = "resource-exhausted";
   else if (diagnostic.startsWith("reader:")) category = "reader";
   else if (diagnostic.includes("type")) category = "type";
   return { category, diagnostic, recoverable: false };

@@ -1,4 +1,25 @@
 export type SeedStage = "seed" | "bootstrap";
+export type SeedErrorCategory = "unbound-name";
+
+const seedErrorCategories: Readonly<Record<number, SeedErrorCategory>> = Object.freeze({
+  1: "unbound-name",
+});
+
+export class SeedLanguageError extends Error {
+  readonly categoryCode: number;
+  readonly category: SeedErrorCategory;
+  readonly diagnostic: string;
+  readonly recoverable = false;
+  readonly sessionDiscarded = true;
+
+  constructor(categoryCode: number, category: SeedErrorCategory, diagnostic: string, cause: unknown) {
+    super(`${diagnostic} · WebAssembly trap; this fresh session was discarded.`, { cause });
+    this.name = "SeedLanguageError";
+    this.categoryCode = categoryCode;
+    this.category = category;
+    this.diagnostic = diagnostic;
+  }
+}
 
 interface SeedExports extends WebAssembly.Exports {
   memory: WebAssembly.Memory;
@@ -10,6 +31,7 @@ interface SeedExports extends WebAssembly.Exports {
   eval_bytes(pointer: number, length: number): void;
   asset_begin(length: number): number;
   asset_commit(): number;
+  error_kind(): number;
 }
 
 interface SeedExample {
@@ -147,6 +169,9 @@ export async function createSeedSession(stage: SeedStage) {
       operation();
     } catch (error) {
       const diagnostic = outputText();
+      const categoryCode = exports.error_kind();
+      const category = seedErrorCategories[categoryCode];
+      if (category) throw new SeedLanguageError(categoryCode, category, diagnostic, error);
       const trap = error instanceof Error ? error.message : String(error);
       throw new Error(diagnostic
         ? `${diagnostic} · WebAssembly trap; this fresh session was discarded.`

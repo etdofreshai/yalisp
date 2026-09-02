@@ -224,6 +224,7 @@ node --test --test-concurrency=1 apps/web/tests/macro-expansion-determinism.test
 node --test --test-concurrency=1 apps/web/tests/resource-cap-properties.test.mjs
 node --test --test-concurrency=1 apps/web/tests/quasiquote-depth.test.mjs
 node --test --test-concurrency=1 apps/web/tests/source-form-idempotence.test.mjs
+node --test --test-concurrency=1 apps/web/tests/structured-error-boundary.test.mjs
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```
@@ -235,6 +236,10 @@ fixed generator configuration, category counts, and null minimal failure. The
 quasiquote command fixes nested depth, splice context/value shape, and arity.
 Malformed fixtures use the independent `read_print` boundary so evaluator
 failures cannot masquerade as reader diagnostics.
+
+The structured-error boundary command asserts both sides of the M3 distinction:
+an unbound name has category code `1` and a typed host record, while an actual
+out-of-bounds Wasm access has category zero and remains a native runtime fault.
 
 The resource-cap property command prints its accounting versions and persisted
 minimal witnesses. `binary-min-depth-v1` refuses to classify an incidental host

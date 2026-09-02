@@ -12,7 +12,8 @@ The checked-in `bootstrap.wat` imports `host.write(ptr, len)` for text and
 `host.bytes_write(ptr, len)` for raw byte buffers. The build assembles it into
 the generated, ignored `public/yalisp/seed.wasm`, which exports a sixteen-page
 WebAssembly memory plus `init`, `eval_all`, `eval_print`, `eval_dom_print`,
-`expand_dom_print`, `eval_bytes`, `asset_begin`, and `asset_commit`. Source is
+`expand_dom_print`, `eval_bytes`, `asset_begin`, `asset_commit`, and the
+read-only `error_kind` failure-metadata export. Source is
 copied into the fixed input range `[1024, 131072)` before evaluation.
 
 `expand_dom_print` is an inspection boundary, not a second evaluator. It reads
@@ -184,6 +185,14 @@ heap remains bounded. The interpreter benchmark is also bounded and reports
 only measured interpreter execution. Heap, reader, and primitive type guards
 write a truthful diagnostic before trapping; the Playground preserves that
 diagnostic and discards the failed instance.
+
+M3 begins the migration away from treating every failure as the same Wasm
+trap. An unbound-name path records seed-owned error category `1` before writing
+its diagnostic and trapping. Node and browser hosts expose that path as a typed
+`SeedLanguageError`; an unclassified Wasm fault keeps its native runtime-error
+identity and `error_kind` remains zero. The instance is still discarded in both
+cases. Other language diagnostics are not yet categorized and remain part of
+the active M3 work.
 
 Run `npm run build-seed --workspace @yalisp/web` to assemble the WAT into the
 ignored generated file `public/yalisp/seed.wasm`.
