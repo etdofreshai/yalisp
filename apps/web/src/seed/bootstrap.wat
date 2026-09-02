@@ -28,7 +28,8 @@
 ;;   define -> prepend a (sym . val) to the frame;  set! -> mutate the val slot.
 ;;
 ;; Memory map:
-;;   [0,    64)  scratch (integer formatting)
+;;   [0,    32)  scratch (integer formatting)
+;;   [32,   64)  compact arithmetic diagnostics
 ;;   [64, 1024)  constant strings
 ;;   [1024, 131072) input buffer (host writes source here)
 ;;   [131072, .  )  heap (bump allocated; no GC yet)
@@ -104,6 +105,8 @@
   (global $error_kind (mut i32) (i32.const 0))
 
   ;; --- constant strings, region [64, 1024) ---
+  (data (i32.const 32)  "division by zero") ;; 32 len 16
+  (data (i32.const 48)  "modulo by zero")   ;; 48 len 14
   (data (i32.const 64)  "nil")          ;; 64  len 3
   (data (i32.const 67)  "true")         ;; 67  len 4
   (data (i32.const 71)  "(")            ;; 71  len 1
@@ -483,7 +486,10 @@
             (i32.or (i32.eq (local.get $ptr) (i32.const 620))
                     (i32.eq (local.get $ptr) (i32.const 732)))))
       (then (global.set $error_kind (i32.const 4))))
-    (if (i32.eq (local.get $ptr) (i32.const 936))
+    (if (i32.or
+          (i32.eq (local.get $ptr) (i32.const 936))
+          (i32.or (i32.eq (local.get $ptr) (i32.const 32))
+                  (i32.eq (local.get $ptr) (i32.const 48))))
       (then (global.set $error_kind (i32.const 6))))
     (if (i32.or
           (i32.eq (local.get $ptr) (i32.const 826))
@@ -1370,10 +1376,13 @@
         (local.set $cur (i32.load offset=8 (local.get $args)))
         (block $d (loop $l
           (br_if $d (i32.eq (local.get $cur) (global.get $nil)))
-          (local.set $acc (i32.div_s (local.get $acc) (call $fixval (i32.load offset=4 (local.get $cur)))))
+          (local.set $a (call $fixval (i32.load offset=4 (local.get $cur))))
+          (if (i32.eqz (local.get $a))
+            (then (call $err_static (i32.const 32) (i32.const 16)) (unreachable)))
+          (local.set $acc (i32.div_s (local.get $acc) (local.get $a)))
           (local.set $cur (i32.load offset=8 (local.get $cur)))
           (br $l)))
-        (return (call $mkfix (local.get $acc)))))
+        (return (call $mkfix_checked (local.get $acc)))))
     ;; =
     (if (i32.eq (local.get $id) (i32.const 10))
       (then (return (call $bool (i32.eq (call $fixval (call $car (local.get $args)))
@@ -1411,8 +1420,12 @@
       (then (return (call $bool (call $has_tag (call $car (local.get $args)) (i32.const 6))))))
     ;; --- arithmetic (M9) ---
     (if (i32.eq (local.get $id) (i32.const 26))   ;; mod
-      (then (return (call $mkfix (i32.rem_s (call $fixval (call $car (local.get $args)))
-                                            (call $fixval (call $car (call $cdr (local.get $args)))))))))
+      (then
+        (local.set $a (call $fixval (call $car (call $cdr (local.get $args)))))
+        (if (i32.eqz (local.get $a))
+          (then (call $err_static (i32.const 48) (i32.const 14)) (unreachable)))
+        (return (call $mkfix (i32.rem_s
+          (call $fixval (call $car (local.get $args))) (local.get $a))))))
     (if (i32.eq (local.get $id) (i32.const 27))   ;; <=
       (then (return (call $bool (i32.le_s (call $fixval (call $car (local.get $args)))
                                           (call $fixval (call $car (call $cdr (local.get $args)))))))))

@@ -225,6 +225,7 @@ node --test --test-concurrency=1 apps/web/tests/resource-cap-properties.test.mjs
 node --test --test-concurrency=1 apps/web/tests/quasiquote-depth.test.mjs
 node --test --test-concurrency=1 apps/web/tests/source-form-idempotence.test.mjs
 node --test --test-concurrency=1 apps/web/tests/structured-error-boundary.test.mjs
+node --test --test-concurrency=1 apps/web/tests/arithmetic-errors.test.mjs
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```
@@ -242,6 +243,10 @@ codes and both sides of the M3 distinction: classified failures have typed host
 records, while an actual out-of-bounds Wasm access has category zero and remains
 a native runtime fault. It also covers metadata reset at host entries through
 independent fresh invocations.
+
+The arithmetic-error command proves both zero-divisor diagnostics and the
+minimum-fixnum divided by `-1` representation edge while retaining an ordinary
+negative division control.
 
 The resource-cap property command prints its accounting versions and persisted
 minimal witnesses. `binary-min-depth-v1` refuses to classify an incidental host

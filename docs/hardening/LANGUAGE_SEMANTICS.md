@@ -212,9 +212,12 @@ Metadata resets at every host entry. Node and browser hosts expose classified
 failures with category code/name, diagnostic, native cause, `recoverable:
 false`, and `sessionDiscarded: true` as a typed `SeedLanguageError`. An
 unclassified Wasm fault retains native `WebAssembly.RuntimeError` identity and
-category zero. Division by zero and other incidental arithmetic traps remain to
-be converted into deliberate language errors. This is an honest bootstrap
-boundary, not the final high-level error model.
+category zero. `/` is a signed left fold that truncates toward zero; `mod` uses
+the matching signed remainder. A zero divisor reports `division by zero` or
+`modulo by zero` with category 6. Division uses checked fixnum construction, so
+`-1073741824 / -1` reports `value exceeds fixnum range` rather than creating an
+invalid tagged value. This is an honest bootstrap boundary, not the final high-
+level error model.
 
 All readers, expanders, evaluators, compilers, printers, equality operations,
 FFI calls, and allocators must honor explicit depth, work, output, and memory

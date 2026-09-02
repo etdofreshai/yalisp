@@ -26,7 +26,8 @@ The non-green discovery run remains in
 `baselines/2026-09-01-m1-golden.md`; M2's six atomic slices end at
 `baselines/2026-09-01-m2-source-forms.md`. M3 is active; its typed-error slices
 are `baselines/2026-09-01-m3-typed-unbound-error.md` and
-`baselines/2026-09-01-m3-error-category-table.md`.
+`baselines/2026-09-01-m3-error-category-table.md`; deliberate arithmetic traps
+are recorded in `baselines/2026-09-01-m3-arithmetic-errors.md`.
 
 ## Operating invariant
 

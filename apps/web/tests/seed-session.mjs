@@ -7,12 +7,12 @@ import { performance } from "node:perf_hooks";
 
 export const SEED_ARTIFACT_PINS = Object.freeze({
   wat: Object.freeze({
-    bytes: 107_481,
-    sha256: "17f54962225b580f696c3b441c2bdce83d04548c6750f29a7a321f164a455320",
+    bytes: 108_081,
+    sha256: "82db6ab1cbe20d76f694736b99ba36d87a1b7cd8ae1d0b031412f719f4002961",
   }),
   wasm: Object.freeze({
-    bytes: 10_992,
-    sha256: "17305d3674ef1b066c2dd10f8fad01767336cc188e678932dc684acd2b22aa3c",
+    bytes: 11_078,
+    sha256: "6fb7036ebd07d1645a794e9a219e3bdb72d25b60c390abc62ccbf45f2c617731",
   }),
   boot: Object.freeze({
     bytes: 4_486,

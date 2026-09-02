@@ -193,8 +193,11 @@ mutation (9), and host contract (10) before writing the diagnostic and trapping.
 Metadata resets at every host entry. Node and browser hosts expose classified
 paths as typed `SeedLanguageError` values; an unclassified Wasm fault keeps its
 native runtime-error identity and `error_kind` remains zero. The instance is
-still discarded in both cases. Transactional effect behavior and incidental
-arithmetic traps remain active M3 work.
+still discarded in both cases. Division and modulo by zero are deliberate
+category-6 errors (`division by zero` and `modulo by zero`), and division uses
+the checked fixnum constructor so the minimum fixnum divided by `-1` cannot
+escape the tagged representation. These compact diagnostics occupy the
+previously unused `[32,64)` bytes below the constant-string region.
 
 Run `npm run build-seed --workspace @yalisp/web` to assemble the WAT into the
 ignored generated file `public/yalisp/seed.wasm`.

@@ -140,8 +140,10 @@ category code/name, diagnostic, native cause, recoverability, and discarded-
 session state. A real out-of-bounds Wasm access retains
 `WebAssembly.RuntimeError` identity with category zero. The golden runner uses
 typed metadata exclusively and contains no diagnostic-string category inference.
-Incidental arithmetic traps, complete category payload data, prior-effect order,
-atomic mutation, host recoverability, and compiler equivalence remain open.
+Division and modulo by zero now produce deliberate category-6 diagnostics, and
+division rejects a result outside the 31-bit fixnum representation. Complete
+category payload data, prior-effect order, atomic mutation, host recoverability,
+and compiler equivalence remain open.
 
 ## M4 — explicit core IR and semantic reference path
 
