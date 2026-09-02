@@ -37,6 +37,14 @@ retain their more specific diagnostics. If complete forms preceded a trailing
 syntax error, their already-written `read_print` output remains an ordered prior
 effect rather than being erased.
 
+Quasiquote tracks lexical nesting depth. `unquote` evaluates only at its
+matching depth, while a deeper occurrence remains inspectable syntax until its
+own quasiquote is evaluated. `unquote-splicing` is accepted only in list-element
+position at the matching depth, requires exactly one operand, and requires that
+operand to evaluate to a proper list. Malformed unquote arity, direct splicing,
+and atom or dotted-list splice values produce stable diagnostics before any
+partial splice is constructed.
+
 The seed implements:
 
 - tagged integers, booleans, nil, symbols, strings, mutable byte buffers,

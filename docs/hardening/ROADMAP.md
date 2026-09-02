@@ -89,8 +89,7 @@ boot expansions have pinned canonical hash `34214d55...` across four fresh
 sessions and 16 rounds in one long-lived session. A two-macro expansion chain
 produces a mutation form 16 times at hash `45787172...` while its counter remains
 zero, proving the inspection path does not evaluate produced user code. This is
-still partial M2 evidence: broader source generation and malformed syntax plus
-nested quasiquote/splice cases remain.
+still partial M2 evidence: broader generated source-form idempotence remains.
 
 The fixed cap slice is now explicit and independently minimized. Both hosts
 accept exactly 130,048 UTF-8 source bytes and reject the next byte. Combined
@@ -98,16 +97,21 @@ form/list-spine depth 511 passes while nested depth 512 is the binary-shrunk
 minimal `depth cap` witness. Exactly 32,768 empty forms consume the 65,536-unit
 reader work budget; form 32,769 yields `work cap`. A self-reproducing named
 macro stops at 1,024 applications with `macro expansion cap` instead of spending
-the heap. Remaining M2 work is broader generated source/malformed syntax and
-nested quasiquote/splice semantics; the generator and shrink evidence now have
-persisted versions and boundaries.
+the heap. Remaining M2 work is broader generated source-form idempotence; the
+generator and shrink evidence now have persisted versions and boundaries.
 
 The malformed reader boundary now independently rejects unmatched/trailing
 closing parentheses; leading, missing, unterminated, and overfull dotted tails;
 and quote/quasiquote/unquote prefixes without an operand. A valid `(1 . 2)` is
 retained. `(1 2))` proves ordered prior output is preserved before the later
-`read error`. Remaining M2 work is nested quasiquote/unquote-splicing semantics
-and broader generated source-form idempotence.
+`read error`.
+
+The quasiquote boundary now tracks nesting depth and evaluates unquote only at
+the matching level. Four deterministic groups cover nested unquote, nested and
+outer splicing, matching-depth double unquote, proper and empty splice order,
+direct-splice rejection, proper-list enforcement, and exact one-operand arity.
+The combined focused hardening set is 42/42. Remaining M2 work is broader
+generated source-form parse/print/parse idempotence.
 
 ## M3 — structured errors and transactional failure boundaries
 

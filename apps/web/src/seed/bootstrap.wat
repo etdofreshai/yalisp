@@ -490,6 +490,24 @@
     (call $write (i32.const 123) (i32.const 4))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
+  (func $err_unquote_expected
+    (call $write (i32.const 219) (i32.const 7))
+    (call $write (i32.const 73) (i32.const 1))
+    (call $write (i32.const 469) (i32.const 8))
+    (call $write (i32.const 104) (i32.const 1))
+    (unreachable))
+  (func $err_unquote_splicing_expected
+    (call $write (i32.const 226) (i32.const 16))
+    (call $write (i32.const 73) (i32.const 1))
+    (call $write (i32.const 469) (i32.const 8))
+    (call $write (i32.const 104) (i32.const 1))
+    (unreachable))
+  (func $err_list_expected
+    (call $write (i32.const 205) (i32.const 4))
+    (call $write (i32.const 73) (i32.const 1))
+    (call $write (i32.const 469) (i32.const 8))
+    (call $write (i32.const 104) (i32.const 1))
+    (unreachable))
   (func $require_string (param $v i32) (result i32)
     (if (i32.eqz (call $has_tag (local.get $v) (i32.const 4)))
       (then (call $err_static (i32.const 462) (i32.const 15)) (unreachable)))
@@ -1108,21 +1126,67 @@
                         (call $lappend (i32.load offset=8 (local.get $a)) (local.get $b))))
       (else (local.get $b))))
 
-  ;; quasiquote: walk template; (unquote e) -> eval e;
-  ;; ((unquote-splicing e) . rest) -> append (eval e) (qq rest); else literal.
-  (func $qq_eval (param $x i32) (param $env i32) (result i32)
-    (local $h i32)
+  ;; Return the sole operand of an unquote form, rejecting malformed arity.
+  (func $qq_arg (param $form i32) (param $splice i32) (result i32)
+    (local $rest i32)
+    (local.set $rest (i32.load offset=8 (local.get $form)))
+    (if (i32.or
+          (i32.eqz (call $is_pair (local.get $rest)))
+          (i32.ne (call $cdr (local.get $rest)) (global.get $nil)))
+      (then
+        (if (local.get $splice)
+          (then (call $err_unquote_splicing_expected) (unreachable))
+          (else (call $err_unquote_expected) (unreachable)))))
+    (i32.load offset=4 (local.get $rest)))
+
+  ;; Quasiquote walks with explicit nesting depth. An unquote is active only
+  ;; at its matching depth; splicing is valid only in list-element position
+  ;; and its evaluated value must be a proper list.
+  (func $qq_eval (param $x i32) (param $env i32) (param $depth i32) (result i32)
+    (local $h i32) (local $arg i32) (local $spliced i32)
     (if (i32.eqz (call $is_pair (local.get $x))) (then (return (local.get $x))))
     (local.set $h (i32.load offset=4 (local.get $x)))
-    (if (i32.eq (local.get $h) (global.get $sym_uq))         ;; (unquote e)
-      (then (return (call $eval (i32.load offset=4 (i32.load offset=8 (local.get $x))) (local.get $env)))))
+    (if (i32.eq (local.get $h) (global.get $sym_qq))
+      (then (return (call $cons (local.get $h)
+                      (call $qq_eval (i32.load offset=8 (local.get $x))
+                                     (local.get $env)
+                                     (i32.add (local.get $depth) (i32.const 1)))))))
+    (if (i32.eq (local.get $h) (global.get $sym_uq))
+      (then
+        (local.set $arg (call $qq_arg (local.get $x) (i32.const 0)))
+        (if (i32.eq (local.get $depth) (i32.const 1))
+          (then (return (call $eval (local.get $arg) (local.get $env)))))
+        (return (call $cons (local.get $h)
+                  (call $cons
+                    (call $qq_eval (local.get $arg) (local.get $env)
+                                   (i32.sub (local.get $depth) (i32.const 1)))
+                    (global.get $nil))))))
+    (if (i32.eq (local.get $h) (global.get $sym_uqs))
+      (then
+        (local.set $arg (call $qq_arg (local.get $x) (i32.const 1)))
+        (if (i32.eq (local.get $depth) (i32.const 1))
+          (then (call $err_unquote_splicing_expected) (unreachable)))
+        (return (call $cons (local.get $h)
+                  (call $cons
+                    (call $qq_eval (local.get $arg) (local.get $env)
+                                   (i32.sub (local.get $depth) (i32.const 1)))
+                    (global.get $nil))))))
     (if (call $is_pair (local.get $h))
-      (then (if (i32.eq (i32.load offset=4 (local.get $h)) (global.get $sym_uqs)) ;; ((unquote-splicing e) . rest)
-              (then (return (call $lappend
-                              (call $eval (i32.load offset=4 (i32.load offset=8 (local.get $h))) (local.get $env))
-                              (call $qq_eval (i32.load offset=8 (local.get $x)) (local.get $env))))))))
-    (call $cons (call $qq_eval (i32.load offset=4 (local.get $x)) (local.get $env))
-                (call $qq_eval (i32.load offset=8 (local.get $x)) (local.get $env))))
+      (then (if (i32.and
+                  (i32.eq (local.get $depth) (i32.const 1))
+                  (i32.eq (i32.load offset=4 (local.get $h)) (global.get $sym_uqs)))
+              (then
+                (local.set $arg (call $qq_arg (local.get $h) (i32.const 1)))
+                (local.set $spliced (call $eval (local.get $arg) (local.get $env)))
+                (if (i32.eqz (call $is_list (local.get $spliced)))
+                  (then (call $err_list_expected) (unreachable)))
+                (return (call $lappend
+                          (local.get $spliced)
+                          (call $qq_eval (i32.load offset=8 (local.get $x))
+                                         (local.get $env) (local.get $depth))))))))
+    (call $cons
+      (call $qq_eval (i32.load offset=4 (local.get $x)) (local.get $env) (local.get $depth))
+      (call $qq_eval (i32.load offset=8 (local.get $x)) (local.get $env) (local.get $depth))))
 
   ;; Evaluation is a trampoline rather than a recursion over tail positions.
   ;; `if` branches, the final form of `begin` and of a closure body, and a
@@ -1177,7 +1241,8 @@
           (local.set $expr (call $eval_but_last (local.get $body) (local.get $env)))
           (br $tail)))
       (if (i32.eq (local.get $head) (global.get $sym_qq))
-        (then (return (call $qq_eval (i32.load offset=4 (i32.load offset=8 (local.get $expr))) (local.get $env)))))
+        (then (return (call $qq_eval (i32.load offset=4 (i32.load offset=8 (local.get $expr)))
+                                    (local.get $env) (i32.const 1)))))
       ;; application (a macro in head position expands against the raw forms, then re-evals)
       (local.set $fn (call $eval (local.get $head) (local.get $env)))
       (if (call $is_macro (local.get $fn))

@@ -138,10 +138,14 @@ and returns an expansion. That expansion is evaluated in the caller's
 environment. Expansion must be deterministic for a fixed macro environment,
 input syntax, resource cap, and explicitly supplied entropy/time capabilities.
 
-Quasiquote constructs data recursively; unquote evaluates one embedded form and
-unquote-splicing inserts a proper-list result into its surrounding list. The
-exact behavior of nested quasiquote depth and malformed splices remains to be
-covered by the golden corpus.
+Quasiquote constructs data recursively and increments a depth counter for each
+nested quasiquote. An unquote decrements that counter and remains literal syntax
+until it reaches depth one, where its sole operand is evaluated. At depth one,
+unquote-splicing is valid only as a list element; its sole operand is evaluated
+and must be a proper list, whose elements replace the splice form in order. A
+direct splice reports `unquote-splicing expected`; missing or extra operands
+report `unquote expected` or `unquote-splicing expected`; atom and dotted-list
+splice values report `list expected`. No partial splice is returned on failure.
 
 Macro hygiene is not currently general. Library macros must avoid capture by
 construction, as the bootstrapped `or` does. If hygienic identifiers are added,
@@ -155,10 +159,11 @@ form produced by the macro. Macro bodies use the same closure application and
 captured definition environment as evaluator-driven expansion. Eight authored
 boot expansions hash to `34214d55...` in four fresh sessions and 16 repetitions
 in one long-lived session; a stateful produced form is proven not to execute.
-Computed-head expansion, nested quasiquote depth, and malformed splice behavior
-remain unspecified or unproved. Named outer expansion stops before application
-1,025 with `macro expansion cap`; the one-form self-reproducing witness is
-persisted by the M2 harness.
+Computed-head expansion remains outside the current inspection boundary.
+Nested quasiquote depth and malformed splice behavior are covered by four M2
+test groups, including matching-depth double unquote and proper-list checks.
+Named outer expansion stops before application 1,025 with `macro expansion
+cap`; the one-form self-reproducing witness is persisted by the M2 harness.
 
 ## 7. Equality
 
