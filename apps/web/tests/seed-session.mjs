@@ -7,12 +7,12 @@ import { performance } from "node:perf_hooks";
 
 export const SEED_ARTIFACT_PINS = Object.freeze({
   wat: Object.freeze({
-    bytes: 105_261,
-    sha256: "95deb4180b7fa8ebfdd33f81b637b5a03bdceb11b2c1d236ade7c2c0011fc371",
+    bytes: 107_481,
+    sha256: "17f54962225b580f696c3b441c2bdce83d04548c6750f29a7a321f164a455320",
   }),
   wasm: Object.freeze({
-    bytes: 10_774,
-    sha256: "ae8dc34690587b178f0930a79eac87361a0ea142f87cb3cc4ef7c8b0ead7f386",
+    bytes: 10_992,
+    sha256: "17305d3674ef1b066c2dd10f8fad01767336cc188e678932dc684acd2b22aa3c",
   }),
   boot: Object.freeze({
     bytes: 4_486,
@@ -29,6 +29,15 @@ const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 export const SEED_ERROR_CATEGORIES = Object.freeze({
   1: "unbound-name",
+  2: "reader",
+  3: "arity",
+  4: "type",
+  5: "apply",
+  6: "arithmetic",
+  7: "bounds",
+  8: "resource-exhausted",
+  9: "mutation",
+  10: "host-contract",
 });
 
 export class SeedLanguageError extends Error {

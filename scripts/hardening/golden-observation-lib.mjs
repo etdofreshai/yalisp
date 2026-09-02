@@ -86,11 +86,7 @@ function normalizeError(error) {
     };
   }
   const diagnostic = typeof error?.diagnostic === "string" ? error.diagnostic : String(error?.message ?? error);
-  let category = "runtime-trap";
-  if (diagnostic === "heap exhausted" || diagnostic === "memory limit reached") category = "resource-exhausted";
-  else if (diagnostic.startsWith("reader:")) category = "reader";
-  else if (diagnostic.includes("type")) category = "type";
-  return { category, diagnostic, recoverable: false };
+  return { category: "runtime-trap", diagnostic, recoverable: false };
 }
 
 async function observeProbes(session, declarations) {

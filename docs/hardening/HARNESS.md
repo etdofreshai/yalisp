@@ -237,9 +237,11 @@ quasiquote command fixes nested depth, splice context/value shape, and arity.
 Malformed fixtures use the independent `read_print` boundary so evaluator
 failures cannot masquerade as reader diagnostics.
 
-The structured-error boundary command asserts both sides of the M3 distinction:
-an unbound name has category code `1` and a typed host record, while an actual
-out-of-bounds Wasm access has category zero and remains a native runtime fault.
+The structured-error boundary command asserts all ten stable seed category
+codes and both sides of the M3 distinction: classified failures have typed host
+records, while an actual out-of-bounds Wasm access has category zero and remains
+a native runtime fault. It also covers metadata reset at host entries through
+independent fresh invocations.
 
 The resource-cap property command prints its accounting versions and persisted
 minimal witnesses. `binary-min-depth-v1` refuses to classify an incidental host

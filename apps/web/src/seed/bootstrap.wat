@@ -237,6 +237,7 @@
   (func $ensure_space (param $end i32)
     (if (i32.gt_u (local.get $end) (i32.shl (memory.size) (i32.const 16)))
       (then
+        (global.set $error_kind (i32.const 8))
         (call $host_write (i32.const 448) (i32.const 14))
         (call $host_write (i32.const 104) (i32.const 1))
         (unreachable))))
@@ -464,6 +465,39 @@
   (func $quote_sym (result i32) (call $intern (i32.const 128) (i32.const 5)))
 
   ;; --- errors (write message, then trap) ---
+  (func $error_reset
+    (global.set $error_kind (i32.const 0)))
+  ;; Compact category table for fixed diagnostics. The pointer names a static
+  ;; seed-owned diagnostic, so it is also a stable, auditable dispatch key.
+  (func $classify_static_error (param $ptr i32)
+    (global.set $error_kind (i32.const 0))
+    (if (i32.or
+          (i32.eq (local.get $ptr) (i32.const 1013))
+          (i32.or (i32.eq (local.get $ptr) (i32.const 477))
+                  (i32.eq (local.get $ptr) (i32.const 496))))
+      (then (global.set $error_kind (i32.const 2))))
+    (if (i32.or
+          (i32.eq (local.get $ptr) (i32.const 462))
+          (i32.or
+            (i32.eq (local.get $ptr) (i32.const 513))
+            (i32.or (i32.eq (local.get $ptr) (i32.const 620))
+                    (i32.eq (local.get $ptr) (i32.const 732)))))
+      (then (global.set $error_kind (i32.const 4))))
+    (if (i32.eq (local.get $ptr) (i32.const 936))
+      (then (global.set $error_kind (i32.const 6))))
+    (if (i32.or
+          (i32.eq (local.get $ptr) (i32.const 826))
+          (i32.or (i32.eq (local.get $ptr) (i32.const 640))
+                  (i32.eq (local.get $ptr) (i32.const 991))))
+      (then (global.set $error_kind (i32.const 7))))
+    (if (i32.or (i32.eq (local.get $ptr) (i32.const 712))
+                (i32.eq (local.get $ptr) (i32.const 803)))
+      (then (global.set $error_kind (i32.const 8))))
+    (if (i32.eq (local.get $ptr) (i32.const 851))
+      (then (global.set $error_kind (i32.const 9))))
+    (if (i32.eq (local.get $ptr) (i32.const 872))
+      (then (global.set $error_kind (i32.const 10))))
+  )
   (func $err_unbound (param $sym i32)
     (global.set $error_kind (i32.const 1))
     (call $write (i32.const 184) (i32.const 9))
@@ -471,24 +505,29 @@
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_apply
+    (global.set $error_kind (i32.const 5))
     (call $write (i32.const 193) (i32.const 12))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_static (param $ptr i32) (param $len i32)
+    (call $classify_static_error (local.get $ptr))
     (call $write (local.get $ptr) (local.get $len))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_depth_cap
+    (global.set $error_kind (i32.const 8))
     (call $write (i32.const 105) (i32.const 5))
     (call $write (i32.const 123) (i32.const 4))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_work_cap
+    (global.set $error_kind (i32.const 8))
     (call $write (i32.const 110) (i32.const 4))
     (call $write (i32.const 123) (i32.const 4))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_macro_expansion_cap
+    (global.set $error_kind (i32.const 8))
     (call $write (i32.const 163) (i32.const 5))
     (call $write (i32.const 73) (i32.const 1))
     (call $write (i32.const 114) (i32.const 9))
@@ -496,18 +535,21 @@
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_unquote_expected
+    (global.set $error_kind (i32.const 3))
     (call $write (i32.const 219) (i32.const 7))
     (call $write (i32.const 73) (i32.const 1))
     (call $write (i32.const 469) (i32.const 8))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_unquote_splicing_expected
+    (global.set $error_kind (i32.const 3))
     (call $write (i32.const 226) (i32.const 16))
     (call $write (i32.const 73) (i32.const 1))
     (call $write (i32.const 469) (i32.const 8))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
   (func $err_list_expected
+    (global.set $error_kind (i32.const 4))
     (call $write (i32.const 205) (i32.const 4))
     (call $write (i32.const 73) (i32.const 1))
     (call $write (i32.const 469) (i32.const 8))
@@ -1728,7 +1770,9 @@
     (call $defprim (i32.const 974) (i32.const 17) (i32.const 64))) ;; bytes.fill-stride
 
   ;; --- drivers (init is separate so loads accumulate without resetting) ---
-  (func (export "init") (call $init))
+  (func (export "init")
+    (call $error_reset)
+    (call $init))
 
   ;; --- host asset ingestion API --------------------------------------------
   ;; Two calls rather than one so a multi-megabyte asset crosses the boundary
@@ -1745,6 +1789,7 @@
   ;; ArrayBuffer.
   (func (export "asset_begin") (param $len i32) (result i32)
     (local $p i32)
+    (call $error_reset)
     (if (global.get $asset_pending)
       (then (call $err_static (i32.const 872) (i32.const 21)) (unreachable)))
     (if (i32.lt_s (local.get $len) (i32.const 0))
@@ -1763,6 +1808,7 @@
   ;; ingest therefore contributes nothing to asset.count or asset.used.
   (func (export "asset_commit") (result i32)
     (local $p i32)
+    (call $error_reset)
     (local.set $p (global.get $asset_pending))
     (if (i32.eqz (local.get $p))
       (then (call $err_static (i32.const 872) (i32.const 21)) (unreachable)))
@@ -1777,6 +1823,7 @@
 
   (func (export "read_print") (param $ptr i32) (param $len i32)
     (local $v i32)
+    (call $error_reset)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
     (call $reader_reset)
@@ -1794,6 +1841,7 @@
   ;; eval every form, discard results (used to load boot.lisp)
   (func (export "eval_all") (param $ptr i32) (param $len i32)
     (local $v i32)
+    (call $error_reset)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
     (call $reader_reset)
@@ -1806,6 +1854,7 @@
   ;; eval every form, print each result (used to run a user program)
   (func (export "eval_print") (param $ptr i32) (param $len i32)
     (local $v i32)
+    (call $error_reset)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
     (call $reader_reset)
@@ -1818,6 +1867,7 @@
   ;; eval every form with DOM-safe string serialization
   (func (export "eval_dom_print") (param $ptr i32) (param $len i32)
     (local $v i32)
+    (call $error_reset)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
     (call $reader_reset)
@@ -1833,6 +1883,7 @@
   ;; data observation boundary used by the deterministic M2 harness.
   (func (export "expand_dom_print") (param $ptr i32) (param $len i32)
     (local $v i32)
+    (call $error_reset)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
     (call $reader_reset)
@@ -1847,6 +1898,7 @@
   ;; the generic host sink. Binary data must not pass through DOM text output.
   (func (export "eval_bytes") (param $ptr i32) (param $len i32)
     (local $form i32) (local $v i32)
+    (call $error_reset)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
     (call $reader_reset)

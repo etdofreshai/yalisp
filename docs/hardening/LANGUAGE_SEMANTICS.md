@@ -191,13 +191,30 @@ and ordered prior effects. Evaluation stops at the failing operation; no later
 argument, branch, mutation, or output may occur.
 
 Current seed failures write a diagnostic and trap. A trapped instance is not a
-recoverable language session and callers should discard it. The first M3 slice
-classifies unbound-name failures with seed-owned category code `1`; Node and
-browser hosts expose the category, diagnostic, native cause, `recoverable:
+recoverable language session and callers should discard it. The M3 seed-owned
+category table is:
+
+| Code | Category |
+| ---: | --- |
+| 0 | unclassified runtime fault |
+| 1 | unbound name |
+| 2 | reader |
+| 3 | arity |
+| 4 | type |
+| 5 | apply |
+| 6 | arithmetic range |
+| 7 | bounds |
+| 8 | resource exhaustion |
+| 9 | mutation |
+| 10 | host contract |
+
+Metadata resets at every host entry. Node and browser hosts expose classified
+failures with category code/name, diagnostic, native cause, `recoverable:
 false`, and `sessionDiscarded: true` as a typed `SeedLanguageError`. An
 unclassified Wasm fault retains native `WebAssembly.RuntimeError` identity and
-category zero. Other language failures are still unclassified traps. This is an
-honest bootstrap boundary, not the final high-level error model.
+category zero. Division by zero and other incidental arithmetic traps remain to
+be converted into deliberate language errors. This is an honest bootstrap
+boundary, not the final high-level error model.
 
 All readers, expanders, evaluators, compilers, printers, equality operations,
 FFI calls, and allocators must honor explicit depth, work, output, and memory

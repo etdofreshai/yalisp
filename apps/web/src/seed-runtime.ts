@@ -1,8 +1,27 @@
 export type SeedStage = "seed" | "bootstrap";
-export type SeedErrorCategory = "unbound-name";
+export type SeedErrorCategory =
+  | "unbound-name"
+  | "reader"
+  | "arity"
+  | "type"
+  | "apply"
+  | "arithmetic"
+  | "bounds"
+  | "resource-exhausted"
+  | "mutation"
+  | "host-contract";
 
 const seedErrorCategories: Readonly<Record<number, SeedErrorCategory>> = Object.freeze({
   1: "unbound-name",
+  2: "reader",
+  3: "arity",
+  4: "type",
+  5: "apply",
+  6: "arithmetic",
+  7: "bounds",
+  8: "resource-exhausted",
+  9: "mutation",
+  10: "host-contract",
 });
 
 export class SeedLanguageError extends Error {
