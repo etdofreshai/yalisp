@@ -117,7 +117,14 @@ primitives reject both missing and extra values; `string.slice` and
 `string.substring` accept two or three. `+`, `-`, `*`, `/`, `list`,
 `string.append`, and `string.concat` are variadic. An arity failure has category
 3 and diagnostic `<called-name> expected`, retains the session, and executes no
-primitive body. Special-form and closure/macro arity remain active M3 work.
+primitive body.
+
+`quote`, `define`, `set!`, and `quasiquote` have exact form shape; `if` has a
+required test/then and optional else; `lambda`/`macro` require parameters and at
+least one body form; `begin` is variadic. Proper closure/macro parameter lists
+require exactly as many arguments, a bare symbol captures all arguments, and a
+dotted symbol tail captures the remainder. Invalid identifiers or counts fail
+before body entry and retain the session.
 
 ## 5. Environments, scope, and mutation
 

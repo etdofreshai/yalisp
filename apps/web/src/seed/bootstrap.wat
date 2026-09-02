@@ -1131,8 +1131,8 @@
   ;; Bind a closure/macro's params to args in a fresh env and return that env.
   ;; params may be: a proper list (fixed arity), a bare symbol (whole arg list),
   ;; or a dotted tail (a symbol reached mid-list -> bind remaining args).
-  (func $bind_params (param $fn i32) (param $args i32) (result i32)
-    (local $nenv i32) (local $params i32) (local $a i32)
+  (func $bind_params (param $fn i32) (param $args i32) (param $name i32) (result i32)
+    (local $nenv i32) (local $params i32) (local $a i32) (local $param i32)
     (local.set $nenv (call $cons (global.get $nil) (i32.load offset=12 (local.get $fn))))
     (local.set $params (i32.load offset=4 (local.get $fn)))
     (local.set $a (local.get $args))
@@ -1140,9 +1140,19 @@
       (if (call $is_symbol (local.get $params))
         (then (call $env_define (local.get $nenv) (local.get $params) (local.get $a))
               (br $bind)))
-      (br_if $bind (i32.eq (local.get $params) (global.get $nil)))
+      (if (i32.eq (local.get $params) (global.get $nil))
+        (then
+          (if (i32.ne (local.get $a) (global.get $nil))
+            (then (call $err_named_expected (local.get $name)) (unreachable)))
+          (br $bind)))
+      (if (i32.or (i32.eqz (call $is_pair (local.get $params)))
+                  (i32.eqz (call $is_pair (local.get $a))))
+        (then (call $err_named_expected (local.get $name)) (unreachable)))
+      (local.set $param (i32.load offset=4 (local.get $params)))
+      (if (i32.eqz (call $is_symbol (local.get $param)))
+        (then (call $err_named_expected (local.get $name)) (unreachable)))
       (call $env_define (local.get $nenv)
-            (i32.load offset=4 (local.get $params))
+            (local.get $param)
             (call $car (local.get $a)))
       (local.set $params (i32.load offset=8 (local.get $params)))
       (local.set $a (call $cdr (local.get $a)))
@@ -1151,9 +1161,9 @@
 
   ;; Macro expansion is not a tail position, so it keeps a plain recursive
   ;; body evaluation; tail calls in ordinary code are handled inside $eval.
-  (func $apply_user (param $fn i32) (param $args i32) (result i32)
+  (func $apply_user (param $fn i32) (param $args i32) (param $name i32) (result i32)
     (call $eval_seq (i32.load offset=8 (local.get $fn))
-                    (call $bind_params (local.get $fn) (local.get $args))))
+                    (call $bind_params (local.get $fn) (local.get $args) (local.get $name))))
 
   ;; Expand named macros at the outermost position until the head is no longer
   ;; a macro. Unlike evaluation, this inspection path never evaluates a
@@ -1178,7 +1188,7 @@
         (then (call $err_macro_expansion_cap) (unreachable)))
       (local.set $steps (i32.add (local.get $steps) (i32.const 1)))
       (local.set $expr
-        (call $apply_user (local.get $fn) (i32.load offset=8 (local.get $expr))))
+        (call $apply_user (local.get $fn) (i32.load offset=8 (local.get $expr)) (local.get $head)))
       (br $again))
     (unreachable))
 
@@ -1259,7 +1269,7 @@
   ;; Non-tail positions (arguments, `define` values, macro bodies, quasiquote)
   ;; still recurse, which is what gives the language its ordinary call depth.
   (func $eval (param $expr i32) (param $env i32) (result i32)
-    (local $t i32) (local $head i32) (local $fn i32) (local $rest i32) (local $body i32)
+    (local $t i32) (local $head i32) (local $fn i32) (local $rest i32) (local $body i32) (local $call_name i32)
     (loop $tail
       (if (i32.and (local.get $expr) (i32.const 1)) (then (return (local.get $expr))))  ;; fixnum
       (local.set $t (i32.load (local.get $expr)))
@@ -1269,10 +1279,13 @@
         (then (return (local.get $expr))))
       (local.set $head (i32.load offset=4 (local.get $expr)))
       (if (i32.eq (local.get $head) (global.get $sym_quote))
-        (then (return (i32.load offset=4 (i32.load offset=8 (local.get $expr))))))
+        (then
+          (call $require_primitive_arity (i32.load offset=8 (local.get $expr)) (i32.const 1) (i32.const 1) (local.get $head))
+          (return (i32.load offset=4 (i32.load offset=8 (local.get $expr))))))
       (if (i32.eq (local.get $head) (global.get $sym_if))
         (then
           (local.set $rest (i32.load offset=8 (local.get $expr)))            ;; (test then else)
+          (call $require_primitive_arity (local.get $rest) (i32.const 2) (i32.const 3) (local.get $head))
           (local.set $t (call $eval (i32.load offset=4 (local.get $rest)) (local.get $env)))
           (local.set $rest (i32.load offset=8 (local.get $rest)))            ;; (then else)
           (if (call $is_falsy (local.get $t))
@@ -1282,19 +1295,27 @@
           (local.set $expr (i32.load offset=4 (local.get $rest)))
           (br $tail)))
       (if (i32.eq (local.get $head) (global.get $sym_lambda))
-        (then (return (call $make_clo (i32.const 5)
+        (then
+          (call $require_primitive_arity (i32.load offset=8 (local.get $expr)) (i32.const 2) (i32.const -1) (local.get $head))
+          (return (call $make_clo (i32.const 5)
                         (i32.load offset=4 (i32.load offset=8 (local.get $expr)))
                         (i32.load offset=8 (i32.load offset=8 (local.get $expr)))
                         (local.get $env)))))
       (if (i32.eq (local.get $head) (global.get $sym_macro))
-        (then (return (call $make_clo (i32.const 6)
+        (then
+          (call $require_primitive_arity (i32.load offset=8 (local.get $expr)) (i32.const 2) (i32.const -1) (local.get $head))
+          (return (call $make_clo (i32.const 6)
                         (i32.load offset=4 (i32.load offset=8 (local.get $expr)))
                         (i32.load offset=8 (i32.load offset=8 (local.get $expr)))
                         (local.get $env)))))
       (if (i32.eq (local.get $head) (global.get $sym_define))
-        (then (return (call $eval_define (local.get $expr) (local.get $env)))))
+        (then
+          (call $require_primitive_arity (i32.load offset=8 (local.get $expr)) (i32.const 2) (i32.const 2) (local.get $head))
+          (return (call $eval_define (local.get $expr) (local.get $env)))))
       (if (i32.eq (local.get $head) (global.get $sym_set))
-        (then (return (call $set_bang (local.get $env)
+        (then
+          (call $require_primitive_arity (i32.load offset=8 (local.get $expr)) (i32.const 2) (i32.const 2) (local.get $head))
+          (return (call $set_bang (local.get $env)
                         (i32.load offset=4 (i32.load offset=8 (local.get $expr)))
                         (call $eval (i32.load offset=4 (i32.load offset=8 (i32.load offset=8 (local.get $expr)))) (local.get $env))))))
       (if (i32.eq (local.get $head) (global.get $sym_begin))
@@ -1304,13 +1325,17 @@
           (local.set $expr (call $eval_but_last (local.get $body) (local.get $env)))
           (br $tail)))
       (if (i32.eq (local.get $head) (global.get $sym_qq))
-        (then (return (call $qq_eval (i32.load offset=4 (i32.load offset=8 (local.get $expr)))
-                                    (local.get $env) (i32.const 1)))))
+        (then
+          (call $require_primitive_arity (i32.load offset=8 (local.get $expr)) (i32.const 1) (i32.const 1) (local.get $head))
+          (return (call $qq_eval (i32.load offset=4 (i32.load offset=8 (local.get $expr)))
+                                (local.get $env) (i32.const 1)))))
       ;; application (a macro in head position expands against the raw forms, then re-evals)
       (local.set $fn (call $eval (local.get $head) (local.get $env)))
       (if (call $is_macro (local.get $fn))
         (then
-          (local.set $expr (call $apply_user (local.get $fn) (i32.load offset=8 (local.get $expr))))
+          (local.set $call_name (if (result i32) (call $is_symbol (local.get $head))
+                                  (then (local.get $head)) (else (global.get $sym_macro))))
+          (local.set $expr (call $apply_user (local.get $fn) (i32.load offset=8 (local.get $expr)) (local.get $call_name)))
           (br $tail)))
       (local.set $rest (call $eval_list (i32.load offset=8 (local.get $expr)) (local.get $env)))
       (if (i32.and (local.get $fn) (i32.const 1)) (then (call $err_apply) (unreachable)))
@@ -1321,7 +1346,9 @@
       (if (i32.ne (local.get $t) (i32.const 5))   ;; only closures are applicable
         (then (call $err_apply) (unreachable)))
       (local.set $body (i32.load offset=8 (local.get $fn)))
-      (local.set $env (call $bind_params (local.get $fn) (local.get $rest)))
+      (local.set $call_name (if (result i32) (call $is_symbol (local.get $head))
+                              (then (local.get $head)) (else (global.get $sym_lambda))))
+      (local.set $env (call $bind_params (local.get $fn) (local.get $rest) (local.get $call_name)))
       (if (i32.eq (local.get $body) (global.get $nil)) (then (return (global.get $nil))))
       (local.set $expr (call $eval_but_last (local.get $body) (local.get $env)))
       (br $tail))

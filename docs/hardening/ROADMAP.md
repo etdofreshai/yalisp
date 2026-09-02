@@ -168,8 +168,15 @@ fixed arity, cover the two/three-argument string slice range, preserve the seven
 variadic primitives, and prove recovery afterward. The first combined run
 caught an incorrect fixed-arity assumption for variadic `string.append`; the
 policy was corrected rather than changing the Lisp-written compiler. The final
-focused set is 56/56 with no golden divergence. Special-form and closure/macro
-arity plus structured payload fields remain open.
+focused set is 56/56 with no golden divergence.
+
+Special forms and user calls now share the arity boundary. Fixed and optional
+special-form shapes are checked before field access; proper parameter lists are
+exact, bare symbols capture the full argument list, and dotted symbol tails
+capture the remainder. Fixed closures/macros reject missing and extra values
+before body entry, including malformed parameter identifiers. The focused set
+is 59/59. Structured payload fields and explicit compiler error-intersection
+evidence remain open.
 
 ## M4 — explicit core IR and semantic reference path
 

@@ -33,6 +33,8 @@ Host recovery policy is recorded in
 `baselines/2026-09-01-m3-host-recovery.md`.
 Primitive arity is recorded in
 `baselines/2026-09-02-m3-primitive-arity.md`.
+Special-form and user-call arity is recorded in
+`baselines/2026-09-02-m3-user-arity.md`.
 
 ## Operating invariant
 

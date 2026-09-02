@@ -208,5 +208,12 @@ variadic surface is `+`, `-`, `*`, `/`, `list`, `string.append`, and
 `string.concat`. The called symbol is retained in the diagnostic, including
 aliases; a computed primitive reports `<primitive> expected`.
 
+Special-form and user-call arity use the same recoverable boundary. `quote`,
+`define`, `set!`, and `quasiquote` are exact; `if` accepts test/then with an
+optional else; `lambda` and `macro` require parameters plus at least one body
+form; `begin` remains variadic. Proper parameter lists are exact, bare symbols
+capture all arguments, and dotted parameter tails capture the remainder.
+Non-symbol parameters and missing/extra fixed arguments fail before body entry.
+
 Run `npm run build-seed --workspace @yalisp/web` to assemble the WAT into the
 ignored generated file `public/yalisp/seed.wasm`.
