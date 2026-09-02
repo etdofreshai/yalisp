@@ -77,8 +77,12 @@ generated code have authored per-case caps.
 ### Errors and caps
 
 - every malformed input class and wrong type/arity;
-- fixed reader depth, form count, output bytes, evaluation work, heap, asset,
-  compilation, and foreign-call caps;
+- host input 130,048/130,049 bytes, combined reader depth 511/512, reader work
+  32,768/32,769 empty forms, and named outer expansion step 1,024/1,025 have
+  fixed passing/failing evidence (implemented);
+- output bytes, evaluation work, heap, asset, compilation, and foreign-call
+  caps retain their current selected evidence and await their owning milestone
+  protocols;
 - atomicity probes after failed byte/block/mutation operations;
 - no test may rely only on a host exception string when a language error record
   exists.
@@ -214,14 +218,20 @@ npm run build
 npm run hardening:golden
 node --test --test-concurrency=1 apps/web/tests/reader-printer-property.test.mjs
 node --test --test-concurrency=1 apps/web/tests/macro-expansion-determinism.test.mjs
+node --test --test-concurrency=1 apps/web/tests/resource-cap-properties.test.mjs
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```
 
 The focused reader/property command is deterministic and prints its generator
 configuration into TAP diagnostics. A failing case reports the stable case
-index and source/printed/reparsed triple. Minimal automatic shrinking and the
-broader malformed depth/work corpus are still M2 requirements.
+index and source/printed/reparsed triple. General generated-value shrinking and
+the broader malformed-syntax corpus are still M2 requirements.
+
+The resource-cap property command prints its accounting versions and persisted
+minimal witnesses. `binary-min-depth-v1` refuses to classify an incidental host
+trap as a cap failure; only the exact `depth cap` diagnostic advances its shrink
+boundary.
 
 The web test command fixes Node's file concurrency at four workers. This keeps
 the same complete file/case set while bounding concurrent 240 MiB application

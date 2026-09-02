@@ -70,6 +70,13 @@
   ;; reader cursor
   (global $rp      (mut i32) (i32.const 0))
   (global $rend    (mut i32) (i32.const 0))
+  ;; A source submission gets fixed reader budgets. Both read1 frames and list
+  ;; spine frames count toward depth/work so flat lists cannot move unbounded
+  ;; recursion out of sight inside $read_list.
+  (global $read_depth (mut i32) (i32.const 0))
+  (global $read_work  (mut i32) (i32.const 0))
+  (global $read_depth_limit i32 (i32.const 1024))
+  (global $read_work_limit  i32 (i32.const 65536))
   ;; --- host-ingested asset registry ---
   ;; Assets are ordinary heap objects, so nothing here assumes a particular
   ;; allocator. They are kept alive by this registry rather than by whatever
@@ -103,6 +110,12 @@
   (data (i32.const 86)  "<macro>")      ;; 86  len 7
   (data (i32.const 93)  "<primitive>")  ;; 93  len 11
   (data (i32.const 104) "\n")           ;; 104 len 1
+  ;; Resource diagnostics assembled from these compact pieces:
+  ;; "depth cap", "work cap", and "macro expansion cap".
+  (data (i32.const 105) "depth")         ;; 105 len 5
+  (data (i32.const 110) "work")          ;; 110 len 4
+  (data (i32.const 114) "expansion")     ;; 114 len 9
+  (data (i32.const 123) " cap")          ;; 123 len 4
   (data (i32.const 128) "quote")        ;; 128 len 5
   (data (i32.const 133) "cons")         ;; 133 len 4
   (data (i32.const 137) "car")          ;; 137 len 3
@@ -459,6 +472,23 @@
     (call $write (local.get $ptr) (local.get $len))
     (call $write (i32.const 104) (i32.const 1))
     (unreachable))
+  (func $err_depth_cap
+    (call $write (i32.const 105) (i32.const 5))
+    (call $write (i32.const 123) (i32.const 4))
+    (call $write (i32.const 104) (i32.const 1))
+    (unreachable))
+  (func $err_work_cap
+    (call $write (i32.const 110) (i32.const 4))
+    (call $write (i32.const 123) (i32.const 4))
+    (call $write (i32.const 104) (i32.const 1))
+    (unreachable))
+  (func $err_macro_expansion_cap
+    (call $write (i32.const 163) (i32.const 5))
+    (call $write (i32.const 73) (i32.const 1))
+    (call $write (i32.const 114) (i32.const 9))
+    (call $write (i32.const 123) (i32.const 4))
+    (call $write (i32.const 104) (i32.const 1))
+    (unreachable))
   (func $require_string (param $v i32) (result i32)
     (if (i32.eqz (call $has_tag (local.get $v) (i32.const 4)))
       (then (call $err_static (i32.const 462) (i32.const 15)) (unreachable)))
@@ -669,6 +699,21 @@
     (call $write (i32.const 104) (i32.const 1)))
 
   ;; --- reader ---
+  (func $reader_reset
+    (global.set $read_depth (i32.const 0))
+    (global.set $read_work (i32.const 0)))
+
+  (func $reader_enter
+    (if (i32.ge_u (global.get $read_depth) (global.get $read_depth_limit))
+      (then (call $err_depth_cap) (unreachable)))
+    (if (i32.ge_u (global.get $read_work) (global.get $read_work_limit))
+      (then (call $err_work_cap) (unreachable)))
+    (global.set $read_depth (i32.add (global.get $read_depth) (i32.const 1)))
+    (global.set $read_work (i32.add (global.get $read_work) (i32.const 1))))
+
+  (func $reader_leave
+    (global.set $read_depth (i32.sub (global.get $read_depth) (i32.const 1))))
+
   (func $is_delim (param $c i32) (result i32)
     (i32.or (i32.le_u (local.get $c) (i32.const 32))
      (i32.or (i32.eq (local.get $c) (i32.const 40))   ;; (
@@ -818,6 +863,13 @@
     (local.get $s))
 
   (func $read_list (result i32)
+    (local $value i32)
+    (call $reader_enter)
+    (local.set $value (call $read_list_inner))
+    (call $reader_leave)
+    (local.get $value))
+
+  (func $read_list_inner (result i32)
     (local $car i32) (local $cdr i32)
     (call $skip_ws)
     (if (i32.ge_u (global.get $rp) (global.get $rend))
@@ -842,6 +894,19 @@
     (call $cons (local.get $car) (local.get $cdr)))
 
   (func $read1 (result i32)
+    (local $value i32)
+    ;; An export probes once after the final form to discover EOF. Whitespace
+    ;; scanning is byte-bounded already; do not charge a nonexistent form as a
+    ;; reader frame/work unit.
+    (call $skip_ws)
+    (if (i32.ge_u (global.get $rp) (global.get $rend))
+      (then (return (global.get $eof))))
+    (call $reader_enter)
+    (local.set $value (call $read1_inner))
+    (call $reader_leave)
+    (local.get $value))
+
+  (func $read1_inner (result i32)
     (local $c i32) (local $x i32)
     (call $skip_ws)
     (if (i32.ge_u (global.get $rp) (global.get $rend)) (then (return (global.get $eof))))
@@ -1007,7 +1072,7 @@
   ;; through the same closure application used by $eval, including their
   ;; captured lexical environment.
   (func $macroexpand_outer (param $expr i32) (param $env i32) (result i32)
-    (local $head i32) (local $entry i32) (local $fn i32)
+    (local $head i32) (local $entry i32) (local $fn i32) (local $steps i32)
     (loop $again
       (if (i32.eqz (call $is_pair (local.get $expr)))
         (then (return (local.get $expr))))
@@ -1020,6 +1085,9 @@
       (local.set $fn (i32.load offset=8 (local.get $entry)))
       (if (i32.eqz (call $is_macro (local.get $fn)))
         (then (return (local.get $expr))))
+      (if (i32.ge_u (local.get $steps) (i32.const 1024))
+        (then (call $err_macro_expansion_cap) (unreachable)))
+      (local.set $steps (i32.add (local.get $steps) (i32.const 1)))
       (local.set $expr
         (call $apply_user (local.get $fn) (i32.load offset=8 (local.get $expr))))
       (br $again))
@@ -1633,6 +1701,7 @@
     (local $v i32)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
+    (call $reader_reset)
     (block $done (loop $l
       (local.set $v (call $read1))
       (br_if $done (i32.eq (local.get $v) (global.get $eof)))
@@ -1644,6 +1713,7 @@
     (local $v i32)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
+    (call $reader_reset)
     (block $done (loop $l
       (local.set $v (call $read1))
       (br_if $done (i32.eq (local.get $v) (global.get $eof)))
@@ -1655,6 +1725,7 @@
     (local $v i32)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
+    (call $reader_reset)
     (block $done (loop $l
       (local.set $v (call $read1))
       (br_if $done (i32.eq (local.get $v) (global.get $eof)))
@@ -1666,6 +1737,7 @@
     (local $v i32)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
+    (call $reader_reset)
     (block $done (loop $l
       (local.set $v (call $read1))
       (br_if $done (i32.eq (local.get $v) (global.get $eof)))
@@ -1680,6 +1752,7 @@
     (local $v i32)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
+    (call $reader_reset)
     (block $done (loop $l
       (local.set $v (call $read1))
       (br_if $done (i32.eq (local.get $v) (global.get $eof)))
@@ -1693,6 +1766,7 @@
     (local $form i32) (local $v i32)
     (global.set $rp (local.get $ptr))
     (global.set $rend (i32.add (local.get $ptr) (local.get $len)))
+    (call $reader_reset)
     (local.set $v (global.get $nil))
     (block $done (loop $l
       (local.set $form (call $read1))

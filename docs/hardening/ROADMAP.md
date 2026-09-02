@@ -89,9 +89,18 @@ boot expansions have pinned canonical hash `34214d55...` across four fresh
 sessions and 16 rounds in one long-lived session. A two-macro expansion chain
 produces a mutation form 16 times at hash `45787172...` while its counter remains
 zero, proving the inspection path does not evaluate produced user code. This is
-still partial M2 evidence: persisted shrinking, broader source generation, nested
-quasiquote/splice cases, and explicit reader/expansion depth and work caps
-remain.
+still partial M2 evidence: broader source generation and malformed syntax plus
+nested quasiquote/splice cases remain.
+
+The fixed cap slice is now explicit and independently minimized. Both hosts
+accept exactly 130,048 UTF-8 source bytes and reject the next byte. Combined
+form/list-spine depth 511 passes while nested depth 512 is the binary-shrunk
+minimal `depth cap` witness. Exactly 32,768 empty forms consume the 65,536-unit
+reader work budget; form 32,769 yields `work cap`. A self-reproducing named
+macro stops at 1,024 applications with `macro expansion cap` instead of spending
+the heap. Remaining M2 work is broader generated source/malformed syntax and
+nested quasiquote/splice semantics; the generator and shrink evidence now have
+persisted versions and boundaries.
 
 ## M3 — structured errors and transactional failure boundaries
 

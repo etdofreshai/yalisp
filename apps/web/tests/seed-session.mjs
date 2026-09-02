@@ -7,12 +7,12 @@ import { performance } from "node:perf_hooks";
 
 export const SEED_ARTIFACT_PINS = Object.freeze({
   wat: Object.freeze({
-    bytes: 97_928,
-    sha256: "0f7b3a87fadfcfa5ca203f959b6cd55e95ccda8a23e65e038093e02f6ef8eefc",
+    bytes: 100_979,
+    sha256: "82ca9cedc0792d34e5ef5d10bc5c6f1517b7dfdb71951a69bc3bf6b08764d4c4",
   }),
   wasm: Object.freeze({
-    bytes: 10_093,
-    sha256: "ab767a39785bd249b73fe3cbfa14739b9a92cbd178d94eb0863d24c5ac917edb",
+    bytes: 10_393,
+    sha256: "17bec98ce1763c8e6f9786d99e8c575585a4586c600153ec2c4604b316318a73",
   }),
   boot: Object.freeze({
     bytes: 4_486,
@@ -82,6 +82,7 @@ export function getSeedSessionSetupMetrics() {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const inputPointer = 1024;
+const inputLimit = 131_072 - inputPointer;
 
 export async function createSeedSession({ boot = true } = {}) {
   const sessionSetupStarted = performance.now();
@@ -111,6 +112,9 @@ export async function createSeedSession({ boot = true } = {}) {
 
   const load = (source) => {
     const bytes = encoder.encode(source);
+    if (bytes.length > inputLimit) {
+      throw new RangeError(`source exceeds the seed's ${inputLimit}-byte input region`);
+    }
     new Uint8Array(memory.buffer).set(bytes, inputPointer);
     meter.evaluations += 1;
     meter.sourceBytes += bytes.length;

@@ -21,6 +21,14 @@ environment, and prints the resulting data canonically. It does not evaluate a
 computed operator or the produced user form. Macro bodies run through the same
 captured closure application as ordinary evaluation.
 
+Both shipped hosts reject source beyond the fixed 130,048-byte input region
+before writing WebAssembly memory. Each accepted submission resets two seed
+reader budgets: 1,024 combined `read1`/list-spine frames and 65,536 corresponding
+work entries. An EOF probe is not charged as a form. Named outer expansion is
+separately capped at 1,024 macro applications. Crossing a boundary writes
+`depth cap`, `work cap`, or `macro expansion cap` and traps; the host discards
+that failed instance.
+
 The seed implements:
 
 - tagged integers, booleans, nil, symbols, strings, mutable byte buffers,

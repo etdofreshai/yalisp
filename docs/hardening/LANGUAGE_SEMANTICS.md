@@ -80,8 +80,11 @@ the canonical data transport. The seed reader decodes that printer's `\\n`,
 `\\t`, `\\r`, `\\b`, `\\f`, and lower-case `\\u00xx` control escapes. A
 versioned, fixed-seed M2 property covers 256 generated acyclic values plus fixed
 string, dotted-pair, comment, numeric, symbol, and Unicode cases. General
-source-form generation, shrinking, and explicit reader depth/work caps remain
-open; opaque runtime values still have no round-trip claim.
+source-form generation and generated-value shrinking remain open; opaque runtime
+values still have no round-trip claim. The current fixed
+host input cap is 130,048 UTF-8 bytes. A submission may enter at most 1,024
+combined form/list-spine reader frames and 65,536 reader work entries; the next
+entry fails as `depth cap` or `work cap` before an incidental host-stack trap.
 
 ## 4. Evaluation order and calls
 
@@ -145,8 +148,10 @@ form produced by the macro. Macro bodies use the same closure application and
 captured definition environment as evaluator-driven expansion. Eight authored
 boot expansions hash to `34214d55...` in four fresh sessions and 16 repetitions
 in one long-lived session; a stateful produced form is proven not to execute.
-Computed-head expansion, nested quasiquote depth, malformed splice behavior,
-and explicit expansion work/depth caps remain unspecified or unproved.
+Computed-head expansion, nested quasiquote depth, and malformed splice behavior
+remain unspecified or unproved. Named outer expansion stops before application
+1,025 with `macro expansion cap`; the one-form self-reproducing witness is
+persisted by the M2 harness.
 
 ## 7. Equality
 
