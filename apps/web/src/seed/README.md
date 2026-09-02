@@ -184,7 +184,8 @@ Curated web examples use a fresh instance so the seed's fixed bump-allocated
 heap remains bounded. The interpreter benchmark is also bounded and reports
 only measured interpreter execution. Heap, reader, and primitive type guards
 write a truthful diagnostic before trapping; the Playground preserves that
-diagnostic and discards the failed instance.
+diagnostic. It retains the session after a recoverable typed language error and
+discards it after resource, host-contract, or raw runtime failure.
 
 M3 begins the migration away from treating every failure as the same Wasm
 trap. The seed records stable codes for unbound name (1), reader (2), arity (3),
@@ -192,9 +193,10 @@ type (4), apply (5), arithmetic range (6), bounds (7), resource exhaustion (8),
 mutation (9), and host contract (10) before writing the diagnostic and trapping.
 Metadata resets at every host entry. Node and browser hosts expose classified
 paths as typed `SeedLanguageError` values; an unclassified Wasm fault keeps its
-native runtime-error identity and `error_kind` remains zero. The instance is
-still discarded in both cases. Division and modulo by zero are deliberate
-category-6 errors (`division by zero` and `modulo by zero`), and division uses
+native runtime-error identity and `error_kind` remains zero. Transactionally
+proven categories 1–7 and 9 retain the session; resource exhaustion, host-
+contract failure, and raw faults invalidate it. Division and modulo by zero are
+deliberate category-6 errors (`division by zero` and `modulo by zero`), and division uses
 the checked fixnum constructor so the minimum fixnum divided by `-1` cannot
 escape the tagged representation. These compact diagnostics occupy the
 previously unused `[32,64)` bytes below the constant-string region.

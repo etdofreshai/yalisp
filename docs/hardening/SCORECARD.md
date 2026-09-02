@@ -1,6 +1,6 @@
 # YaLisp living hardening scorecard
 
-Updated: 2026-09-01 M2 complete; active M3 transactional-error slice green. Scale: 0
+Updated: 2026-09-01 M2 complete; active M3 host-recovery slice green. Scale: 0
 absent, 1 prototype, 2 bounded and partly evidenced, 3 broadly conformant, 4 production-hardened, 5 independently
 reproduced across supported targets. Scores are independent; speed cannot raise
 a correctness score and a small binary cannot raise bootstrap purity if work is
@@ -15,7 +15,7 @@ hidden in the host.
 | Memory / GC | 0 | Bump allocation and explicit arenas; exact 240 MiB replay plus live circuit/render gates and a 20,808-byte two-plane cache ownership gate are measured, but no collector exists | Automatic managed memory, root-map proofs, pause/throughput/leak/soak evidence |
 | Code size / instructions | 2 | Current seed is 11,078 bytes with 4,548 static instruction lines; layer bytes/hashes and one 43-byte AOT artifact are recorded | Automated per-stage size/static count and representative dynamic counts |
 | Portability | 1 | WebAssembly/Node/browser path on x86_64 Linux; no matrix | Two engines plus declared OS/architecture targets and deterministic builds |
-| Developer ergonomics | 1 | Persistent REPL and macros; ten seed error categories have typed host records but sessions still trap/discard; no modules/debug tier switching | Transactional errors, modules, live source/IR inspection, safe hot switching |
+| Developer ergonomics | 1 | Persistent REPL and macros; ten typed error categories, with session recovery for proven transactional codes and enforced discard for unsafe failures; no modules/debug tier switching | Complete arity/payload errors, modules, live source/IR inspection, safe hot switching |
 | Documentation | 2 | Extensive web docs and seed boundary notes; initial hierarchical hardening specs | Normative reference linked to conformance cases and cost tables per layer |
 | Library completeness | 1 | Small boot list/control library and several real Lisp applications | Versioned standard-library surface, module packaging, broader high-level suites |
 
@@ -43,7 +43,7 @@ hidden in the host.
 
 ## Current first gap
 
-M1 remains green. Corpus `e50cfe93...` records 15 cases, 17 events, 30
+M1 remains green. Corpus `8aa06e80...` records 15 cases, 17 events, 30
 applicable stage observations, 15 explicit not-applicable stages, and no
 expected or cross-stage divergence. M2's reader/printer property is green at
 seed `0x59414c49`, named outer macro expansion has pinned fresh/warmed hashes,
@@ -57,5 +57,7 @@ faults, resets metadata at every host entry, and removes diagnostic-string
 category inference from the golden runner. Zero divisors and division overflow
 are deliberate arithmetic errors. Post-trap inspection proves operator/argument
 effect order, binding commit timing, and fail-before-write behavior for fill,
-copy, and strided fill. The earliest gap is useful category payload data, then
-host recoverability and interpreter/compiler error parity.
+copy, and strided fill. Proven language failures retain the session; resource,
+host-contract, and raw faults enforce discard. The earliest gap is complete
+primitive/special-form arity and payload data, then explicit compiler error
+intersection evidence.

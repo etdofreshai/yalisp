@@ -23,20 +23,33 @@ const seedErrorCategories: Readonly<Record<number, SeedErrorCategory>> = Object.
   9: "mutation",
   10: "host-contract",
 });
+const recoverableSeedErrorCodes = new Set([1, 2, 3, 4, 5, 6, 7, 9]);
+
+export class SeedSessionDiscardedError extends Error {
+  constructor() {
+    super("seed session was discarded after a non-recoverable failure");
+    this.name = "SeedSessionDiscardedError";
+  }
+}
 
 export class SeedLanguageError extends Error {
   readonly categoryCode: number;
   readonly category: SeedErrorCategory;
   readonly diagnostic: string;
-  readonly recoverable = false;
-  readonly sessionDiscarded = true;
+  readonly recoverable: boolean;
+  readonly sessionDiscarded: boolean;
 
   constructor(categoryCode: number, category: SeedErrorCategory, diagnostic: string, cause: unknown) {
-    super(`${diagnostic} · WebAssembly trap; this fresh session was discarded.`, { cause });
+    const recoverable = recoverableSeedErrorCodes.has(categoryCode);
+    super(recoverable
+      ? `${diagnostic} · Language error; the session was retained.`
+      : `${diagnostic} · WebAssembly trap; this session was discarded.`, { cause });
     this.name = "SeedLanguageError";
     this.categoryCode = categoryCode;
     this.category = category;
     this.diagnostic = diagnostic;
+    this.recoverable = recoverable;
+    this.sessionDiscarded = !recoverable;
   }
 }
 
@@ -145,6 +158,7 @@ export async function createSeedSession(stage: SeedStage) {
   let memory: WebAssembly.Memory | undefined;
   let outputBytes: Uint8Array[] = [];
   let binaryOutput: Uint8Array | undefined;
+  let discarded = false;
   const instance = await WebAssembly.instantiate(await loadModule(), {
     host: {
       write(pointer: number, length: number) {
@@ -183,6 +197,7 @@ export async function createSeedSession(stage: SeedStage) {
   };
 
   const run = (operation: () => void) => {
+    if (discarded) throw new SeedSessionDiscardedError();
     outputBytes = [];
     try {
       operation();
@@ -190,7 +205,12 @@ export async function createSeedSession(stage: SeedStage) {
       const diagnostic = outputText();
       const categoryCode = exports.error_kind();
       const category = seedErrorCategories[categoryCode];
-      if (category) throw new SeedLanguageError(categoryCode, category, diagnostic, error);
+      if (category) {
+        const classified = new SeedLanguageError(categoryCode, category, diagnostic, error);
+        if (classified.sessionDiscarded) discarded = true;
+        throw classified;
+      }
+      discarded = true;
       const trap = error instanceof Error ? error.message : String(error);
       throw new Error(diagnostic
         ? `${diagnostic} · WebAssembly trap; this fresh session was discarded.`
@@ -365,8 +385,12 @@ function mountDemo(root: HTMLElement) {
     } catch (error) {
       terminal.result.classList.add("repl-terminal-error");
       terminal.output.textContent = error instanceof Error ? error.message : String(error);
-      session = undefined;
-      status.textContent = "Fresh session required";
+      if (error instanceof SeedLanguageError && error.recoverable) {
+        status.textContent = "Language error — session retained";
+      } else {
+        session = undefined;
+        status.textContent = "Fresh session required";
+      }
     } finally {
       scrollTranscript();
       manualRun.disabled = false;

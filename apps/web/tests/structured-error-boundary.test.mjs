@@ -12,9 +12,34 @@ test("an intentional unbound-name failure is a typed language error", async () =
     assert.equal(error.category, "unbound-name");
     assert.equal(error.categoryCode, 1);
     assert.equal(error.diagnostic, "unbound: m3.missing");
+    assert.equal(error.recoverable, true);
+    assert.equal(error.sessionDiscarded, false);
+    assert.ok(error.cause instanceof WebAssembly.RuntimeError);
+    return true;
+  });
+});
+
+test("recoverable language errors retain state while unsafe failures discard", async () => {
+  const recoverable = await seedHarness.createSeedSession({ boot: false });
+  recoverable.evaluateQuietly("(define m3.saved 41)");
+  assert.throws(() => recoverable.evaluate("m3.missing"), (error) => {
+    assert.ok(error instanceof seedHarness.SeedLanguageError);
+    assert.equal(error.recoverable, true);
+    assert.equal(error.sessionDiscarded, false);
+    return true;
+  });
+  assert.equal(recoverable.evaluate("(+ m3.saved 1)"), "42");
+
+  const exhausted = await seedHarness.createSeedSession({ boot: false });
+  assert.throws(() => exhausted.evaluate("(heap.reserve 1073741824)"), (error) => {
+    assert.ok(error instanceof seedHarness.SeedLanguageError);
+    assert.equal(error.category, "resource-exhausted");
     assert.equal(error.recoverable, false);
     assert.equal(error.sessionDiscarded, true);
-    assert.ok(error.cause instanceof WebAssembly.RuntimeError);
+    return true;
+  });
+  assert.throws(() => exhausted.evaluate("42"), (error) => {
+    assert.ok(error instanceof seedHarness.SeedSessionDiscardedError);
     return true;
   });
 });

@@ -152,7 +152,7 @@
         "source": "missing-name",
         "probes": [],
         "effectProbes": [],
-        "expected": {"value": null, "printedOutput": "unbound: missing-name", "effects": [{"channel": "diagnostic", "value": "unbound: missing-name"}], "error": {"category": "unbound-name", "diagnostic": "unbound: missing-name", "recoverable": false}, "probes": []}
+        "expected": {"value": null, "printedOutput": "unbound: missing-name", "effects": [{"channel": "diagnostic", "value": "unbound: missing-name"}], "error": {"category": "unbound-name", "diagnostic": "unbound: missing-name", "recoverable": true}, "probes": []}
       }]
     },
     {

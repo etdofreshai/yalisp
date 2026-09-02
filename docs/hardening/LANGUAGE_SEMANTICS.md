@@ -197,12 +197,11 @@ argument has already run left-to-right. A failing `set!` or `define` value does
 not commit its binding change. `bytes.fill`, `bytes.copy`, and
 `bytes.fill-stride` validate their complete destination/source ranges before
 the first write; bounds failure leaves the destination byte-for-byte unchanged.
-These post-failure facts are inspected only by the conformance harness; normal
-hosts discard the trapped instance.
+These post-failure facts were first inspected by the low-level conformance
+harness and now define which typed failures may retain a production session.
 
-Current seed failures write a diagnostic and trap. A trapped instance is not a
-recoverable language session and callers should discard it. The M3 seed-owned
-category table is:
+Current seed failures write a diagnostic and trap. The M3 seed-owned category
+table is:
 
 | Code | Category |
 | ---: | --- |
@@ -219,10 +218,13 @@ category table is:
 | 10 | host contract |
 
 Metadata resets at every host entry. Node and browser hosts expose classified
-failures with category code/name, diagnostic, native cause, `recoverable:
-false`, and `sessionDiscarded: true` as a typed `SeedLanguageError`. An
-unclassified Wasm fault retains native `WebAssembly.RuntimeError` identity and
-category zero. `/` is a signed left fold that truncates toward zero; `mod` uses
+failures with category code/name, diagnostic, native cause, `recoverable`, and
+`sessionDiscarded` as a typed `SeedLanguageError`. Codes 1–7 and 9 are
+recoverable because their transactional boundaries are evidenced; the same
+instance and its definitions remain available. Codes 8 and 10 invalidate the
+session, as does an unclassified native `WebAssembly.RuntimeError`; subsequent
+wrapper calls fail with `SeedSessionDiscardedError`. `/` is a signed left fold
+that truncates toward zero; `mod` uses
 the matching signed remainder. A zero divisor reports `division by zero` or
 `modulo by zero` with category 6. Division uses checked fixnum construction, so
 `-1073741824 / -1` reports `value exceeds fixnum range` rather than creating an

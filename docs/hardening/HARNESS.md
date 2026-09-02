@@ -243,7 +243,9 @@ The structured-error boundary command asserts all ten stable seed category
 codes and both sides of the M3 distinction: classified failures have typed host
 records, while an actual out-of-bounds Wasm access has category zero and remains
 a native runtime fault. It also covers metadata reset at host entries through
-independent fresh invocations.
+independent fresh invocations. Its recovery case retains a definition after a
+recoverable unbound error, then proves resource exhaustion invalidates the
+wrapper and rejects the next call.
 
 The arithmetic-error command proves both zero-divisor diagnostics and the
 minimum-fixnum divided by `-1` representation edge while retaining an ordinary

@@ -39,6 +39,14 @@ export const SEED_ERROR_CATEGORIES = Object.freeze({
   9: "mutation",
   10: "host-contract",
 });
+const RECOVERABLE_SEED_ERROR_CODES = new Set([1, 2, 3, 4, 5, 6, 7, 9]);
+
+export class SeedSessionDiscardedError extends Error {
+  constructor() {
+    super("seed session was discarded after a non-recoverable failure");
+    this.name = "SeedSessionDiscardedError";
+  }
+}
 
 export class SeedLanguageError extends Error {
   constructor(categoryCode, category, diagnostic, cause) {
@@ -47,8 +55,8 @@ export class SeedLanguageError extends Error {
     this.categoryCode = categoryCode;
     this.category = category;
     this.diagnostic = diagnostic;
-    this.recoverable = false;
-    this.sessionDiscarded = true;
+    this.recoverable = RECOVERABLE_SEED_ERROR_CODES.has(categoryCode);
+    this.sessionDiscarded = !this.recoverable;
   }
 }
 
@@ -121,6 +129,7 @@ export async function createSeedSession({ boot = true } = {}) {
   let memory;
   let outputBytes = [];
   let binaryOutput;
+  let discarded = false;
   const instantiateStarted = performance.now();
   const instance = await WebAssembly.instantiate(compiledSeedModule, {
     host: {
@@ -163,11 +172,15 @@ export async function createSeedSession({ boot = true } = {}) {
   // A classified kernel path writes its diagnostic, records a stable category,
   // and traps. Unclassified Wasm faults retain their native error identity.
   const invoke = (method, source) => {
+    if (discarded) throw new SeedSessionDiscardedError();
     outputBytes = [];
+    const length = load(source);
     try {
-      instance.exports[method](inputPointer, load(source));
+      instance.exports[method](inputPointer, length);
     } catch (error) {
-      throw classifySeedTrap(error, instance.exports.error_kind(), text());
+      const classified = classifySeedTrap(error, instance.exports.error_kind(), text());
+      if (!(classified instanceof SeedLanguageError) || classified.sessionDiscarded) discarded = true;
+      throw classified;
     }
     return text();
   };
@@ -196,12 +209,19 @@ export async function createSeedSession({ boot = true } = {}) {
     // The same minimal ingestion contract the browser binding uses: a length
     // of bytes in, a handle out, and no interpretation of the contents.
     ingestBytes(bytes) {
+      if (discarded) throw new SeedSessionDiscardedError();
       outputBytes = [];
-      const pointer = instance.exports.asset_begin(bytes.length);
-      // asset_begin may have grown the memory, so the destination view is
-      // taken after the call rather than before it.
-      new Uint8Array(memory.buffer).set(bytes, pointer);
-      return instance.exports.asset_commit();
+      try {
+        const pointer = instance.exports.asset_begin(bytes.length);
+        // asset_begin may have grown the memory, so the destination view is
+        // taken after the call rather than before it.
+        new Uint8Array(memory.buffer).set(bytes, pointer);
+        return instance.exports.asset_commit();
+      } catch (error) {
+        const classified = classifySeedTrap(error, instance.exports.error_kind(), text());
+        if (!(classified instanceof SeedLanguageError) || classified.sessionDiscarded) discarded = true;
+        throw classified;
+      }
     }
   };
 }
