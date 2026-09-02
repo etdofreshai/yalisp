@@ -60,8 +60,10 @@ generated code have authored per-case caps.
   (implemented);
 - seeded generated acyclic data for `read(print(v))` (implemented as
   `yalisp-acyclic-data-v1`, seed `0x59414c49`, 256 cases, depth 4);
-- seeded source forms for parse/print/parse canonical idempotence;
-- persisted seed, generator version, case count, and minimal shrunk failure.
+- seeded source forms for parse/print/parse canonical idempotence (implemented
+  as `yalisp-source-forms-v1`, seed `0x53524346`, 512 cases, depth 5);
+- persisted seed, generator version, case count, category counts, shrink policy,
+  and minimal failure (`null` for the green corpus).
 
 ### Macro/IR/compiler
 
@@ -221,17 +223,18 @@ node --test --test-concurrency=1 apps/web/tests/reader-printer-property.test.mjs
 node --test --test-concurrency=1 apps/web/tests/macro-expansion-determinism.test.mjs
 node --test --test-concurrency=1 apps/web/tests/resource-cap-properties.test.mjs
 node --test --test-concurrency=1 apps/web/tests/quasiquote-depth.test.mjs
+node --test --test-concurrency=1 apps/web/tests/source-form-idempotence.test.mjs
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```
 
 The focused reader/property command is deterministic and prints its generator
 configuration into TAP diagnostics. A failing case reports the stable case
-index and source/printed/reparsed triple. General generated-value shrinking and
-broader source-form generation are still M2 requirements. The quasiquote command
-fixes nested depth, splice context/value shape, and arity cases. Malformed
-fixtures use the independent `read_print` boundary so evaluator failures cannot
-masquerade as reader diagnostics.
+index and source/printed/reparsed triple. The source-form command prints its
+fixed generator configuration, category counts, and null minimal failure. The
+quasiquote command fixes nested depth, splice context/value shape, and arity.
+Malformed fixtures use the independent `read_print` boundary so evaluator
+failures cannot masquerade as reader diagnostics.
 
 The resource-cap property command prints its accounting versions and persisted
 minimal witnesses. `binary-min-depth-v1` refuses to classify an incidental host

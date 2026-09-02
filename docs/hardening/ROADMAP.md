@@ -60,7 +60,7 @@ slots were explicit `not-applicable`. A deliberate `442` -> `443` bootstrap
 perturbation localized to case 12, event 0, `value`, byte 3. See
 `baselines/2026-09-01-m1-golden.md`.
 
-## M2 — reader/printer, expansion, and malformed-input properties (active)
+## M2 — reader/printer, expansion, and malformed-input properties (complete)
 
 Goal: make code-as-data boundaries deterministic and resource-bounded.
 
@@ -88,8 +88,7 @@ Independent named outer-macro inspection is also implemented. Eight authored
 boot expansions have pinned canonical hash `34214d55...` across four fresh
 sessions and 16 rounds in one long-lived session. A two-macro expansion chain
 produces a mutation form 16 times at hash `45787172...` while its counter remains
-zero, proving the inspection path does not evaluate produced user code. This is
-still partial M2 evidence: broader generated source-form idempotence remains.
+zero, proving the inspection path does not evaluate produced user code.
 
 The fixed cap slice is now explicit and independently minimized. Both hosts
 accept exactly 130,048 UTF-8 source bytes and reject the next byte. Combined
@@ -97,8 +96,8 @@ form/list-spine depth 511 passes while nested depth 512 is the binary-shrunk
 minimal `depth cap` witness. Exactly 32,768 empty forms consume the 65,536-unit
 reader work budget; form 32,769 yields `work cap`. A self-reproducing named
 macro stops at 1,024 applications with `macro expansion cap` instead of spending
-the heap. Remaining M2 work is broader generated source-form idempotence; the
-generator and shrink evidence now have persisted versions and boundaries.
+the heap. The generator and shrink evidence have persisted versions and
+boundaries.
 
 The malformed reader boundary now independently rejects unmatched/trailing
 closing parentheses; leading, missing, unterminated, and overfull dotted tails;
@@ -110,10 +109,15 @@ The quasiquote boundary now tracks nesting depth and evaluates unquote only at
 the matching level. Four deterministic groups cover nested unquote, nested and
 outer splicing, matching-depth double unquote, proper and empty splice order,
 direct-splice rejection, proper-list enforcement, and exact one-operand arity.
-The combined focused hardening set is 42/42. Remaining M2 work is broader
-generated source-form parse/print/parse idempotence.
+The generated source-form property `yalisp-source-forms-v1` adds 512 cases at
+maximum depth 5 with seed `0x53524346`. It covers atoms, strings, proper and
+dotted lists, quote/quasiquote/unquote/splice prefixes, comments, and varied
+whitespace. Canonical parse/print/parse is idempotent for every case; all required
+categories have nonzero coverage and the persisted minimal failure is `null`.
+The combined focused hardening set is 43/43. This satisfies every M2 exit
+criterion; see `baselines/2026-09-01-m2-source-forms.md`.
 
-## M3 — structured errors and transactional failure boundaries
+## M3 — structured errors and transactional failure boundaries (active)
 
 Goal: replace incidental traps with a minimal inspectable language error record
 while preserving bootstrap simplicity.
