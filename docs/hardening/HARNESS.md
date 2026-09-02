@@ -56,7 +56,8 @@ generated code have authored per-case caps.
 ### Reader/printer
 
 - fixed edge corpus for comments, quotes, dotted lists, escapes, Unicode,
-  numeric bounds, symbols, and malformed string/list input (implemented);
+  numeric bounds, symbols, and 12 malformed prefix/closing/string/dotted forms
+  (implemented);
 - seeded generated acyclic data for `read(print(v))` (implemented as
   `yalisp-acyclic-data-v1`, seed `0x59414c49`, 256 cases, depth 4);
 - seeded source forms for parse/print/parse canonical idempotence;
@@ -226,7 +227,9 @@ node scripts/hardening/artifact-inventory.mjs
 The focused reader/property command is deterministic and prints its generator
 configuration into TAP diagnostics. A failing case reports the stable case
 index and source/printed/reparsed triple. General generated-value shrinking and
-the broader malformed-syntax corpus are still M2 requirements.
+nested quasiquote/splice source generation are still M2 requirements. Malformed
+fixtures use the independent `read_print` boundary so evaluator failures cannot
+masquerade as reader diagnostics.
 
 The resource-cap property command prints its accounting versions and persisted
 minimal witnesses. `binary-min-depth-v1` refuses to classify an incidental host

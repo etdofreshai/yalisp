@@ -224,6 +224,7 @@
   (data (i32.const 962) "heap.release")             ;; 962 len 12
   (data (i32.const 974) "bytes.fill-stride")        ;; 974 len 17
   (data (i32.const 991) "heap mark out of range")   ;; 991 len 22
+  (data (i32.const 1013) "read error")               ;; 1013 len 10
 
   ;; Fail before a write crosses the current declared memory boundary. Use the
   ;; host import directly because $write may itself be buffering into the full
@@ -714,6 +715,11 @@
   (func $reader_leave
     (global.set $read_depth (i32.sub (global.get $read_depth) (i32.const 1))))
 
+  (func $require_read_value (param $value i32) (result i32)
+    (if (i32.eq (local.get $value) (global.get $eof))
+      (then (call $err_static (i32.const 1013) (i32.const 10)) (unreachable)))
+    (local.get $value))
+
   (func $is_delim (param $c i32) (result i32)
     (i32.or (i32.le_u (local.get $c) (i32.const 32))
      (i32.or (i32.eq (local.get $c) (i32.const 40))   ;; (
@@ -862,14 +868,14 @@
     (i32.store offset=8 (local.get $s) (local.get $n))
     (local.get $s))
 
-  (func $read_list (result i32)
+  (func $read_list (param $can_dot i32) (result i32)
     (local $value i32)
     (call $reader_enter)
-    (local.set $value (call $read_list_inner))
+    (local.set $value (call $read_list_inner (local.get $can_dot)))
     (call $reader_leave)
     (local.get $value))
 
-  (func $read_list_inner (result i32)
+  (func $read_list_inner (param $can_dot i32) (result i32)
     (local $car i32) (local $cdr i32)
     (call $skip_ws)
     (if (i32.ge_u (global.get $rp) (global.get $rend))
@@ -882,15 +888,18 @@
       (then (if (i32.or (i32.ge_u (i32.add (global.get $rp) (i32.const 1)) (global.get $rend))
                         (call $is_delim (i32.load8_u (i32.add (global.get $rp) (i32.const 1)))))
               (then
+                (if (i32.eqz (local.get $can_dot))
+                  (then (call $err_static (i32.const 1013) (i32.const 10)) (unreachable)))
                 (global.set $rp (i32.add (global.get $rp) (i32.const 1)))
-                (local.set $cdr (call $read1))
+                (local.set $cdr (call $require_read_value (call $read1)))
                 (call $skip_ws)
-                (if (i32.lt_u (global.get $rp) (global.get $rend))
-                  (then (if (i32.eq (i32.load8_u (global.get $rp)) (i32.const 41))
-                          (then (global.set $rp (i32.add (global.get $rp) (i32.const 1)))))))
+                (if (i32.or (i32.ge_u (global.get $rp) (global.get $rend))
+                            (i32.ne (i32.load8_u (global.get $rp)) (i32.const 41)))
+                  (then (call $err_static (i32.const 1013) (i32.const 10)) (unreachable)))
+                (global.set $rp (i32.add (global.get $rp) (i32.const 1)))
                 (return (local.get $cdr))))))
     (local.set $car (call $read1))
-    (local.set $cdr (call $read_list))
+    (local.set $cdr (call $read_list (i32.const 1)))
     (call $cons (local.get $car) (local.get $cdr)))
 
   (func $read1 (result i32)
@@ -913,18 +922,17 @@
     (local.set $c (i32.load8_u (global.get $rp)))
     (if (i32.eq (local.get $c) (i32.const 40))   ;; '('
       (then (global.set $rp (i32.add (global.get $rp) (i32.const 1)))
-            (return (call $read_list))))
-    (if (i32.eq (local.get $c) (i32.const 41))   ;; ')' unexpected -> stop
-      (then (global.set $rp (i32.add (global.get $rp) (i32.const 1)))
-            (return (global.get $eof))))
+            (return (call $read_list (i32.const 0)))))
+    (if (i32.eq (local.get $c) (i32.const 41))   ;; ')' outside its owning list
+      (then (call $err_static (i32.const 1013) (i32.const 10)) (unreachable)))
     (if (i32.eq (local.get $c) (i32.const 39))   ;; '\''
       (then (global.set $rp (i32.add (global.get $rp) (i32.const 1)))
-            (local.set $x (call $read1))
+            (local.set $x (call $require_read_value (call $read1)))
             (return (call $cons (call $quote_sym)
                             (call $cons (local.get $x) (global.get $nil))))))
     (if (i32.eq (local.get $c) (i32.const 96))   ;; '`' quasiquote
       (then (global.set $rp (i32.add (global.get $rp) (i32.const 1)))
-            (local.set $x (call $read1))
+            (local.set $x (call $require_read_value (call $read1)))
             (return (call $cons (global.get $sym_qq)
                             (call $cons (local.get $x) (global.get $nil))))))
     (if (i32.eq (local.get $c) (i32.const 44))   ;; ',' unquote / ',@' splice
@@ -935,11 +943,11 @@
                              (i32.eq (i32.load8_u (global.get $rp)) (i32.const 64))) ;; '@'
                   (then
                     (global.set $rp (i32.add (global.get $rp) (i32.const 1)))
-                    (local.set $x (call $read1))
+                    (local.set $x (call $require_read_value (call $read1)))
                     (call $cons (global.get $sym_uqs)
                           (call $cons (local.get $x) (global.get $nil))))
                   (else
-                    (local.set $x (call $read1))
+                    (local.set $x (call $require_read_value (call $read1)))
                     (call $cons (global.get $sym_uq)
                           (call $cons (local.get $x) (global.get $nil))))))))
     (if (i32.eq (local.get $c) (i32.const 34))   ;; '"'

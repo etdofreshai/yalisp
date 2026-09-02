@@ -29,6 +29,14 @@ separately capped at 1,024 macro applications. Crossing a boundary writes
 `depth cap`, `work cap`, or `macro expansion cap` and traps; the host discards
 that failed instance.
 
+The reader rejects unmatched closing parentheses, a dotted tail before any list
+element, a missing dotted value or closing parenthesis, extra forms after a
+dotted value, and quote/quasiquote/unquote prefixes without an operand. These
+fail as `read error` before evaluation. Unterminated strings and ordinary lists
+retain their more specific diagnostics. If complete forms preceded a trailing
+syntax error, their already-written `read_print` output remains an ordered prior
+effect rather than being erased.
+
 The seed implements:
 
 - tagged integers, booleans, nil, symbols, strings, mutable byte buffers,

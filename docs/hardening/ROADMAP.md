@@ -79,7 +79,7 @@ Exit criteria:
 Current evidence: generator `yalisp-acyclic-data-v1`, seed `0x59414c49`, 256
 cases, and maximum generated depth 4 now pass canonical `read(print(v))` checks.
 Nine fixed string cases and 14 grammar cases cover control escapes, delimiters,
-Unicode, comments, proper/dotted lists, numeric bounds, and symbols; two
+Unicode, comments, proper/dotted lists, numeric bounds, and symbols; 12
 malformed cases have stable diagnostics. The deterministic first failures were
 carriage return and generated case 1 containing byte `0x04`; the seed reader now
 decodes the canonical printer's complete control-escape profile.
@@ -101,6 +101,13 @@ macro stops at 1,024 applications with `macro expansion cap` instead of spending
 the heap. Remaining M2 work is broader generated source/malformed syntax and
 nested quasiquote/splice semantics; the generator and shrink evidence now have
 persisted versions and boundaries.
+
+The malformed reader boundary now independently rejects unmatched/trailing
+closing parentheses; leading, missing, unterminated, and overfull dotted tails;
+and quote/quasiquote/unquote prefixes without an operand. A valid `(1 . 2)` is
+retained. `(1 2))` proves ordered prior output is preserved before the later
+`read error`. Remaining M2 work is nested quasiquote/unquote-splicing semantics
+and broader generated source-form idempotence.
 
 ## M3 — structured errors and transactional failure boundaries
 

@@ -86,6 +86,13 @@ host input cap is 130,048 UTF-8 bytes. A submission may enter at most 1,024
 combined form/list-spine reader frames and 65,536 reader work entries; the next
 entry fails as `depth cap` or `work cap` before an incidental host-stack trap.
 
+The independent reader boundary now rejects unmatched closing parentheses;
+leading, missing, unterminated, and overfull dotted tails; and operand-less
+quote, quasiquote, unquote, or unquote-splicing prefixes. These use stable
+`read error`; unterminated strings/lists retain their specific diagnostics.
+Output from complete earlier forms precedes a later reader diagnostic in the
+ordered text-effect stream.
+
 ## 4. Evaluation order and calls
 
 YaLisp is eagerly evaluated except for special forms and macros.

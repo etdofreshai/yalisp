@@ -115,15 +115,28 @@ test("seeded generated acyclic data satisfies canonical read(print(value)) equal
   }
 });
 
-test("malformed string/list input fails with stable reader diagnostics", async () => {
+test("malformed prefix, closing, string, and dotted forms fail at the reader boundary", async () => {
   for (const [sourceText, expected] of [
     ['"unterminated', "unterminated string"],
     ["(+ 1 2", "unterminated list"],
+    [")", "read error"],
+    ["(1 2))", "(1 2)\nread error"],
+    ["(. 1)", "read error"],
+    ["(1 .)", "read error"],
+    ["(1 . 2", "read error"],
+    ["(1 . 2 3)", "read error"],
+    ["'", "read error"],
+    ["`", "read error"],
+    [",", "read error"],
+    [",@", "read error"],
   ]) {
     const session = await createSeedSession({ boot: false });
-    assert.throws(() => session.evaluateCanonical(sourceText), (error) => {
+    assert.throws(() => session.read(sourceText), (error) => {
       assert.equal(error.diagnostic, expected);
       return true;
     });
   }
+
+  const valid = await createSeedSession({ boot: false });
+  assert.equal(valid.read("(1 . 2)"), "(1 . 2)");
 });
