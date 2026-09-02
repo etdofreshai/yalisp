@@ -60,12 +60,12 @@ Measured evidence at the audited working tree:
 
 | Artifact | Bytes | SHA-256 |
 | --- | ---: | --- |
-| `bootstrap.wat` | 108,081 | `82db6ab1cbe20d76f694736b99ba36d87a1b7cd8ae1d0b031412f719f4002961` |
-| generated `seed.wasm` | 11,078 | `6fb7036ebd07d1645a794e9a219e3bdb72d25b60c390abc62ccbf45f2c617731` |
+| `bootstrap.wat` | 113,023 | `107811503fc4ada27a20589b7db11e24ea64e7be502075260cac47236b3e3494` |
+| generated `seed.wasm` | 11,673 | `54047410be958b7cd140f8ac60fcf1dd39aee06ec7b70cc2568356e9ca7dc61e` |
 
-The binary contains 100 defined functions plus two function imports and ten
+The binary contains 103 defined functions plus two function imports and ten
 functional exports (memory is also exported). WABT's unfolded disassembly has
-4,548 static instruction lines under the harness counting rule: numeric,
+4,898 static instruction lines under the harness counting rule: numeric,
 local/global, memory, call, branch, control, return/drop, and trap operators,
 including structural `else`/`end`. This is a reproducible static code-size
 metric, not a dynamic instruction count.

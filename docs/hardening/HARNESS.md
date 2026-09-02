@@ -227,6 +227,7 @@ node --test --test-concurrency=1 apps/web/tests/source-form-idempotence.test.mjs
 node --test --test-concurrency=1 apps/web/tests/structured-error-boundary.test.mjs
 node --test --test-concurrency=1 apps/web/tests/arithmetic-errors.test.mjs
 node --test --test-concurrency=1 apps/web/tests/error-transactionality.test.mjs
+node --test --test-concurrency=1 apps/web/tests/primitive-arity.test.mjs
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```
@@ -255,6 +256,11 @@ The transactional-error command intentionally reuses trapped instances only as
 an inspection instrument. It records post-failure bindings and destination
 bytes for operator/argument order, `set!`/`define`, and the three atomic block
 operations. This does not authorize production session reuse.
+
+The primitive-arity command exhaustively checks missing and extra operands for
+every fixed primitive and alias, both sides of ranged string slicing, all seven
+variadic identities, and same-session recovery. Compiler/golden validation is a
+required companion because compiler.lisp uses variadic string concatenation.
 
 The resource-cap property command prints its accounting versions and persisted
 minimal witnesses. `binary-min-depth-v1` refuses to classify an incidental host

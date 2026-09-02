@@ -112,6 +112,13 @@ Argument arity and malformed special-form shape must eventually produce stable
 language errors. Incidental WebAssembly loads or host exceptions are not the
 long-term error contract.
 
+Primitive dispatch now checks arity before executing the primitive. Fixed
+primitives reject both missing and extra values; `string.slice` and
+`string.substring` accept two or three. `+`, `-`, `*`, `/`, `list`,
+`string.append`, and `string.concat` are variadic. An arity failure has category
+3 and diagnostic `<called-name> expected`, retains the session, and executes no
+primitive body. Special-form and closure/macro arity remain active M3 work.
+
 ## 5. Environments, scope, and mutation
 
 Scope is lexical. A closure captures the environment in which its `lambda` is

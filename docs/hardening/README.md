@@ -31,6 +31,8 @@ are recorded in `baselines/2026-09-01-m3-arithmetic-errors.md`, and post-failure
 state evidence in `baselines/2026-09-01-m3-error-transactionality.md`.
 Host recovery policy is recorded in
 `baselines/2026-09-01-m3-host-recovery.md`.
+Primitive arity is recorded in
+`baselines/2026-09-02-m3-primitive-arity.md`.
 
 ## Operating invariant
 

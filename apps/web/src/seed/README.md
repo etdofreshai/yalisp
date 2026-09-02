@@ -201,5 +201,12 @@ the checked fixnum constructor so the minimum fixnum divided by `-1` cannot
 escape the tagged representation. These compact diagnostics occupy the
 previously unused `[32,64)` bytes below the constant-string region.
 
+Primitive arity is checked before dispatch. Every fixed primitive and alias
+rejects missing or extra operands with category 3 and `<called-name> expected`;
+`string.slice`/`string.substring` accept two or three operands. The intentional
+variadic surface is `+`, `-`, `*`, `/`, `list`, `string.append`, and
+`string.concat`. The called symbol is retained in the diagnostic, including
+aliases; a computed primitive reports `<primitive> expected`.
+
 Run `npm run build-seed --workspace @yalisp/web` to assemble the WAT into the
 ignored generated file `public/yalisp/seed.wasm`.

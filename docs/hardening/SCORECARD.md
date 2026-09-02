@@ -1,6 +1,6 @@
 # YaLisp living hardening scorecard
 
-Updated: 2026-09-01 M2 complete; active M3 host-recovery slice green. Scale: 0
+Updated: 2026-09-02 M2 complete; active M3 primitive-arity slice green. Scale: 0
 absent, 1 prototype, 2 bounded and partly evidenced, 3 broadly conformant, 4 production-hardened, 5 independently
 reproduced across supported targets. Scores are independent; speed cannot raise
 a correctness score and a small binary cannot raise bootstrap purity if work is
@@ -13,7 +13,7 @@ hidden in the host.
 | Bootstrap purity | 2 | Checked-in WAT seed and YaLisp bootstrap with provenance and reproducible binary | Separate core IR/evaluator policy, then reduce audited seed with ledger |
 | Performance | 1 | Cold precompiled setup diagnostic and single-shot feasibility measurements exist | Quiet-host warmups, raw samples, p50/p95/p99, variance/confidence gates |
 | Memory / GC | 0 | Bump allocation and explicit arenas; exact 240 MiB replay plus live circuit/render gates and a 20,808-byte two-plane cache ownership gate are measured, but no collector exists | Automatic managed memory, root-map proofs, pause/throughput/leak/soak evidence |
-| Code size / instructions | 2 | Current seed is 11,078 bytes with 4,548 static instruction lines; layer bytes/hashes and one 43-byte AOT artifact are recorded | Automated per-stage size/static count and representative dynamic counts |
+| Code size / instructions | 2 | Current seed is 11,673 bytes with 4,898 static instruction lines; layer bytes/hashes and one 43-byte AOT artifact are recorded | Automated per-stage size/static count and representative dynamic counts |
 | Portability | 1 | WebAssembly/Node/browser path on x86_64 Linux; no matrix | Two engines plus declared OS/architecture targets and deterministic builds |
 | Developer ergonomics | 1 | Persistent REPL and macros; ten typed error categories, with session recovery for proven transactional codes and enforced discard for unsafe failures; no modules/debug tier switching | Complete arity/payload errors, modules, live source/IR inspection, safe hot switching |
 | Documentation | 2 | Extensive web docs and seed boundary notes; initial hierarchical hardening specs | Normative reference linked to conformance cases and cost tables per layer |
@@ -58,6 +58,7 @@ category inference from the golden runner. Zero divisors and division overflow
 are deliberate arithmetic errors. Post-trap inspection proves operator/argument
 effect order, binding commit timing, and fail-before-write behavior for fill,
 copy, and strided fill. Proven language failures retain the session; resource,
-host-contract, and raw faults enforce discard. The earliest gap is complete
-primitive/special-form arity and payload data, then explicit compiler error
-intersection evidence.
+host-contract, and raw faults enforce discard. Every primitive/alias now has an
+exhaustive fixed, ranged, or variadic arity contract. The earliest gap is
+special-form and closure/macro arity plus structured payload data, then explicit
+compiler error-intersection evidence.

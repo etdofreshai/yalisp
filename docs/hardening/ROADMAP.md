@@ -162,6 +162,15 @@ The browser REPL preserves definitions only after a recoverable typed error.
 The reviewed unbound golden observation now records `recoverable: true` at
 corpus hash `8aa06e80...`. This satisfies the host-distinction exit criterion.
 
+Every primitive and alias now has an explicit fixed, ranged, or variadic arity
+policy checked before dispatch. Exhaustive fixtures reject both sides of every
+fixed arity, cover the two/three-argument string slice range, preserve the seven
+variadic primitives, and prove recovery afterward. The first combined run
+caught an incorrect fixed-arity assumption for variadic `string.append`; the
+policy was corrected rather than changing the Lisp-written compiler. The final
+focused set is 56/56 with no golden divergence. Special-form and closure/macro
+arity plus structured payload fields remain open.
+
 ## M4 — explicit core IR and semantic reference path
 
 Goal: establish one inspectable representation shared by expansion,
