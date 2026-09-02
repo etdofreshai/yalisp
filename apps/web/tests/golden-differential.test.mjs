@@ -33,6 +33,9 @@ test("all applicable stages match reviewed values, output, effects, errors, prob
   assert.equal(report.counts.events, 17);
   assert.equal(report.earliestDivergence, null);
   assert.equal(report.crossStageDivergence, null);
+  assert.equal(report.compilerErrorIntersection.status, "pass");
+  assert.equal(report.compilerErrorIntersection.observedJointErrorCases, 0);
+  assert.equal(report.compilerErrorIntersection.earliestUnexpectedIntersection, null);
 
   const compiler = report.cases.find((candidate) => candidate.id === "compiler-square");
   assert.deepEqual(compiler.stages.map((stage) => stage.status), ["observed", "observed", "observed"]);

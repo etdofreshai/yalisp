@@ -193,6 +193,7 @@
   (data (i32.const 583) "bit.shl")            ;; 583 len 7
   (data (i32.const 590) "bit.shr")            ;; 590 len 7
   (data (i32.const 597) "fx.mul-shift")       ;; 597 len 12
+  (data (i32.const 609) "bit.mul-shr")        ;; 609 len 11
   (data (i32.const 620) "byte buffer expected") ;; 620 len 20
   (data (i32.const 640) "byte index out of range") ;; 640 len 23
   (data (i32.const 664) "<bytes>")           ;; 664 len 7
@@ -351,6 +352,24 @@
                 (local.get $n))
       (then (call $err_static (i32.const 936) (i32.const 26)) (unreachable)))
     (call $mkfix (local.get $n)))
+
+  ;; Arithmetic folds check every intermediate in i64 space. Checking only the
+  ;; final wrapped i32 would let a later operand disguise an earlier overflow.
+  (func $fix_i64_checked (param $n i64) (result i32)
+    (if (i32.or
+          (i64.lt_s (local.get $n) (i64.const -1073741824))
+          (i64.gt_s (local.get $n) (i64.const 1073741823)))
+      (then (call $err_static (i32.const 936) (i32.const 26)) (unreachable)))
+    (i32.wrap_i64 (local.get $n)))
+  (func $fix_add_checked (param $a i32) (param $b i32) (result i32)
+    (call $fix_i64_checked
+      (i64.add (i64.extend_i32_s (local.get $a)) (i64.extend_i32_s (local.get $b)))))
+  (func $fix_sub_checked (param $a i32) (param $b i32) (result i32)
+    (call $fix_i64_checked
+      (i64.sub (i64.extend_i32_s (local.get $a)) (i64.extend_i32_s (local.get $b)))))
+  (func $fix_mul_checked (param $a i32) (param $b i32) (result i32)
+    (call $fix_i64_checked
+      (i64.mul (i64.extend_i32_s (local.get $a)) (i64.extend_i32_s (local.get $b)))))
 
   ;; The unsigned reading of the same word. A word whose top bits are set is a
   ;; large positive number here, not a small negative one, so it is rejected
@@ -875,14 +894,24 @@
 
   (func $parse_int (param $p i32) (param $len i32) (result i32)
     (local $i i32) (local $neg i32) (local $acc i32) (local $c i32)
+    (local $digit i32) (local $limit i32)
     (local.set $i (i32.const 0)) (local.set $neg (i32.const 0)) (local.set $acc (i32.const 0))
     (local.set $c (i32.load8_u (local.get $p)))
     (if (i32.eq (local.get $c) (i32.const 45)) (then (local.set $neg (i32.const 1)) (local.set $i (i32.const 1))))
     (if (i32.eq (local.get $c) (i32.const 43)) (then (local.set $i (i32.const 1))))
+    (local.set $limit
+      (if (result i32) (local.get $neg)
+        (then (i32.const 1073741824))
+        (else (i32.const 1073741823))))
     (block $d (loop $l
       (br_if $d (i32.ge_u (local.get $i) (local.get $len)))
-      (local.set $acc (i32.add (i32.mul (local.get $acc) (i32.const 10))
-                               (i32.sub (i32.load8_u (i32.add (local.get $p) (local.get $i))) (i32.const 48))))
+      (local.set $digit
+        (i32.sub (i32.load8_u (i32.add (local.get $p) (local.get $i))) (i32.const 48)))
+      (if (i32.gt_u
+            (local.get $acc)
+            (i32.div_u (i32.sub (local.get $limit) (local.get $digit)) (i32.const 10)))
+        (then (call $err_static (i32.const 936) (i32.const 26)) (unreachable)))
+      (local.set $acc (i32.add (i32.mul (local.get $acc) (i32.const 10)) (local.get $digit)))
       (local.set $i (i32.add (local.get $i) (i32.const 1)))
       (br $l)))
     (if (local.get $neg) (then (local.set $acc (i32.sub (i32.const 0) (local.get $acc)))))
@@ -1413,6 +1442,7 @@
     (if (i32.eq (local.get $id) (i32.const 62)) (then (return (i32.const 5))))
     (if (i32.eq (local.get $id) (i32.const 63)) (then (return (i32.const 1))))
     (if (i32.eq (local.get $id) (i32.const 64)) (then (return (i32.const 5))))
+    (if (i32.eq (local.get $id) (i32.const 65)) (then (return (i32.const 3))))
     (i32.const -1))
 
   (func $require_primitive_arity (param $args i32) (param $minimum i32) (param $maximum i32) (param $name i32)
@@ -1457,7 +1487,8 @@
         (local.set $acc (i32.const 0)) (local.set $cur (local.get $args))
         (block $d (loop $l
           (br_if $d (i32.eq (local.get $cur) (global.get $nil)))
-          (local.set $acc (i32.add (local.get $acc) (call $fixval (i32.load offset=4 (local.get $cur)))))
+          (local.set $acc (call $fix_add_checked
+            (local.get $acc) (call $fixval (i32.load offset=4 (local.get $cur)))))
           (local.set $cur (i32.load offset=8 (local.get $cur)))
           (br $l)))
         (return (call $mkfix (local.get $acc)))))
@@ -1468,10 +1499,11 @@
         (local.set $acc (call $fixval (i32.load offset=4 (local.get $args))))
         (local.set $cur (i32.load offset=8 (local.get $args)))
         (if (i32.eq (local.get $cur) (global.get $nil))
-          (then (return (call $mkfix (i32.sub (i32.const 0) (local.get $acc))))))
+          (then (return (call $mkfix (call $fix_sub_checked (i32.const 0) (local.get $acc))))))
         (block $d (loop $l
           (br_if $d (i32.eq (local.get $cur) (global.get $nil)))
-          (local.set $acc (i32.sub (local.get $acc) (call $fixval (i32.load offset=4 (local.get $cur)))))
+          (local.set $acc (call $fix_sub_checked
+            (local.get $acc) (call $fixval (i32.load offset=4 (local.get $cur)))))
           (local.set $cur (i32.load offset=8 (local.get $cur)))
           (br $l)))
         (return (call $mkfix (local.get $acc)))))
@@ -1481,7 +1513,8 @@
         (local.set $acc (i32.const 1)) (local.set $cur (local.get $args))
         (block $d (loop $l
           (br_if $d (i32.eq (local.get $cur) (global.get $nil)))
-          (local.set $acc (i32.mul (local.get $acc) (call $fixval (i32.load offset=4 (local.get $cur)))))
+          (local.set $acc (call $fix_mul_checked
+            (local.get $acc) (call $fixval (i32.load offset=4 (local.get $cur)))))
           (local.set $cur (i32.load offset=8 (local.get $cur)))
           (br $l)))
         (return (call $mkfix (local.get $acc)))))
@@ -1652,9 +1685,20 @@
         (local.set $acc (call $fixval (call $car (local.get $args))))
         (local.set $a (call $fixval (call $car (call $cdr (local.get $args)))))
         (local.set $b (call $fixval (call $car (call $cdr (call $cdr (local.get $args))))))
-        (return (call $mkfix (i32.wrap_i64 (i64.shr_s
+        (return (call $mkfix (call $fix_i64_checked (i64.shr_s
           (i64.mul (i64.extend_i32_s (local.get $acc)) (i64.extend_i32_s (local.get $a)))
           (i64.extend_i32_s (local.get $b))))))))
+    ;; bit.mul-shr deliberately models a wrapped 32-bit multiply followed by
+    ;; an arithmetic right shift. It is the explicit escape hatch for source
+    ;; algorithms whose machine-word overflow is part of their semantics;
+    ;; ordinary * remains checked. The shifted result must still fit a fixnum.
+    (if (i32.eq (local.get $id) (i32.const 65))
+      (then
+        (local.set $acc (call $arg_num (local.get $args) (i32.const 0)))
+        (local.set $a (call $arg_num (local.get $args) (i32.const 1)))
+        (local.set $b (call $arg_num (local.get $args) (i32.const 2)))
+        (return (call $mkfix_checked
+          (i32.shr_s (i32.mul (local.get $acc) (local.get $a)) (local.get $b))))))
     ;; --- environment and capacity introspection ---
     (if (i32.eq (local.get $id) (i32.const 47))   ;; (bound? 'name) against the global environment
       (then
@@ -1897,7 +1941,8 @@
     (call $defprim (i32.const 916) (i32.const 10) (i32.const 61))  ;; bytes.fill
     (call $defprim (i32.const 926) (i32.const 10) (i32.const 62))  ;; bytes.copy
     (call $defprim (i32.const 962) (i32.const 12) (i32.const 63))  ;; heap.release
-    (call $defprim (i32.const 974) (i32.const 17) (i32.const 64))) ;; bytes.fill-stride
+    (call $defprim (i32.const 974) (i32.const 17) (i32.const 64))  ;; bytes.fill-stride
+    (call $defprim (i32.const 609) (i32.const 11) (i32.const 65))) ;; bit.mul-shr
 
   ;; --- drivers (init is separate so loads accumulate without resetting) ---
   (func (export "init")

@@ -60,7 +60,7 @@ function installSyntheticActors(value, firstX = 1, secondX = 2) {
       (wl.actor-hitpoints! 0 25) (wl.actor-hitpoints! 1 25)
       (u16! wl.actorspeed 0 512) (u16! wl.actorspeed 2 512)
       (wl.actor-temp2! 0 0) (wl.actor-temp2! 1 0)
-      (wl.actor-aux-zero! 0) (wl.actor-aux-zero! 1)))`);
+      (wl.actor-aux-zero! 0) (wl.actor-aux-zero! 1))`);
 }
 
 test("actorhash modules fit, evaluate in order, and derive every reached R1 shape transition", async () => {

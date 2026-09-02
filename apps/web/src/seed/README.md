@@ -200,9 +200,13 @@ fixed failures. An unclassified Wasm fault keeps its native runtime-error
 identity while `error_kind` and the data length remain zero. Transactionally
 proven categories 1–7 and 9 retain the session; resource exhaustion, host-
 contract failure, and raw faults invalidate it. Division and modulo by zero are
-deliberate category-6 errors (`division by zero` and `modulo by zero`), and division uses
-the checked fixnum constructor so the minimum fixnum divided by `-1` cannot
-escape the tagged representation. These compact diagnostics occupy the
+deliberate category-6 errors (`division by zero` and `modulo by zero`). Decimal
+literals check each digit; `+`, `-`, and `*` check every fold intermediate;
+unary negation, division, and `fx.mul-shift` check their result, so none can
+escape the tagged representation. `bit.mul-shr` is the deliberately named
+low-level exception: it performs wrapped WebAssembly `i32` multiplication,
+then arithmetic right shift, then rejects a shifted result outside the fixnum
+range. These compact diagnostics occupy the
 previously unused `[32,64)` bytes below the constant-string region.
 
 Primitive arity is checked before dispatch. Every fixed primitive and alias

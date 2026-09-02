@@ -191,7 +191,7 @@
       "events": [{
         "id": "reserve",
         "kind": "value",
-        "source": "(heap.reserve 1073741824)",
+        "source": "(heap.reserve 1073741823)",
         "probes": [],
         "effectProbes": [],
         "expected": {"value": null, "printedOutput": "memory limit reached", "effects": [{"channel": "diagnostic", "value": "memory limit reached"}], "error": {"category": "resource-exhausted", "diagnostic": "memory limit reached", "data": "memory limit reached", "recoverable": false}, "probes": []}

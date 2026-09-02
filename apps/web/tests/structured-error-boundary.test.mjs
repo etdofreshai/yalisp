@@ -32,7 +32,7 @@ test("recoverable language errors retain state while unsafe failures discard", a
   assert.equal(recoverable.evaluate("(+ m3.saved 1)"), "42");
 
   const exhausted = await seedHarness.createSeedSession({ boot: false });
-  assert.throws(() => exhausted.evaluate("(heap.reserve 1073741824)"), (error) => {
+  assert.throws(() => exhausted.evaluate("(heap.reserve 1073741823)"), (error) => {
     assert.ok(error instanceof seedHarness.SeedLanguageError);
     assert.equal(error.category, "resource-exhausted");
     assert.equal(error.recoverable, false);
@@ -83,7 +83,7 @@ test("intentional seed diagnostics expose stable category records", async () => 
       source: "(begin (define m3.word (bytes.alloc 4)) (u8! m3.word 3 64) (i32@ m3.word 0))",
     },
     { category: "bounds", code: 7, diagnostic: "byte index out of range", data: "byte index out of range", source: "(u8@ (bytes.alloc 1) 1)" },
-    { category: "resource-exhausted", code: 8, diagnostic: "memory limit reached", data: "memory limit reached", source: "(heap.reserve 1073741824)" },
+    { category: "resource-exhausted", code: 8, diagnostic: "memory limit reached", data: "memory limit reached", source: "(heap.reserve 1073741823)" },
   ]) {
     const session = await seedHarness.createSeedSession({ boot: false });
     assert.throws(() => session[fixture.method ?? "evaluate"](fixture.source), (error) => {

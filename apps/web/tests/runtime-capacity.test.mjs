@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createSeedSession } from "./seed-session.mjs";
+import { SeedLanguageError, createSeedSession } from "./seed-session.mjs";
+
+function expectLanguageError(action, category, diagnostic) {
+  assert.throws(action, (error) => {
+    assert.ok(error instanceof SeedLanguageError);
+    assert.equal(error.category, category);
+    assert.equal(error.diagnostic, diagnostic);
+    return true;
+  });
+}
 
 // The workload is a generic fixed-point stepping loop. It is not a raycaster,
 // a map walk, or any other game shape; it only exercises the property a long
@@ -11,19 +20,33 @@ const steppingLoop = (steps) => `(begin
     (if (= remaining 0)
         (+ x y angle distance)
         (capacity.step (- remaining 1)
-          (+ x (fx.mul-shift angle 4096 16))
-          (+ y (fx.mul-shift distance 2048 16))
+          (bit.and (+ x (fx.mul-shift angle 4096 16)) 65535)
+          (bit.and (+ y (fx.mul-shift distance 2048 16)) 65535)
           (bit.and (+ angle 10923) 65535)
-          (+ distance 1024))))
+          (bit.and (+ distance 1024) 65535))))
   (capacity.step ${steps} 65536 131072 98304 65536))`;
+
+function steppingExpected(steps) {
+  let x = 65536;
+  let y = 131072;
+  let angle = 98304;
+  let distance = 65536;
+  for (let index = 0; index < steps; index += 1) {
+    x = (x + Math.trunc((angle * 4096) / 65536)) & 65535;
+    y = (y + Math.trunc((distance * 2048) / 65536)) & 65535;
+    angle = (angle + 10923) & 65535;
+    distance = (distance + 1024) & 65535;
+  }
+  return String(x + y + angle + distance);
+}
 
 test("tail position is iterative, so recursion depth is bounded by heap and not by the host stack", async () => {
   const session = await createSeedSession();
   session.evaluate("(heap.reserve 33554432)");
   // 20480 is the regression floor this foundation exists to hold: 64 columns
   // of 320 steps, the order of magnitude a 320x200 per-tick workload needs.
-  assert.equal(session.evaluate(steppingLoop(20480)), "370663168");
-  assert.equal(session.evaluate(steppingLoop(1024)), "21943488");
+  assert.equal(session.evaluate(steppingLoop(20480)), steppingExpected(20480));
+  assert.equal(session.evaluate(steppingLoop(1024)), steppingExpected(1024));
 });
 
 // Each case gets its own session because the seed has no collector yet: what
@@ -85,7 +108,7 @@ test("memory is declared rather than taken: capacity grows only when a program r
 
   // The ceiling is a declared limit, so exceeding it is a diagnostic, not a
   // silent allocation of unbounded host memory.
-  assert.throws(() => session.evaluate("(heap.reserve 1073741824)"), /unreachable/);
+  expectLanguageError(() => session.evaluate("(heap.reserve 1073741823)"), "resource-exhausted", "memory limit reached");
 });
 
 test("bound? answers the global environment without evaluating or trapping on unbound names", async () => {
@@ -93,7 +116,7 @@ test("bound? answers the global environment without evaluating or trapping on un
   assert.equal(session.evaluate("(list (bound? 'map) (bound? 'heap.reserve) (bound? 'app.attach))"), "(true true false)");
   session.evaluateQuietly("(define app.attach (lambda () 1))");
   assert.equal(session.evaluate("(bound? 'app.attach)"), "true");
-  assert.throws(() => session.evaluate("(bound? 42)"), /unreachable/);
+  expectLanguageError(() => session.evaluate("(bound? 42)"), "type", "symbol expected");
 });
 
 test("a long-lived session's per-tick allocation is measurable, which is what bounds its lifetime", async () => {
@@ -146,14 +169,14 @@ test("a mark the allocator cannot honour is refused rather than corrupting the h
   session.evaluate("(heap.reserve 1048576)");
   const used = Number(session.evaluate("(heap.used)"));
   // Forward of the current position is not a mark this session ever handed out.
-  assert.throws(() => session.evaluate(`(heap.release ${used + 4096})`), /unreachable/);
-  assert.throws(() => session.evaluate("(heap.release -1)"), /unreachable/);
+  expectLanguageError(() => session.evaluate(`(heap.release ${used + 4096})`), "bounds", "heap mark out of range");
+  expectLanguageError(() => session.evaluate("(heap.release -1)"), "bounds", "heap mark out of range");
 
   // An ingested asset is permanent by contract, so no mark below one is legal
   // even though the bump pointer could physically be wound back there.
   const beforeAsset = Number(session.evaluate("(heap.used)"));
   session.evaluateQuietly("(asset.reserve 64)");
   session.ingestBytes(Uint8Array.from([7, 8, 9, 10]));
-  assert.throws(() => session.evaluate(`(heap.release ${beforeAsset})`), /unreachable/);
+  expectLanguageError(() => session.evaluate(`(heap.release ${beforeAsset})`), "bounds", "heap mark out of range");
   assert.equal(session.evaluate("(u8@ (asset.ref 0) 0)"), "7");
 });

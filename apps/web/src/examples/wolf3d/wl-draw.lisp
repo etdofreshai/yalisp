@@ -227,7 +227,9 @@
     (u8! wl.wallpic (wl.view@ wl.PIXX) 255)))
 
 (defn wl.pwall-intercept (intercept step)
-  (+ intercept (bit.shr (* step wl.pwallpos) 6)))
+  ;; The original C/ASM route multiplies in a 32-bit register before shifting.
+  ;; Name that wrap explicitly; ordinary YaLisp multiplication is checked.
+  (+ intercept (bit.mul-shr step wl.pwallpos 6)))
 
 (defn wl.pwall-plane (tile step)
   (+ (bit.shl tile 16)

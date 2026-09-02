@@ -56,6 +56,20 @@ async function createInspectingSession() {
       assert.ok(result.error instanceof WebAssembly.RuntimeError, source);
       return result;
     },
+    trapAssetBegin(length) {
+      output = [];
+      try {
+        instance.exports.asset_begin(length);
+        assert.fail(`asset_begin(${length}) was expected to trap`);
+      } catch (error) {
+        assert.ok(error instanceof WebAssembly.RuntimeError);
+        return {
+          value: decoder.decode(Buffer.concat(output)).trimEnd(),
+          error,
+          categoryCode: instance.exports.error_kind(),
+        };
+      }
+    },
   };
 }
 
@@ -112,4 +126,14 @@ test("block byte operations validate their complete range before writing", async
   stride.evaluateQuietly("(define m3.buf (bytes.alloc 4)) (bytes.fill m3.buf 0 4 7)");
   assert.equal(stride.trap("(bytes.fill-stride m3.buf 1 2 3 9)").categoryCode, 7);
   assert.equal(stride.evaluate("(list (u8@ m3.buf 0) (u8@ m3.buf 1) (u8@ m3.buf 2) (u8@ m3.buf 3))"), "(7 7 7 7)");
+});
+
+test("a refused host asset begin publishes no partial object or usage", async () => {
+  const session = await createInspectingSession();
+  assert.equal(session.evaluate("(asset.reserve 4096)"), "4096");
+  const failure = session.trapAssetBegin(4097);
+  assert.equal(failure.categoryCode, 8);
+  assert.equal(failure.value, "asset capacity exceeded");
+  assert.equal(session.evaluate("(asset.count)"), "0");
+  assert.equal(session.evaluate("(asset.used)"), "0");
 });

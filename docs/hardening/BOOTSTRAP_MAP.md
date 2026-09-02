@@ -60,12 +60,12 @@ Measured evidence at the audited working tree:
 
 | Artifact | Bytes | SHA-256 |
 | --- | ---: | --- |
-| `bootstrap.wat` | 116,403 | `a2192105e7edb6af1b78eb85a09deaf3c06f010876526894ecb158e2702d9af8` |
-| generated `seed.wasm` | 12,028 | `504083c9a42e3ad5dee2f2a9feba50ffd00a35a13fb3b8369ef01768db2671e7` |
+| `bootstrap.wat` | 118,851 | `abca01af5f0e981f37fa7d91311b86ca011d404d6f6760dd9fd7b23f513170a7` |
+| generated `seed.wasm` | 12,244 | `dbab8a04778ba61dd71c2892c62d8d6da1fbf1ee3fe563db560708fe5f32cda8` |
 
-The binary contains 106 defined functions plus two function imports and twelve
+The binary contains 110 defined functions plus two function imports and twelve
 functional exports (memory is also exported). WABT's unfolded disassembly has
-5,042 static instruction lines under the harness counting rule: numeric,
+5,132 static instruction lines under the harness counting rule: numeric,
 local/global, memory, call, branch, control, return/drop, and trap operators,
 including structural `else`/`end`. This is a reproducible static code-size
 metric, not a dynamic instruction count.
@@ -101,6 +101,12 @@ the parameter, and nested binary `+`, `-`, and `*`. It emits a WAT function
 payload. A host WABT call still assembles that payload. The checked-in example
 module is 43 bytes with SHA-256
 `105c061efadfcdc5742c533bc9fe0c7297b7b5411b98b624885e3cc8436068ff`.
+
+Its executable error profile has eleven reviewed cases covering every seed
+category: eight are rejected before code generation, two fail before a valid
+source form can reach the compiler, and one records the excluded signed-range
+value divergence. The supported language-error intersection is therefore
+explicitly 0/0 rather than inferred from absent compiler observations.
 
 This stage does not compile general YaLisp, share interpreter state, deoptimize,
 or bootstrap itself. Calling it a JIT or self-hosted compiler would be false.

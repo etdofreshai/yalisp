@@ -1,0 +1,123 @@
+{
+  "schema": "yalisp-compiler-error-intersection-v1",
+  "profile": {
+    "parameters": 1,
+    "bodyForms": 1,
+    "expressions": ["integer", "parameter", "binary +", "binary -", "binary *"],
+    "numericMinimum": -1073741824,
+    "numericMaximum": 1073741823,
+    "numericRule": "every input, literal, intermediate, and result remains within the inclusive signed 30-bit range"
+  },
+  "expectedJointErrorCases": 0,
+  "cases": [
+    {
+      "id": "unbound-symbol",
+      "categoryCode": 1,
+      "category": "unbound-name",
+      "boundary": "compiler-rejection",
+      "body": "missing",
+      "argument": 0,
+      "interpreterSource": "((lambda (x) missing) 0)",
+      "expectedError": {"diagnostic": "unbound: missing", "data": "missing"}
+    },
+    {
+      "id": "reader-before-form",
+      "categoryCode": 2,
+      "category": "reader",
+      "boundary": "precompile-reader",
+      "interpreterSource": ")",
+      "expectedError": {"diagnostic": "read error", "data": "read error"}
+    },
+    {
+      "id": "unsupported-arity-form",
+      "categoryCode": 3,
+      "category": "arity",
+      "boundary": "compiler-rejection",
+      "body": "(car)",
+      "argument": 0,
+      "interpreterSource": "((lambda (x) (car)) 0)",
+      "expectedError": {"diagnostic": "car expected", "data": "car"}
+    },
+    {
+      "id": "unsupported-type-form",
+      "categoryCode": 4,
+      "category": "type",
+      "boundary": "compiler-rejection",
+      "body": "(string.length x)",
+      "argument": 1,
+      "interpreterSource": "((lambda (x) (string.length x)) 1)",
+      "expectedError": {"diagnostic": "string expected", "data": "string expected"}
+    },
+    {
+      "id": "unsupported-apply-form",
+      "categoryCode": 5,
+      "category": "apply",
+      "boundary": "compiler-rejection",
+      "body": "(x 1)",
+      "argument": 1,
+      "interpreterSource": "((lambda (x) (x 1)) 1)",
+      "expectedError": {"diagnostic": "cannot apply", "data": "cannot apply"}
+    },
+    {
+      "id": "unsupported-zero-divisor-form",
+      "categoryCode": 6,
+      "category": "arithmetic",
+      "boundary": "compiler-rejection",
+      "body": "(/ x 0)",
+      "argument": 1,
+      "interpreterSource": "((lambda (x) (/ x 0)) 1)",
+      "expectedError": {"diagnostic": "division by zero", "data": "division by zero"}
+    },
+    {
+      "id": "accepted-expression-outside-numeric-profile",
+      "categoryCode": 6,
+      "category": "arithmetic",
+      "boundary": "numeric-domain-exclusion",
+      "body": "(+ x 1)",
+      "argument": 1073741823,
+      "interpreterSource": "((lambda (x) (+ x 1)) 1073741823)",
+      "expectedError": {"diagnostic": "value exceeds fixnum range", "data": "value exceeds fixnum range"},
+      "expectedCompiledValue": "1073741824",
+      "firstOutOfRangeValue": 1073741824
+    },
+    {
+      "id": "unsupported-bounds-form",
+      "categoryCode": 7,
+      "category": "bounds",
+      "boundary": "compiler-rejection",
+      "body": "(u8@ (bytes.alloc 1) 1)",
+      "argument": 0,
+      "interpreterSource": "((lambda (x) (u8@ (bytes.alloc 1) 1)) 0)",
+      "expectedError": {"diagnostic": "byte index out of range", "data": "byte index out of range"}
+    },
+    {
+      "id": "unsupported-resource-form",
+      "categoryCode": 8,
+      "category": "resource-exhausted",
+      "boundary": "compiler-rejection",
+      "body": "(heap.reserve -1)",
+      "argument": 0,
+      "interpreterSource": "((lambda (x) (heap.reserve -1)) 0)",
+      "expectedError": {"diagnostic": "memory limit reached", "data": "memory limit reached"}
+    },
+    {
+      "id": "unsupported-mutation-form",
+      "categoryCode": 9,
+      "category": "mutation",
+      "boundary": "compiler-rejection",
+      "body": "(u8! (asset.ref 0) 0 1)",
+      "argument": 0,
+      "setup": ["(asset.reserve 1)"],
+      "ingestHex": "00",
+      "interpreterSource": "((lambda (x) (u8! (asset.ref 0) 0 1)) 0)",
+      "expectedError": {"diagnostic": "immutable byte buffer", "data": "immutable byte buffer"}
+    },
+    {
+      "id": "host-contract-before-source",
+      "categoryCode": 10,
+      "category": "host-contract",
+      "boundary": "precompile-host",
+      "expectedError": {"diagnostic": "asset ingest protocol", "data": "asset ingest protocol"}
+    }
+  ]
+}

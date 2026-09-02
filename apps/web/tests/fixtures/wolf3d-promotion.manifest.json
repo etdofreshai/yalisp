@@ -1,6 +1,6 @@
 {
   "kind": "wolf3d-yalisp-source-promotion-v1",
-  "sourceManifestSha256": "31181c032aaf435482121c07647751428eaf5919e5b2077d00188c6b1f34d371",
+  "sourceManifestSha256": "204577f54eeacb1b0dfba00e50ecbd1ca0936918d1364390b3f93a98c498996b",
   "modules": [
     { "name": "wl-def", "bytes": 1499, "sha256": "cdd84b1b27929292310dda6ee6702d2d894a76aa41517a2bec1bfbeb69394ef0" },
     { "name": "wl-fixed", "bytes": 5018, "sha256": "4d369adaa76adef451a6c7929a1a60d848e3ce2d37dbb8ebe707587c5d07da1e" },
@@ -12,7 +12,7 @@
     { "name": "wl-game", "bytes": 47679, "sha256": "8c699d1f027bcbed6dffe77a1b98c24cc5140194c47d97ba92056be8fecbf1e1", "sourceBlobSha1": "a3c60810ae0c59ec4e59180d64e45c43ca300521" },
     { "name": "wl-agent", "bytes": 26921, "sha256": "9b633e0c314dc06a9ef0cc4731d1683800b27aab783c6b1eb8a33241d764c0d3" },
     { "name": "wl-act2", "bytes": 85431, "sha256": "6ac724b388f0358d24ce31c61c3124f3dd10b599b5efeffedb15d1b3767011d2" },
-    { "name": "wl-state", "bytes": 1080, "sha256": "e9ef537c86488b1d1619421839014dcdc0cb741cc5177ec40659acc5a533c481" },
+    { "name": "wl-state", "bytes": 1079, "sha256": "a594a032cf9eb82599db3074d4c38513b8644d107b90c8064c15629afef2ff96", "sourceBlobSha1": "947b8e42ddf87aca74ec935715c88fa5bcfcccfe" },
     { "name": "wl-act1", "bytes": 1309, "sha256": "98c9ef4a38f571acbc210ef6256150e6f95686050404821876956d312a70c900" },
     { "name": "wl-play", "bytes": 12213, "sha256": "3141bedd0c386f80035c2960c29daa2361bfad3b3f3e74c6b74a374a9a5df9f6" },
     { "name": "wl-audio", "bytes": 8467, "sha256": "e85c4a44f2f0d0ddefe49b7388169ceb555c5e20eee8d1392e1805cd519be9a8" },
@@ -22,7 +22,7 @@
     { "name": "wl-menu", "bytes": 52501, "sha256": "ea7510e4401a25e2ba57be11a6d21cc7cf70b683d3d8fd3684941bd00130b2d4" },
     { "name": "wl-config", "bytes": 7185, "sha256": "78b9bbf633472704f010c7f6838fd019ca6da56122694d6dcba89ccece3e6b6d" },
     { "name": "wl-save", "bytes": 13031, "sha256": "2d43d3aef0b097e3c8400ed25043f06cdcab45553e16f0c535a15278551b8da2" },
-    { "name": "wl-draw", "bytes": 24736, "sha256": "1eabde7b905c472c40c31e4d6da534cb560c572da0e3ef1d560ee65008b172d6" },
+    { "name": "wl-draw", "bytes": 24890, "sha256": "8a275a5b98868e408aaa3a4beb9efef30c9594b279e6b086e86b060e29d635ea", "sourceBlobSha1": "e61ef4ccf88332d909f32f6c4b7370b644dc48a6" },
     { "name": "wl-scale", "bytes": 17059, "sha256": "74c2210e51cc5762b395e3fa1065e2625eee84c8e1703a023ed14b0606e0e355" },
     { "name": "app", "bytes": 124047, "sha256": "c9855c4f1c00013f02cefc0713479794402a0633176088d6abc6d28f85504b65", "sourceBlobSha1": "619c486cf0a9822e351287e932451bfab175a6ba" }
   ],

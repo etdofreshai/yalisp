@@ -12,7 +12,7 @@ const FIXED_ARITIES = Object.freeze({
   "string.contains?": 2, "string=?": 2,
   "to-string": 1, "bytes.alloc": 1, "bytes.length": 1, "u8@": 2,
   "u8!": 3, "u16@": 2, "bit.and": 2, "bit.or": 2, "bit.xor": 2,
-  "bit.shl": 2, "bit.shr": 2, "fx.mul-shift": 3, "bound?": 1,
+  "bit.shl": 2, "bit.shr": 2, "fx.mul-shift": 3, "bit.mul-shr": 3, "bound?": 1,
   "heap.reserve": 1, "heap.used": 0, "heap.capacity": 0,
   "asset.reserve": 1, "asset.used": 0, "asset.count": 0, "asset.ref": 1,
   "asset?": 1, "u16!": 3, "i16@": 2, "u32@": 2, "i32@": 2,

@@ -1,6 +1,6 @@
 # YaLisp hardening roadmap
 
-Status: prioritized roadmap, 2026-09-01.
+Status: prioritized roadmap, 2026-09-02.
 
 Only one milestone may be active. Priority is determined by the earliest
 semantic/evidence gap, not by novelty or benchmark appeal. Later milestones may
@@ -117,7 +117,7 @@ categories have nonzero coverage and the persisted minimal failure is `null`.
 The combined focused hardening set is 43/43. This satisfies every M2 exit
 criterion; see `baselines/2026-09-01-m2-source-forms.md`.
 
-## M3 — structured errors and transactional failure boundaries (active)
+## M3 — structured errors and transactional failure boundaries (complete)
 
 Goal: replace incidental traps with a minimal inspectable language error record
 while preserving bootstrap simplicity.
@@ -147,7 +147,7 @@ Each classified trap now also exports a seed-owned UTF-8 data span. Dynamic
 unbound/called names, cap dimensions, and fixed diagnostic tokens are decoded
 identically by the Node and browser hosts and exposed as `SeedLanguageError.data`.
 The golden error observations review this field; raw traps prove category zero
-and an empty span after entry reset. Compiler equivalence remains open.
+and an empty span after entry reset.
 
 The transactional observation harness first reused a trapped instance only for
 low-level inspection; production hosts now retain only the categories proved
@@ -165,7 +165,7 @@ codes 1–7 and 9. Resource exhaustion, host-contract errors, and raw Wasm fault
 invalidate the wrapper; subsequent calls fail as `SeedSessionDiscardedError`.
 The browser REPL preserves definitions only after a recoverable typed error.
 The reviewed unbound golden observation now records `recoverable: true` at
-corpus hash `d6a57946...`. This satisfies the host-distinction exit criterion.
+corpus hash `9740b03f...`. This satisfies the host-distinction exit criterion.
 
 Every primitive and alias now has an explicit fixed, ranged, or variadic arity
 policy checked before dispatch. Exhaustive fixtures reject both sides of every
@@ -180,11 +180,29 @@ special-form shapes are checked before field access; proper parameter lists are
 exact, bare symbols capture the full argument list, and dotted symbol tails
 capture the remainder. Fixed closures/macros reject missing and extra values
 before body entry, including malformed parameter identifiers. The focused set
-is 59/59. The payload slice remains 59/59 with golden corpus hash
-`d6a57946...`, and leaves explicit compiler error-intersection evidence as the
-only open M3 exit.
+is 59/59. The payload slice remains 59/59; the current golden corpus hash is
+`9740b03f...` after moving its resource witness inside the valid literal range.
 
-## M4 — explicit core IR and semantic reference path
+The reviewed `yalisp-compiler-error-intersection-v1` profile makes the final
+exit non-vacuous. Eleven cases cover all ten error categories: eight error-
+producing forms are rejected before code generation, reader and host-contract
+failures occur before a valid compiler form exists, and one accepted arithmetic
+form deliberately demonstrates the excluded numeric boundary. The audit first
+caught the seed wrapping that addition; the seed now reports category-6
+`value exceeds fixnum range`, while raw compiled i32 addition yields
+`1073741824`. The first intermediate is outside the declared inclusive fixnum
+domain. Decimal literals, every `+`/`-`/`*` intermediate, unary
+negation, division, and fixed-point shifted results now reject overflow.
+Machine-word overflow required by audited low-level source is named through
+`bit.mul-shr`, which wraps only its i32 product, shifts arithmetically, and
+checks the final tagged result.
+Therefore the current jointly supported language-error
+intersection contains exactly zero cases, not an untested assumption. The
+golden report records expected/observed joint errors as 0/0 and no unexpected
+intersection. The M3 completion suite is 69/69; see
+`baselines/2026-09-02-m3-completion.md`.
+
+## M4 — explicit core IR and semantic reference path (active)
 
 Goal: establish one inspectable representation shared by expansion,
 interpretation, compilation, decompilation/debugging, and caching.

@@ -20,6 +20,12 @@ console.log(JSON.stringify({
   corpusSha256: report.corpus.sha256,
   counts: report.counts,
   earliestDivergence: report.earliestDivergence,
+  compilerErrorIntersection: {
+    status: report.compilerErrorIntersection.status,
+    expectedJointErrorCases: report.compilerErrorIntersection.expectedJointErrorCases,
+    observedJointErrorCases: report.compilerErrorIntersection.observedJointErrorCases,
+    earliestUnexpectedIntersection: report.compilerErrorIntersection.earliestUnexpectedIntersection,
+  },
   reportPath,
 }, null, 2));
 

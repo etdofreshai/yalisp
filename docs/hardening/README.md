@@ -37,6 +37,8 @@ Special-form and user-call arity is recorded in
 `baselines/2026-09-02-m3-user-arity.md`.
 Structured category payloads are recorded in
 `baselines/2026-09-02-m3-error-payloads.md`.
+M3 completion and the explicit compiler error intersection are recorded in
+`baselines/2026-09-02-m3-completion.md`.
 
 ## Operating invariant
 

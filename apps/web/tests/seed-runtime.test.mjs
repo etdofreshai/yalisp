@@ -226,6 +226,8 @@ test("generic byte buffers and fixed-point primitives support Wolf3D-sized data 
     (list (bytes.length framebuffer) (u8@ framebuffer 0) (u16@ framebuffer 63998)))`), "(64000 18 4660)");
   assert.equal(session.evaluate("(list (bit.and 13 11) (bit.or 12 3) (bit.xor 12 10) (bit.shl 3 4) (bit.shr -32 3))"), "(9 15 6 48 -4)");
   assert.equal(session.evaluate("(fx.mul-shift 98304 131072 16)"), "196608");
+  assert.equal(session.evaluate("(list (bit.mul-shr 75099057 63 6) (bit.mul-shr -75099057 63 6))"),
+    "(6816770 -6816771)");
 });
 
 test("generic byte-buffer evaluation transfers raw bytes without DOM serialization", async () => {

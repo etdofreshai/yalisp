@@ -8,6 +8,7 @@ import {
   SeedLanguageError,
   createSeedSession,
 } from "../../apps/web/tests/seed-session.mjs";
+import { runCompilerErrorIntersection } from "./compiler-error-intersection-lib.mjs";
 
 export const GOLDEN_SCHEMA = "yalisp-golden-differential-v1";
 export const defaultCorpusUrl = new URL(
@@ -333,6 +334,21 @@ export async function runGoldenDifferential({ corpusUrl = defaultCorpusUrl, pert
     cases.push({ id: candidate.id, tags: candidate.tags, expected, stages });
   }
 
+  const compilerErrorIntersection = await runCompilerErrorIntersection();
+  const profileDivergence = compilerErrorIntersection.earliestUnexpectedIntersection;
+  const finalEarliestDivergence = earliestDivergence ?? crossStageDivergence ?? (profileDivergence
+    ? {
+        caseIndex: null,
+        caseId: `compiler-profile/${profileDivergence.caseId}`,
+        eventIndex: 0,
+        eventId: profileDivergence.eventId,
+        channel: profileDivergence.channel,
+        byteOffset: 0,
+        stage: "compiler",
+        against: "declared-profile",
+      }
+    : null);
+
   return {
     schema: GOLDEN_SCHEMA,
     corpus: {
@@ -344,6 +360,7 @@ export async function runGoldenDifferential({ corpusUrl = defaultCorpusUrl, pert
     inputs: {
       seedArtifacts: SEED_ARTIFACT_PINS,
       compiler: { bytes: encoder.encode(compilerSource).byteLength, sha256: sha256(encoder.encode(compilerSource)) },
+      compilerErrorProfile: compilerErrorIntersection.fixture,
     },
     machine: {
       hostname: hostname(),
@@ -356,16 +373,18 @@ export async function runGoldenDifferential({ corpusUrl = defaultCorpusUrl, pert
       node: process.version,
     },
     stageOrder: corpus.stageOrder,
-    status: earliestDivergence || crossStageDivergence ? "divergent" : "pass",
+    status: finalEarliestDivergence ? "divergent" : "pass",
     counts: {
       cases: corpus.cases.length,
       events: corpus.cases.reduce((total, candidate) => total + candidate.events.length, 0),
       observedStages: observedStageCount,
       notApplicableStages: notApplicableStageCount,
+      compilerErrorProfileCases: compilerErrorIntersection.counts.cases,
     },
-    earliestDivergence: earliestDivergence ?? crossStageDivergence,
+    earliestDivergence: finalEarliestDivergence,
     expectedDivergence: earliestDivergence,
     crossStageDivergence,
+    compilerErrorIntersection,
     cases,
   };
 }

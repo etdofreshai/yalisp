@@ -51,6 +51,12 @@ big-endian byte lengths followed by UTF-8 name and canonical value bytes.
 Normal execution never writes the fixture. Source, output, linear memory, and
 generated code have authored per-case caps.
 
+The companion reviewed compiler profile is
+`apps/web/tests/fixtures/compiler-error-intersection-v1.json`. Its runner
+executes every seed error category, checks the compiler disposition, records
+the first excluded numeric value divergence, and publishes expected versus
+observed jointly supported error counts inside every golden report.
+
 ## 2. Conformance suites
 
 ### Reader/printer
@@ -76,6 +82,9 @@ generated code have authored per-case caps.
 - IR validation plus serialize/decompile round trips when those paths exist;
 - interpreted, reference-IR, incrementally compiled, deoptimized, and AOT
   observation comparison over their declared support intersection.
+- the bounded compiler's current error intersection is explicit: 11 reviewed
+  cases cover ten categories, eight codegen rejections, two precompile
+  boundaries, one numeric-domain exclusion, and zero jointly supported errors.
 
 ### Errors and caps
 
@@ -229,6 +238,7 @@ node --test --test-concurrency=1 apps/web/tests/arithmetic-errors.test.mjs
 node --test --test-concurrency=1 apps/web/tests/error-transactionality.test.mjs
 node --test --test-concurrency=1 apps/web/tests/primitive-arity.test.mjs
 node --test --test-concurrency=1 apps/web/tests/user-arity.test.mjs
+node --test --test-concurrency=1 apps/web/tests/compiler-error-intersection.test.mjs
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```
@@ -250,9 +260,12 @@ invocations. Its recovery case retains a definition after a
 recoverable unbound error, then proves resource exhaustion invalidates the
 wrapper and rejects the next call.
 
-The arithmetic-error command proves both zero-divisor diagnostics and the
-minimum-fixnum divided by `-1` representation edge while retaining an ordinary
-negative division control.
+The arithmetic-error command proves both zero-divisor diagnostics, both literal
+boundaries, every `+`/`-`/`*` fold intermediate, unary negation, fixed-point
+shifted results, and the minimum-fixnum divided by `-1` edge while retaining
+in-range controls. It also distinguishes checked `*` from the explicit
+wrapped-`i32` then arithmetic-shift contract of `bit.mul-shr`, including a
+post-shift result that cannot enter the tagged domain.
 
 The transactional-error command intentionally reuses trapped instances only as
 an inspection instrument. It records post-failure bindings and destination
@@ -263,6 +276,11 @@ The primitive-arity command exhaustively checks missing and extra operands for
 every fixed primitive and alias, both sides of ranged string slicing, all seven
 variadic identities, and same-session recovery. Compiler/golden validation is a
 required companion because compiler.lisp uses variadic string concatenation.
+
+The compiler-error-intersection command independently executes the reviewed
+profile. A compiler rejection is not counted as error parity; it is an explicit
+stage exclusion. The numeric boundary must show both independently observed
+values and prove the first intermediate lies outside the declared range.
 
 The user-arity command covers fixed/optional/variadic special forms, fixed
 closure and macro calls, bare-rest and dotted-rest parameters, invalid parameter

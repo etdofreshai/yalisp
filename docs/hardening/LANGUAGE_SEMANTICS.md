@@ -29,7 +29,10 @@ only one-parameter integer expressions using binary `+`, `-`, and `*`; it has no
 shared session state or hot-switch mechanism. Equivalence is therefore proven
 only for the explicitly bounded compiler corpus. M1 records 15 reviewed cases,
 17 events, and 30 applicable stage observations with no divergence; three cases
-are in the compiler intersection and all unsupported stage slots are explicit.
+are in the compiler value intersection and all unsupported stage slots are
+explicit. The current compiler language-error intersection is explicitly empty:
+an 11-case reviewed profile covers all ten categories and the excluded numeric
+boundary rather than silently treating missing compiler errors as passes.
 
 ## 2. Values and representation
 
@@ -50,11 +53,19 @@ tagged heap objects. The exact tags and layouts are documented in
 license for high-level code to depend on raw addresses.
 
 Fixnums cover `[-2^30, 2^30-1]`. Arithmetic that cannot be represented must not
-silently become a different YaLisp value. The present primitive operations use
-WebAssembly `i32` arithmetic and the current compiler is equivalent only while
-inputs and intermediate results remain within the documented fixnum range.
-Checked overflow semantics are unresolved and must be specified before the
-numeric surface expands.
+silently become a different YaLisp value. Decimal literal parsing checks each
+digit before accumulation. `+`, `-`, and `*` check every left-fold intermediate
+in i64 space; unary negation, division results, and `fx.mul-shift` results use
+the same range boundary. They report category-6 `value exceeds fixnum range`.
+`bit.mul-shr a b k` is an explicit machine-word escape hatch: it multiplies
+the two fixnum operands modulo `2^32`, performs WebAssembly's arithmetic `i32`
+right shift (whose count uses the low five bits), and then checks that the
+shifted result is representable as a fixnum. This operation exists for audited
+low-level algorithms whose overflow is semantic; it does not weaken `*`.
+The current compiler still emits raw WebAssembly `i32` arithmetic and is
+equivalent only while inputs and intermediate results remain within the
+documented fixnum range. Low-level bit-shift overflow semantics remain to be
+specified before the numeric surface expands.
 
 Strings are byte-backed UTF-8 values at the host boundary. Mutable bytes and
 assets have the same read surface; assets reject mutation. Wider byte reads and
@@ -250,6 +261,18 @@ the matching signed remainder. A zero divisor reports `division by zero` or
 `-1073741824 / -1` reports `value exceeds fixnum range` rather than creating an
 invalid tagged value. This is an honest bootstrap boundary, not the final high-
 level error model.
+
+The current compiler accepts only pure one-parameter binary `+`, `-`, and `*`
+trees whose inputs, literals, intermediates, and result remain in the inclusive
+fixnum range. Within that profile execution is total and has no language-error
+case. Eight representative error-producing forms are rejected before code
+generation; reader and host-contract errors precede a valid compiler input.
+The accepted `(+ x 1)` boundary at `x = 1073741823` is explicitly outside the
+profile: interpretation reports category-6 `value exceeds fixnum range`, while
+compiled i32 execution returns `1073741824`. This observed error/value
+divergence is an exclusion, not a parity claim. Compiler-side checked arithmetic
+and a shared structured-error ABI are required before that boundary may enter
+the supported intersection.
 
 All readers, expanders, evaluators, compilers, printers, equality operations,
 FFI calls, and allocators must honor explicit depth, work, output, and memory

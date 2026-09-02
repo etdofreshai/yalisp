@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createSeedSession } from "./seed-session.mjs";
+import { SeedLanguageError, createSeedSession } from "./seed-session.mjs";
+
+function expectLanguageError(action, category, diagnostic) {
+  assert.throws(action, (error) => {
+    assert.ok(error instanceof SeedLanguageError);
+    assert.equal(error.category, category);
+    assert.equal(error.diagnostic, diagnostic);
+    return true;
+  });
+}
 
 // Host-to-runtime byte ingestion, exercised as the generic capability it is.
 // Nothing here describes a file format: an asset is a length of bytes the host
@@ -45,7 +54,7 @@ test("a multi-megabyte asset survives ingestion byte for byte", async () => {
   assert.equal(session.evaluate("(u8@ (asset.ref 0) 0)"), String(source[0]));
   assert.equal(session.evaluate(`(u8@ (asset.ref 0) ${source.length - 1})`), String(source[source.length - 1]));
   assert.equal(session.evaluate("(u16@ (asset.ref 0) 0)"), String(source[0] | (source[1] << 8)));
-  assert.throws(() => session.evaluate(`(u8@ (asset.ref 0) ${source.length})`), /unreachable/);
+  expectLanguageError(() => session.evaluate(`(u8@ (asset.ref 0) ${source.length})`), "bounds", "byte index out of range");
 });
 
 test("several assets keep distinct handles, contents, and lengths", async () => {
@@ -64,35 +73,35 @@ test("several assets keep distinct handles, contents, and lengths", async () => 
 });
 
 test("capacity is declared rather than taken, and exceeding it fails truthfully", async () => {
-  const session = await createSeedSession();
   // No capacity has been granted, so the host cannot hand over any asset at
   // all, however small.
-  assert.equal(session.evaluate("(asset.used)"), "0");
-  assert.throws(() => session.ingestBytes(pattern(1)), /unreachable/);
-  assert.equal(session.evaluate("(asset.count)"), "0");
+  const absent = await createSeedSession();
+  assert.equal(absent.evaluate("(asset.used)"), "0");
+  expectLanguageError(() => absent.ingestBytes(pattern(1)), "resource-exhausted", "asset capacity exceeded");
 
   // A grant is an exact allowance, and reserving reports what remains.
-  assert.equal(session.evaluate("(asset.reserve 4096)"), "4096");
-  assert.equal(session.evaluate("(asset.reserve 1024)"), "4096", "an already-satisfied reserve grants nothing further");
-  assert.throws(() => session.ingestBytes(pattern(4097)), /unreachable/);
+  const exceeded = await createSeedSession();
+  assert.equal(exceeded.evaluate("(asset.reserve 4096)"), "4096");
+  assert.equal(exceeded.evaluate("(asset.reserve 1024)"), "4096", "an already-satisfied reserve grants nothing further");
+  expectLanguageError(() => exceeded.ingestBytes(pattern(4097)), "resource-exhausted", "asset capacity exceeded");
 
-  // A refused ingest leaves no partial asset behind.
-  assert.equal(session.evaluate("(asset.count)"), "0");
-  assert.equal(session.evaluate("(asset.used)"), "0");
-
-  session.ingestBytes(pattern(4000));
-  assert.equal(session.evaluate("(asset.used)"), "4000");
-  // The allowance is consumed, not per-asset: the remainder is what is left.
-  assert.throws(() => session.ingestBytes(pattern(97)), /unreachable/);
+  // The transactionality suite independently reuses the trapped low-level
+  // instance and proves a refused begin publishes no object or usage.
+  const consumed = await createSeedSession();
+  assert.equal(consumed.evaluate("(asset.reserve 4096)"), "4096");
+  consumed.ingestBytes(pattern(4000));
+  assert.equal(consumed.evaluate("(asset.used)"), "4000");
   // Reserving states a floor on what must be available, so it grants exactly
   // the shortfall rather than the sum of the request and the remainder.
-  assert.equal(session.evaluate("(asset.reserve 1000)"), "1000");
-  assert.equal(session.ingestBytes(pattern(97)), 1);
+  assert.equal(consumed.evaluate("(asset.reserve 1000)"), "1000");
+  assert.equal(consumed.ingestBytes(pattern(97)), 1);
 
   // The declared asset allowance still sits under the kernel's own memory
   // ceiling, so an impossible reserve is a diagnostic rather than a promise.
-  assert.throws(() => session.evaluate("(asset.reserve 1073741824)"), /unreachable/);
-  assert.throws(() => session.evaluate("(asset.reserve -1)"), /unreachable/);
+  const impossible = await createSeedSession();
+  expectLanguageError(() => impossible.evaluate("(asset.reserve 1073741823)"), "resource-exhausted", "memory limit reached");
+  const negative = await createSeedSession();
+  expectLanguageError(() => negative.evaluate("(asset.reserve -1)"), "resource-exhausted", "asset capacity exceeded");
 });
 
 test("ingested assets are immutable, and refusing a write says so specifically", async () => {
@@ -147,8 +156,8 @@ test("a handle names the same asset for the life of the session", async () => {
   assert.equal(session.evaluate("(u8@ (asset.ref 0) 7)"), sampled);
   assert.equal(session.evaluate("(asset.count)"), "2");
 
-  assert.throws(() => session.evaluate("(asset.ref 2)"), /unreachable/);
-  assert.throws(() => session.evaluate("(asset.ref -1)"), /unreachable/);
+  expectLanguageError(() => session.evaluate("(asset.ref 2)"), "bounds", "asset handle out of range");
+  expectLanguageError(() => session.evaluate("(asset.ref -1)"), "bounds", "asset handle out of range");
 });
 
 // Ingested assets are only as safe as the accessors that address them, so the
@@ -181,7 +190,7 @@ test("a zero-length asset is a valid asset rather than a special case", async ()
   assert.equal(session.ingestBytes(new Uint8Array(0)), 0);
   assert.equal(session.evaluate("(bytes.length (asset.ref 0))"), "0");
   assert.equal(session.evaluate("(asset? (asset.ref 0))"), "true");
-  assert.throws(() => session.evaluate("(u8@ (asset.ref 0) 0)"), /unreachable/);
+  expectLanguageError(() => session.evaluate("(u8@ (asset.ref 0) 0)"), "bounds", "byte index out of range");
 });
 
 // A trap discards the instance, so each bounds case needs its own session.
