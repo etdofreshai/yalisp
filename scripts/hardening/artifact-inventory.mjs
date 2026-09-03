@@ -13,6 +13,7 @@ const artifacts = Object.freeze({
   aotExample: new URL("apps/web/public/yalisp/aot-benchmark.wasm", root),
   coreIrExample: new URL("apps/web/tests/fixtures/core-ir-v1-example.lisp", root),
   coreIrValidator: new URL("scripts/hardening/core-ir-v1.mjs", root),
+  coreIrLowerer: new URL("scripts/hardening/core-ir-lowering.mjs", root),
 });
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");

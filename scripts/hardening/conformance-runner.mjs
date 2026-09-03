@@ -17,7 +17,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 export const RUNNER_SCHEMA = "yalisp-conformance-shards-v2";
-export const INHERITED_CASE_FLOOR = 350;
+export const INHERITED_CASE_FLOOR = 358;
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), "../..");
@@ -34,6 +34,7 @@ const artifactPaths = Object.freeze({
   aotExample: "apps/web/public/yalisp/aot-benchmark.wasm",
   coreIrExample: "apps/web/tests/fixtures/core-ir-v1-example.lisp",
   coreIrValidator: "scripts/hardening/core-ir-v1.mjs",
+  coreIrLowerer: "scripts/hardening/core-ir-lowering.mjs",
 });
 
 const buildProtectedPaths = Object.freeze([
@@ -45,6 +46,7 @@ const buildProtectedPaths = Object.freeze([
   "apps/web/scripts/build-seed.mjs",
   "apps/web/scripts/build-aot.mjs",
   "scripts/hardening/core-ir-v1.mjs",
+  "scripts/hardening/core-ir-lowering.mjs",
   "apps/web/package.json",
   "package-lock.json",
 ]);

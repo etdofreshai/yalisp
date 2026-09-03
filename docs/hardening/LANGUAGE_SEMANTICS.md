@@ -189,6 +189,11 @@ Nested quasiquote depth and malformed splice behavior are covered by four M2
 test groups, including matching-depth double unquote and proper-list checks.
 Named outer expansion stops before application 1,025 with `macro expansion
 cap`; the one-form self-reproducing witness is persisted by the M2 harness.
+The M4 host-tooling lowerer reuses that named-global expansion boundary to
+produce validated `yalisp-core-ir-v1` data. It preserves the original UTF-8
+call span, records ordered outer-to-inner macro origins, and never evaluates
+the produced form. This is not yet general macro lowering: computed or
+lexically passed macro values remain outside the boundary.
 
 ## 7. Equality
 

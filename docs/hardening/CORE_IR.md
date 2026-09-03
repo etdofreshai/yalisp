@@ -1,7 +1,8 @@
 # YaLisp core IR v1
 
-Status: normative data and validation contract; lowering, reference execution,
-and compiler consumption are not implemented yet.
+Status: normative data and validation contract with bounded deterministic
+source lowering; reference execution and compiler consumption are not yet
+implemented.
 
 Core IR is ordinary, immutable YaLisp data. It is not a hidden host AST and it
 does not authorize a compiler to change language behavior. Its first purpose is
@@ -90,7 +91,54 @@ tail flag; all earlier forms are non-tail. The validator rejects the first
 incorrect annotation. A compiler may optimize a `call` only when its stored
 flag is true, and must preserve semantics if it chooses not to optimize it.
 
-## 4. Deterministic validation
+## 4. Deterministic source lowering
+
+`scripts/hardening/core-ir-lowering.mjs` is the initial independent lowering
+boundary. It reads exactly one UTF-8 source submission, tracks half-open byte
+spans, lowers the kernel forms `quote`, `if`, `lambda`, `define`, `set!`, and
+`begin`, resolves lexical references to program-unique binder IDs, and validates
+the resulting IR before returning it. Empty `begin`, omitted `if` alternates,
+and multi-form lambda bodies use explicit generated provenance rather than
+hidden host nodes.
+
+The optional `expandOuter` boundary accepts and returns canonical source text.
+It is called only for a proper application with a global symbol head, after
+kernel-special-form precedence and lexical-head resolution. A changed result is
+recorded as one expansion, reparsed, given the original call-site span plus an
+ordered outermost-to-innermost macro origin, and recursively expanded before
+lowering. An unchanged result is a runtime call. Macro lookup follows source
+order, including test, consequent, then alternate for an `if`; produced user
+code is not evaluated by the lowerer.
+
+The lowering profile has independent exact work caps:
+
+| Cap | Default | Counted unit |
+| --- | ---: | --- |
+| `maxSourceBytes` | 130,048 | UTF-8 bytes in the submitted source |
+| `maxSourceUnitBytes` | 65,536 | UTF-8 bytes in the source-unit identifier |
+| `maxSyntaxNodes` | 4,096 | original nodes plus every reparsed expansion node |
+| `maxSyntaxDepth` | 256 | maximum reader nesting, root depth 1 |
+| `maxMacroExpansions` | 1,024 | changed outer-expansion results |
+| `maxMacroExpansionBytes` | 1,048,576 | every callback result, including unchanged results |
+| `maxOriginsPerSpan` | 64 | macro and generated origins on one span |
+
+The last allowed unit succeeds and the next fails before it is charged. The
+fixed-seed `yalisp-core-source-v1` profile uses seed `0x4c4f5745`, 256 forms,
+and generator depth 5. It reaches every IR opcode, lowers every form twice,
+validates the output, and pins aggregate hash
+`2677a95639aa4aeb3b6fc2cf153eed8cc670de3ef0cc9c2ba62d81da4283004e`.
+Eight fresh boot sessions lower nested `let`/`when` expansion to hash
+`a693116b6607ef5065104858a31b873f4d18a3de3435d95b45abc2e2be06fab4`.
+
+This boundary is deliberately narrower than evaluator semantics. It observes
+only named global outer macros through the callback, not computed or lexically
+passed macro values. `macro` and unresolved quasiquote forms must be expanded
+before core lowering. A `define` inside a closure is rejected as
+`unsupported-local-define`: the current seed defines in its current frame,
+whereas IR v1 intentionally models only global definition. These are explicit
+gaps, not silent rewrites.
+
+## 5. Deterministic validation
 
 `scripts/hardening/core-ir-v1.mjs` is the initial independent tooling
 validator. It walks depth-first in grammar field order and returns exactly one
@@ -123,14 +171,14 @@ graph, compares serialization after a structural clone, and requires a root-tail
 mutation to fail at the same path. The aggregate of the 256 canonical IR hashes
 is `c7e849d3916c957c1f2d8a6c43209cdd11c432ea6d1d750aa28db2087cebc342`.
 
-The validator is presently a conformance-tool trust boundary, not part of the
-seed or a claim of self-hosting. M4 remains incomplete until deterministic
-macro-expanded source lowers to this data, a reference interpreter executes it,
-the golden corpus compares direct and IR execution, and canonical
+The validator and lowerer are presently conformance-tool trust boundaries, not
+part of the seed or a claim of self-hosting. M4 remains incomplete until a
+reference interpreter executes this data, the golden corpus compares direct
+and IR execution, and canonical
 serialization/decompilation round trips preserve every semantic and source-map
 field.
 
-## 5. Canonical identity and future consumers
+## 6. Canonical identity and future consumers
 
 Canonical IR serialization uses the seed reader/printer spelling for portable
 data. SHA-256 is computed over those UTF-8 bytes with no trailing newline. The

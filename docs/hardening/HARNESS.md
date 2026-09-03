@@ -11,9 +11,9 @@ status, and stable hierarchical case IDs. Top-level IDs remain
 name path. Promotion mode forbids skips, cancellations, incomplete shards,
 abnormal exits, failures, and coverage below the inherited floor. Resume is
 allowed only for an exact schema and identity hash.
-After the fully green core-IR validation run, the non-regression floor is 350
-web tests; later M4 work may raise the observed total but cannot lower that
-floor.
+After the fully green deterministic core-IR lowering run, the non-regression
+floor is 358 web tests; later M4 work may raise the observed total but cannot
+lower that floor.
 
 ## 1. One corpus, independent observations
 
@@ -81,7 +81,8 @@ observed jointly supported error counts inside every golden report.
 - eight authored boot expansions repeat in four fresh sessions and 16 rounds
   in one warmed session at pinned canonical hash `34214d55...` (implemented);
 - capture-sensitive lexical fixtures and nested quasiquote/unquote depth;
-- canonical expansion hashes (implemented for M2); IR hashes await M4;
+- canonical expansion hashes (implemented for M2) and deterministic source-to-IR
+  hashes for authored boot macros plus a 256-form generated profile (implemented);
 - IR validation plus serialize/decompile round trips when those paths exist;
 - interpreted, reference-IR, incrementally compiled, deoptimized, and AOT
   observation comparison over their declared support intersection.
@@ -91,7 +92,11 @@ observed jointly supported error counts inside every golden report.
 - core IR v1 validation walks canonical YaLisp list data in deterministic
   field order, reports the earliest code/path, and applies exact node, depth,
   literal-node, literal-byte, source-unit, provenance, binding, and cycle caps.
-  Lowering and reference execution are still open M4 gates.
+- the bounded source lowerer preserves UTF-8 spans, resolves lexical binders,
+  expands named global outer macros without evaluation, validates its result,
+  and applies exact source/expansion/node/depth/provenance caps. Dynamic macro
+  values, current-frame local `define`, reference execution, and decompilation
+  remain open M4 gates.
 
 ### Errors and caps
 

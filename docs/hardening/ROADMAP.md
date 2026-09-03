@@ -229,10 +229,19 @@ exact node, depth, literal-node/byte, source, provenance, lexical-binding, and
 cycle caps. The 1,252-byte reviewed YaLisp-data example hashes to
 `12e1ba6d...`; 32 fresh/warmed validations are byte-identical. A fixed-seed
 256-graph property profile covers every opcode, reaches 70 nodes, and pins
-aggregate hash `c7e849d3...`. This is the first M4 slice only. Deterministic
-expansion/lowering, reference execution, golden parity, and semantic
-serialization/decompilation round trips remain open.
-The repository-wide gate is green at 350/350 web tests plus 1/1 site-content
+aggregate hash `c7e849d3...`. The second slice adds a span-aware single-form
+reader/lowerer for every IR opcode. It gives lexical binders program-unique
+IDs, preserves left-to-right lowering order, expands named global boot macros
+recursively without evaluating produced code, retains ordered call-site
+provenance, and validates every result. Eight fresh nested `let`/`when` runs
+pin hash `a693116b...`; the fixed-seed 256-form `yalisp-core-source-v1`
+profile reaches 75 IR nodes and every opcode at aggregate hash `2677a956...`.
+Exact witnesses cover source bytes, source-unit bytes, syntax nodes/depth,
+expansion steps/bytes, and origins. Dynamic or lexical macro values and
+current-frame local `define` remain explicit unsupported boundaries.
+Reference execution, golden parity, and semantic serialization/decompilation
+round trips remain open.
+The repository-wide gate is green at 358/358 web tests plus 1/1 site-content
 test with no failures, cancellations, skips, or todos.
 
 ## M5 — shared-state incremental compilation and hot switching
