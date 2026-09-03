@@ -1,6 +1,6 @@
 # YaLisp living hardening scorecard
 
-Updated: 2026-09-02 M3 complete; active M4 core-IR specification. Scale: 0
+Updated: 2026-09-02 M3 complete; active M4 core-IR validation. Scale: 0
 absent, 1 prototype, 2 bounded and partly evidenced, 3 broadly conformant, 4 production-hardened, 5 independently
 reproduced across supported targets. Scores are independent; speed cannot raise
 a correctness score and a small binary cannot raise bootstrap purity if work is
@@ -27,7 +27,7 @@ hidden in the host.
 | Earliest divergence | Implemented to case/event/channel/byte; deliberate perturbation localized | Preserve and extend |
 | Reader/printer round trip | `yalisp-acyclic-data-v1`: 256 values at depth 4, seed `0x59414c49`; `yalisp-source-forms-v1`: 512 forms at depth 5, seed `0x53524346`, all syntax categories covered, minimal failure `null`; 23 fixed edges | Preserve and extend |
 | Macro expansion determinism | Independent named outer expansion; 8 authored cases hash `34214d55...` across 4 fresh and 16 warmed corpus runs; produced user mutation is not evaluated; step 1,025 fails explicitly; 4 quasiquote groups cover nesting, context, list shape, and arity | Preserve and extend |
-| IR/decompile invariants | No IR | M4 |
+| IR/decompile invariants | Core IR v1 has canonical YaLisp-data syntax, source maps, lexical IDs, tail/effect rules, deterministic earliest-error validation, exact graph/resource caps, and a 256-graph/every-opcode property profile; no lowering, executor, or decompiler yet | Complete M4 lowering, reference execution, and semantic round trips |
 | Property/fuzz and malformed caps | 256 generated values, 512 generated source forms, 12 malformed reader fixtures, 4 quasiquote groups, binary shrink 511/512, exact 32,768/32,769 work boundary, 130,048-byte host cap, and minimal self-expanding macro witness | Extend through M4 IR validation |
 | Cold start / parse / expand / eval / compile | Partial cold setup; phases not fully separated | M1/M7 |
 | Throughput and latency percentiles | Absent | M7 |
@@ -64,7 +64,9 @@ bare-rest, and dotted-rest user calls are also explicit. Classified failures
 now carry a seed-owned UTF-8 data span, which both hosts and the reviewed golden
 errors expose; raw faults reset to an empty span. The earliest gap is explicit
 core IR syntax, validation, binding/effect/tail/source-map semantics, and a
-reference execution path. M3 is complete at 69/69: checked literal and
+reference execution path. The syntax and validator now exist with a pinned
+1,252-byte canonical example and exact malformed/cap witnesses; deterministic
+lowering and reference execution are the earliest remaining gap. M3 is complete at 69/69: checked literal and
 arithmetic construction closes the overflow found by its 11-case compiler profile,
 which covers all ten categories, records eight codegen rejections and two precompile
 boundaries, exposes one out-of-range value divergence, and proves expected and

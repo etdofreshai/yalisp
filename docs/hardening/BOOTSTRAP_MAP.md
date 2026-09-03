@@ -121,6 +121,12 @@ making the first differential boundary explicit. Required evidence includes IR
 validation, round trips where applicable, source maps, environment-cell ABI,
 and corpus-wide observation equivalence.
 
+Current boundary: the `yalisp-core-ir-v1` canonical list grammar, reviewed
+1,252-byte example, and independently capped structural validator now exist.
+They remain host conformance tooling, not seed functionality. No lowering,
+reference executor, environment-cell implementation, or general compiler may
+be claimed until the remaining M4 gates are executable.
+
 ### S5 — shared-state tiering
 
 Add incremental compilation, generation-keyed caches, safe points,

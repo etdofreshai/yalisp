@@ -229,7 +229,7 @@ test("promotion aggregate rejects skips, cancellations, incomplete shards, and c
   ], "promotion");
   assert.equal(aggregate.status, "fail");
   assert.match(aggregate.violations.join("; "), /incomplete/);
-  assert.match(aggregate.violations.join("; "), /below the 284-case floor/);
+  assert.match(aggregate.violations.join("; "), new RegExp(`below the ${INHERITED_CASE_FLOOR}-case floor`));
   assert.match(aggregate.violations.join("; "), /skipped/);
 });
 

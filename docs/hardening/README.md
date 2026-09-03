@@ -39,6 +39,9 @@ Structured category payloads are recorded in
 `baselines/2026-09-02-m3-error-payloads.md`.
 M3 completion and the explicit compiler error intersection are recorded in
 `baselines/2026-09-02-m3-completion.md`.
+The active M4 representation and validation contract is in `CORE_IR.md`.
+Its first executable evidence is in
+`baselines/2026-09-02-m4-core-ir-validation.md`.
 
 ## Operating invariant
 

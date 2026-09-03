@@ -11,6 +11,9 @@ status, and stable hierarchical case IDs. Top-level IDs remain
 name path. Promotion mode forbids skips, cancellations, incomplete shards,
 abnormal exits, failures, and coverage below the inherited floor. Resume is
 allowed only for an exact schema and identity hash.
+After the fully green core-IR validation run, the non-regression floor is 350
+web tests; later M4 work may raise the observed total but cannot lower that
+floor.
 
 ## 1. One corpus, independent observations
 
@@ -85,6 +88,10 @@ observed jointly supported error counts inside every golden report.
 - the bounded compiler's current error intersection is explicit: 11 reviewed
   cases cover ten categories, eight codegen rejections, two precompile
   boundaries, one numeric-domain exclusion, and zero jointly supported errors.
+- core IR v1 validation walks canonical YaLisp list data in deterministic
+  field order, reports the earliest code/path, and applies exact node, depth,
+  literal-node, literal-byte, source-unit, provenance, binding, and cycle caps.
+  Lowering and reference execution are still open M4 gates.
 
 ### Errors and caps
 
@@ -239,6 +246,7 @@ node --test --test-concurrency=1 apps/web/tests/error-transactionality.test.mjs
 node --test --test-concurrency=1 apps/web/tests/primitive-arity.test.mjs
 node --test --test-concurrency=1 apps/web/tests/user-arity.test.mjs
 node --test --test-concurrency=1 apps/web/tests/compiler-error-intersection.test.mjs
+node --test --test-concurrency=1 apps/web/tests/core-ir-validator.test.mjs
 npm run measure:wolf3d-feasibility --workspace @yalisp/web
 node scripts/hardening/artifact-inventory.mjs
 ```

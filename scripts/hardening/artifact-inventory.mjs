@@ -11,6 +11,8 @@ const artifacts = Object.freeze({
   bootstrap: new URL("apps/web/public/yalisp/boot.lisp", root),
   compiler: new URL("apps/web/public/yalisp/compiler.lisp", root),
   aotExample: new URL("apps/web/public/yalisp/aot-benchmark.wasm", root),
+  coreIrExample: new URL("apps/web/tests/fixtures/core-ir-v1-example.lisp", root),
+  coreIrValidator: new URL("scripts/hardening/core-ir-v1.mjs", root),
 });
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");

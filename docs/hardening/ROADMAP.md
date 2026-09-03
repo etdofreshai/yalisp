@@ -219,6 +219,22 @@ Exit criteria:
   across the golden corpus;
 - serialization or decompilation round trips preserve all semantic fields.
 
+Current evidence: `yalisp-core-ir-v1` now has a normative canonical-list
+grammar covering constants, resolved reads/writes, global definition,
+conditionals, closures, calls, and sequencing. It specifies global and
+program-unique lexical identities, shared-cell mutation, left-to-right effects,
+tail annotations, half-open UTF-8 source spans, and macro/generated provenance.
+The independent tooling validator rejects the earliest malformed field under
+exact node, depth, literal-node/byte, source, provenance, lexical-binding, and
+cycle caps. The 1,252-byte reviewed YaLisp-data example hashes to
+`12e1ba6d...`; 32 fresh/warmed validations are byte-identical. A fixed-seed
+256-graph property profile covers every opcode, reaches 70 nodes, and pins
+aggregate hash `c7e849d3...`. This is the first M4 slice only. Deterministic
+expansion/lowering, reference execution, golden parity, and semantic
+serialization/decompilation round trips remain open.
+The repository-wide gate is green at 350/350 web tests plus 1/1 site-content
+test with no failures, cancellations, skips, or todos.
+
 ## M5 — shared-state incremental compilation and hot switching
 
 Goal: compile on the fly without forking language state or losing transparent
